@@ -20,7 +20,7 @@ Remove the `GameRoom` dependency from `Simulation` so the battle engine can run 
 **Project Type**: Full-stack game (brownfield refactoring)
 **Performance Goals**: Battle simulation runs at 60fps equivalent (16ms per update tick)
 **Constraints**: `npm run build` must pass at every commit. Multiplayer must keep working.
-**Scale/Scope**: 8 files in `app/core/` with Schema imports, 14 broadcast/send calls to replace
+**Scale/Scope**: 8 files in `app/core/` with Schema imports, 14 room operations to replace (8 in simulation.ts + 6 in pokemon-state.ts) + broadcastAbility in pokemon-entity.ts
 
 ## Constitution Check
 
@@ -65,7 +65,7 @@ app/
 ├── rooms/
 │   └── game-room.ts               # Adapt to process BattleEvent[] from update()
 ├── types/
-│   ├── interfaces/Simulation.ts   # Update ISimulation interface (remove room)
+│   ├── index.ts                   # Update ISimulation interface (remove room)
 │   └── BattleEvent.ts             # NEW: BattleEvent type definition
 └── package.json                   # Add vitest devDependency
 ```
@@ -88,7 +88,7 @@ app/
 
 **Step 1**: Define `BattleEvent` type
 - Create `app/types/BattleEvent.ts` with discriminated union
-- 7 event variants mapping 1:1 to existing Transfer.* broadcasts
+- 8 event variants mapping 1:1 to existing Transfer.* broadcasts (ABILITY, POKEMON_DAMAGE, POKEMON_HEAL, BOARD_EVENT, CLEAR_BOARD, SIMULATION_END, PLAYER_INCOME, PLAYER_DAMAGE)
 - ~30 lines of type definitions
 
 **Step 2**: Add event buffer to Simulation
@@ -107,34 +107,46 @@ app/
 
 **Step 4**: Add `specialGameRule` as constructor parameter
 - Add `specialGameRule: SpecialGameRule | null` to Simulation constructor
-- Replace `this.simulation.room.state.specialGameRule` access in pokemon-entity.ts with `this.simulation.specialGameRule`
+- Replace `this.simulation.room.state.specialGameRule` access in pokemon-entity.ts (line 1273 only) with `this.simulation.specialGameRule`
+- Note: pokemon-entity.ts also has a standalone function parameter `specialGameRule` (lines 1796-1798) — this is already decoupled and does NOT need changes
 - 1 line added to constructor, ~2 lines changed in pokemon-entity.ts
 - No broadcast dependency — safe to do early
 
 **Step 5**: Adapt GameRoom to process events
-- In game-room.ts where `simulation.update(deltaTime)` is called (via OnUpdateCommand):
+- The actual `simulation.update(deltaTime)` call is in `app/rooms/commands/game-commands.ts:1039` (OnUpdateCommand), not directly in game-room.ts
+- Modify OnUpdateCommand to capture the returned events and delegate to GameRoom:
   ```typescript
   const events = simulation.update(deltaTime)
   for (const event of events) {
-    this.processBattleEvent(event, simulation)
+    this.room.processBattleEvent(event, simulation)
   }
   ```
-- `processBattleEvent()` is a switch on `event.type` that calls the existing `this.broadcast()` / `client.send()` — same logic that was previously inline in Simulation, now moved to GameRoom
+- `processBattleEvent()` is a new method on GameRoom — a switch on `event.type` that calls the existing `this.broadcast()` / `client.send()` — same logic that was previously inline in Simulation
 - This is the ONE new function in GameRoom (~50 lines)
+- Simulation constructor calls are also in game-commands.ts (lines 1931, 1986) — will be updated in Step 9 when removing the `room` parameter
 - At this point: events buffer is empty, processBattleEvent is a no-op, existing broadcasts still work
 - **This step MUST come before Steps 6-8** so there is a consumer ready when broadcasts are replaced
 
-**Step 6**: Replace `room.broadcast()` calls in simulation.ts (8 calls)
-- Each `this.room.broadcast(Transfer.X, data)` → `this.pushEvent({ type: "X", ...data })`
-- Line-by-line replacement, same data payloads
-- Replace `this.room.clients.find()` + `client.send()` with PLAYER_INCOME/PLAYER_DAMAGE events
-- Replace `this.room.rankPlayers()` with inclusion in SIMULATION_END event
+**Step 6**: Replace all room operations in simulation.ts (8 operations)
+- 5 `room.broadcast()` calls → `this.pushEvent({ type: "X", ...data })`
+  - Line 750: `pokemon.simulation.room.broadcast(Transfer.ABILITY)` for COMET_CRASH — note: accessed via `pokemon.simulation.room`, not `this.room` (inside DelayedCommand callback) → `pokemon.simulation.pushEvent({ type: "ABILITY", ... })`
+  - Line 1432: `this.room.broadcast(Transfer.BOARD_EVENT)` STORM lightning → pushEvent
+  - Line 1740: `this.room.broadcast(Transfer.ABILITY)` TIDAL_WAVE → pushEvent
+  - Line 1749: `this.room.broadcast(Transfer.CLEAR_BOARD)` → pushEvent
+  - Line 1475: `this.room.broadcast(Transfer.SIMULATION_STOP)` → SIMULATION_END event
+- 1 `room.clients.find()` + `client.send()` (line 1565) → PLAYER_INCOME / PLAYER_DAMAGE events
+- 1 `room.computeRoundDamage()` (line 1584) → call extracted `computeRoundDamage()` directly (Step 3)
+- 1 `room.rankPlayers()` (line 1623) → include data in SIMULATION_END event, GameRoom calls rankPlayers
 - Now events flow through the buffer → GameRoom processBattleEvent handles them
 
-**Step 7**: Replace `room.broadcast()` calls in pokemon-state.ts (6 calls)
-- `pokemon.simulation.room.broadcast(Transfer.POKEMON_DAMAGE, ...)` → `pokemon.simulation.pushEvent({ type: "POKEMON_DAMAGE", ... })`
-- `pokemon.simulation.room.broadcast(Transfer.POKEMON_HEAL, ...)` → `pokemon.simulation.pushEvent({ type: "POKEMON_HEAL", ... })`
-- Replace `pokemon.simulation.room.state.time` checks with `pokemon.simulation.elapsedTime`
+**Step 7**: Replace all room references in pokemon-state.ts (6 references)
+- 3 `room.broadcast()` calls → `pokemon.simulation.pushEvent()`
+  - Line 330: `room.broadcast(Transfer.POKEMON_HEAL)` heal → pushEvent
+  - Line 367: `room.broadcast(Transfer.POKEMON_HEAL)` shield → pushEvent
+  - Line 728: `room.broadcast(Transfer.POKEMON_DAMAGE)` → pushEvent
+- 3 `room.state.time` accesses → `pokemon.simulation.elapsedTime`
+  - Lines 329, 366: guard `< FIGHTING_PHASE_DURATION` before broadcast
+  - Line 957: ZENITH weather healing calculation `Math.floor(time / 1000) % 2 === 0`
 
 **Step 8**: Replace `broadcastAbility()` in pokemon-entity.ts
 - Current: iterates `room.clients`, sends to spectating clients
@@ -147,7 +159,8 @@ app/
 - Delete `this.room = room` in constructor
 - Remove `room` parameter from constructor
 - Delete `import GameRoom from "..."` line
-- Update `ISimulation` interface to remove `room` field
+- Update `ISimulation` interface in `app/types/index.ts` (lines 359-374) to remove `room` field
+- Update Simulation constructor calls in `game-commands.ts` (lines 1931, 1986) to remove `room` argument and add `specialGameRule`
 - All room references already eliminated in Steps 6-8; this is pure cleanup
 
 ### Sub-phase B: Interface Cleanup
