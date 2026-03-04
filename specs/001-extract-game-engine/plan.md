@@ -6,7 +6,7 @@
 
 ## Summary
 
-Remove the `GameRoom` dependency from `Simulation` so the battle engine can run without any network context. Replace all 14 `room.broadcast()` / `client.send()` calls with an event buffer that `update(dt)` returns as `BattleEvent[]`. GameRoom processes the returned events and broadcasts them to clients. Keep class names (`Simulation`, `PokemonEntity`, `Dps`) unchanged. Keep `extends Schema` temporarily for Colyseus auto-sync backward compatibility — deferred to Phase 4.
+Remove the `GameRoom` dependency from `Simulation` so the battle engine can run without any network context. Replace all 14 room operations (broadcasts, client access, room method calls, room.state reads) with an event buffer that `update(dt)` returns as `BattleEvent[]`. GameRoom processes the returned events and broadcasts them to clients. Keep class names (`Simulation`, `PokemonEntity`, `Dps`) unchanged. Keep `extends Schema` temporarily for Colyseus auto-sync backward compatibility — deferred to Phase 4.
 
 **User constraint**: "以最小改動來進行修改，使用既有函數盡可能減少創建新函數，並且需要撰寫測試來確保結果正確"
 
@@ -63,7 +63,8 @@ app/
 │       ├── compute-round-damage.test.ts
 │       └── simulation-events.test.ts
 ├── rooms/
-│   └── game-room.ts               # Adapt to process BattleEvent[] from update()
+│   ├── game-room.ts               # Add processBattleEvent() method
+│   └── commands/game-commands.ts   # Wire update() return to processBattleEvent, update constructor calls
 ├── types/
 │   ├── index.ts                   # Update ISimulation interface (remove room)
 │   └── BattleEvent.ts             # NEW: BattleEvent type definition
@@ -105,11 +106,12 @@ app/
 - In game-room.ts: delete the method, import from core (or keep delegating — minimal change)
 - No broadcast dependency — safe to do early
 
-**Step 4**: Add `specialGameRule` as constructor parameter
-- Add `specialGameRule: SpecialGameRule | null` to Simulation constructor
+**Step 4**: Cache `specialGameRule` from room in Simulation constructor
+- Add `specialGameRule: SpecialGameRule | null` as a **property** on Simulation
+- In constructor: `this.specialGameRule = this.room.state.specialGameRule ?? null` (cache from room, zero interface change)
 - Replace `this.simulation.room.state.specialGameRule` access in pokemon-entity.ts (line 1273 only) with `this.simulation.specialGameRule`
 - Note: pokemon-entity.ts also has a standalone function parameter `specialGameRule` (lines 1796-1798) — this is already decoupled and does NOT need changes
-- 1 line added to constructor, ~2 lines changed in pokemon-entity.ts
+- Constructor signature and call sites remain unchanged — specialGameRule becomes a constructor parameter later in Step 9
 - No broadcast dependency — safe to do early
 
 **Step 5**: Adapt GameRoom to process events
@@ -155,13 +157,14 @@ app/
 - ~40 lines deleted, ~3 lines added
 
 **Step 9**: Remove `room` property from Simulation
-- Delete `room: GameRoom` field
-- Delete `this.room = room` in constructor
+- Delete `room: GameRoom` field and `this.room = room` in constructor
 - Remove `room` parameter from constructor
+- Promote `specialGameRule` from internal cache (Step 4) to constructor parameter
+- Replace `this.specialGameRule = this.room.state.specialGameRule ?? null` with `this.specialGameRule = specialGameRule`
 - Delete `import GameRoom from "..."` line
 - Update `ISimulation` interface in `app/types/index.ts` (lines 359-374) to remove `room` field
-- Update Simulation constructor calls in `game-commands.ts` (lines 1931, 1986) to remove `room` argument and add `specialGameRule`
-- All room references already eliminated in Steps 6-8; this is pure cleanup
+- Update Simulation constructor calls in `game-commands.ts` (lines 1931, 1986): remove `room` argument, add `specialGameRule` argument
+- All room references already eliminated in Steps 4, 6-8; this is pure cleanup
 
 ### Sub-phase B: Interface Cleanup
 
