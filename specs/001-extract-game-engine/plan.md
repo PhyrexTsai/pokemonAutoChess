@@ -84,6 +84,8 @@ app/
 
 ### Sub-phase A: Event System + Room Decoupling (core value)
 
+> **Migration safety**: Infrastructure first (Steps 1-5), then replace broadcasts one file at a time (Steps 6-8), then cleanup (Step 9). At every step the build passes and multiplayer works.
+
 **Step 1**: Define `BattleEvent` type
 - Create `app/types/BattleEvent.ts` with discriminated union
 - 7 event variants mapping 1:1 to existing Transfer.* broadcasts
@@ -94,43 +96,22 @@ app/
 - Add `pushEvent(event: BattleEvent): void` method (1 line: `this.events.push(event)`)
 - Modify `update(dt)` to return `BattleEvent[]` (drain and return buffer at end)
 - Add `private elapsedTime: number = 0` for internal time tracking
+- At this point: update() returns empty arrays (no pushEvent calls yet), existing broadcasts still work
 - ~10 lines changed in simulation.ts
 
-**Step 3**: Replace `room.broadcast()` calls in simulation.ts (8 calls)
-- Each `this.room.broadcast(Transfer.X, data)` → `this.pushEvent({ type: "X", ...data })`
-- Line-by-line replacement, same data payloads
-- Replace `this.room.clients.find()` + `client.send()` with PLAYER_INCOME/PLAYER_DAMAGE events
-- Replace `this.room.rankPlayers()` with inclusion in SIMULATION_END event
-
-**Step 4**: Replace `room.broadcast()` calls in pokemon-state.ts (6 calls)
-- `pokemon.simulation.room.broadcast(Transfer.POKEMON_DAMAGE, ...)` → `pokemon.simulation.pushEvent({ type: "POKEMON_DAMAGE", ... })`
-- `pokemon.simulation.room.broadcast(Transfer.POKEMON_HEAL, ...)` → `pokemon.simulation.pushEvent({ type: "POKEMON_HEAL", ... })`
-- Replace `pokemon.simulation.room.state.time` checks with `pokemon.simulation.elapsedTime`
-
-**Step 5**: Replace `broadcastAbility()` in pokemon-entity.ts
-- Current: iterates `room.clients`, sends to spectating clients
-- Replace: `this.simulation.pushEvent({ type: "ABILITY", ... })`
-- The filtering logic (which client sees which simulation) moves to GameRoom event processing
-- ~40 lines deleted, ~3 lines added
-
-**Step 6**: Extract `computeRoundDamage()` as pure function
+**Step 3**: Extract `computeRoundDamage()` as pure function
 - Create `app/core/compute-round-damage.ts` (10 lines)
 - In simulation.ts: `import { computeRoundDamage } from "./compute-round-damage"` and call directly
 - In game-room.ts: delete the method, import from core (or keep delegating — minimal change)
+- No broadcast dependency — safe to do early
 
-**Step 7**: Add `specialGameRule` as constructor parameter
+**Step 4**: Add `specialGameRule` as constructor parameter
 - Add `specialGameRule: SpecialGameRule | null` to Simulation constructor
 - Replace `this.simulation.room.state.specialGameRule` access in pokemon-entity.ts with `this.simulation.specialGameRule`
 - 1 line added to constructor, ~2 lines changed in pokemon-entity.ts
+- No broadcast dependency — safe to do early
 
-**Step 8**: Remove `room` property from Simulation
-- Delete `room: GameRoom` field
-- Delete `this.room = room` in constructor
-- Remove `room` parameter from constructor
-- Delete `import GameRoom from "..."` line
-- Update `ISimulation` interface to remove `room` field
-
-**Step 9**: Adapt GameRoom to process events
+**Step 5**: Adapt GameRoom to process events
 - In game-room.ts where `simulation.update(deltaTime)` is called (via OnUpdateCommand):
   ```typescript
   const events = simulation.update(deltaTime)
@@ -140,6 +121,34 @@ app/
   ```
 - `processBattleEvent()` is a switch on `event.type` that calls the existing `this.broadcast()` / `client.send()` — same logic that was previously inline in Simulation, now moved to GameRoom
 - This is the ONE new function in GameRoom (~50 lines)
+- At this point: events buffer is empty, processBattleEvent is a no-op, existing broadcasts still work
+- **This step MUST come before Steps 6-8** so there is a consumer ready when broadcasts are replaced
+
+**Step 6**: Replace `room.broadcast()` calls in simulation.ts (8 calls)
+- Each `this.room.broadcast(Transfer.X, data)` → `this.pushEvent({ type: "X", ...data })`
+- Line-by-line replacement, same data payloads
+- Replace `this.room.clients.find()` + `client.send()` with PLAYER_INCOME/PLAYER_DAMAGE events
+- Replace `this.room.rankPlayers()` with inclusion in SIMULATION_END event
+- Now events flow through the buffer → GameRoom processBattleEvent handles them
+
+**Step 7**: Replace `room.broadcast()` calls in pokemon-state.ts (6 calls)
+- `pokemon.simulation.room.broadcast(Transfer.POKEMON_DAMAGE, ...)` → `pokemon.simulation.pushEvent({ type: "POKEMON_DAMAGE", ... })`
+- `pokemon.simulation.room.broadcast(Transfer.POKEMON_HEAL, ...)` → `pokemon.simulation.pushEvent({ type: "POKEMON_HEAL", ... })`
+- Replace `pokemon.simulation.room.state.time` checks with `pokemon.simulation.elapsedTime`
+
+**Step 8**: Replace `broadcastAbility()` in pokemon-entity.ts
+- Current: iterates `room.clients`, sends to spectating clients
+- Replace: `this.simulation.pushEvent({ type: "ABILITY", ... })`
+- The filtering logic (which client sees which simulation) moves to GameRoom event processing
+- ~40 lines deleted, ~3 lines added
+
+**Step 9**: Remove `room` property from Simulation
+- Delete `room: GameRoom` field
+- Delete `this.room = room` in constructor
+- Remove `room` parameter from constructor
+- Delete `import GameRoom from "..."` line
+- Update `ISimulation` interface to remove `room` field
+- All room references already eliminated in Steps 6-8; this is pure cleanup
 
 ### Sub-phase B: Interface Cleanup
 
@@ -150,9 +159,9 @@ app/
 - GameRoom passes Player objects unchanged (structural typing match)
 
 **Step 11**: Update `effect.ts` interfaces
-- Replace `room: GameRoom` in `OnStageStartEffectArgs` and `OnItemDroppedEffectArgs` with engine-internal types
-- Replace `MapSchema<IPokemonEntity>` in `OnSimulationStartEffectArgs` team field with `Map<string, IPokemonEntity>` — wait, this would break callers that pass MapSchema. Since MapSchema extends Map-like behavior, pass `Iterable` or keep as-is temporarily.
-- Minimal approach: just remove `room: GameRoom` type, replace with the fields actually used.
+- Remove `room: GameRoom` from `OnStageStartEffectArgs` and `OnItemDroppedEffectArgs`
+- Replace with the specific fields actually used (e.g., `simulation: ISimulation`) or remove entirely if unused
+- Keep `MapSchema<IPokemonEntity>` type annotations unchanged — MapSchema removal is deferred to Phase 4 alongside Schema stripping
 
 ### Sub-phase C: Tests
 
@@ -168,19 +177,20 @@ app/
 
 **Step 14**: Test Simulation event generation
 - File: `app/core/__tests__/simulation-events.test.ts`
-- Create minimal Simulation with mock player data
-- Verify `update(dt)` returns BattleEvent arrays
-- Verify SIMULATION_END event is emitted when battle completes
-- ~60 lines
+- Create mock `ISimulationPlayer` objects with required fields and stub mutation methods
+- Create minimal board configurations (1v1 Pokemon for fast battles)
+- Verify `update(dt)` returns non-empty `BattleEvent[]` after combat starts
+- Verify SIMULATION_END event is emitted when one team is eliminated
+- ~100-120 lines (includes mock setup boilerplate for ISimulationPlayer, board data, Pokemon placement)
 
 ## Deferred Items
 
 | Item | Spec Requirement | Deferred To | Reason |
 |------|-----------------|-------------|--------|
-| Strip `extends Schema` from Simulation | FR-001, SC-002 | Phase 4 | Removing Schema breaks Colyseus auto-sync. Client depends on Schema sync for battle rendering. Phase 2 must change client first. |
-| Strip `extends Schema` from PokemonEntity | FR-001, SC-002 | Phase 4 | Same as above — client reads Pokemon HP/position from Schema sync. |
-| Strip `extends Schema` from Dps | FR-009, SC-002 | Phase 4 | Low impact, but same category. |
-| Replace `MapSchema` with `Map` in Simulation fields | FR-006 | Phase 4 | MapSchema is needed for `@type()` decorator and Colyseus sync. |
+| Strip `extends Schema` from Simulation | FR-001 (note) | Phase 4 | Removing Schema breaks Colyseus auto-sync. Client depends on Schema sync for battle rendering. Phase 2 must change client first. |
+| Strip `extends Schema` from PokemonEntity | FR-001 (note) | Phase 4 | Same as above — client reads Pokemon HP/position from Schema sync. |
+| Strip `extends Schema` from Dps | FR-009 | Phase 4 | Low impact, but same category. Schema stripping deferred per spec. |
+| Replace `MapSchema` with `Map` in Simulation fields | FR-006 | Phase 4 | MapSchema is needed for `@type()` decorator and Colyseus sync. Deferred per spec. |
 | Pure data constructor (no Player mutation) | Ideal | Future cleanup | onFinish() mutates Player directly. Making it pure requires restructuring 150+ lines. Not minimal. |
 
 ## Complexity Tracking

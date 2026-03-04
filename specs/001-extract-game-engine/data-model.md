@@ -10,7 +10,7 @@ type BattleEvent =
   | { type: "POKEMON_DAMAGE"; index: string; attackType: AttackType; amount: number; x: number; y: number; id: string }
   | { type: "POKEMON_HEAL"; index: string; healType: HealType; amount: number; x: number; y: number; id: string }
   | { type: "BOARD_EVENT"; simulationId: string; x: number; y: number; effect: Effect }
-  | { type: "SIMULATION_END"; winnerId: string; /* round damage data included for GameRoom to process */ }
+  | { type: "SIMULATION_END"; visibleSimulationId: string; visibleBluePlayerId: string; visibleRedPlayerId: string; winnerId: string; loserId: string; roundDamage: number; weather: Weather }
   | { type: "PLAYER_INCOME"; playerId: string; amount: number }
   | { type: "PLAYER_DAMAGE"; playerId: string; amount: number }
 ```

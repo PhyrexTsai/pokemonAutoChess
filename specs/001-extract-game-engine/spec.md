@@ -54,23 +54,23 @@ As a developer maintaining the multiplayer version during the transition period,
 
 ---
 
-### User Story 3 - Schema Decorators Isolated from Game Logic (Priority: P3)
+### User Story 3 - GameRoom Dependency Fully Removed from Core (Priority: P3)
 
-As a developer, the Colyseus `@type()` decorators and `Schema` inheritance remain only on thin networking wrapper classes, not on the core game logic classes. The core classes (Simulation, PokemonEntity, Dps) are plain TypeScript with no Colyseus imports.
+As a developer, the `app/core/` files have zero references to `GameRoom`, `room.broadcast()`, `room.clients`, or `room.state`. The engine is testable in isolation without any network context. Schema inheritance (`extends Schema`) and `@type()` decorators are temporarily retained for Colyseus auto-sync backward compatibility — their full removal is deferred to Phase 4 after Phase 2 changes the client data source.
 
-**Why this priority**: This cleanly separates concerns so that Phase 4 (cleanup schemas) becomes a mechanical find-and-delete operation rather than a risky logic refactoring. It also makes the engine testable in isolation.
+**Why this priority**: Removing room access is the actual decoupling that enables single-player mode. Schema inheritance is inert — it doesn't prevent standalone execution. Phase 4 handles Schema stripping after the client no longer depends on it.
 
-**Independent Test**: Run `grep -r "@colyseus/schema" app/core/` and verify zero results. The core directory has no Colyseus dependency.
+**Independent Test**: Run `grep -rn "room\.broadcast\|room\.clients\|this\.room" app/core/` and verify zero matches. The core directory has no GameRoom dependency.
 
 **Acceptance Scenarios**:
 
-1. **Given** the refactored `app/core/` directory, **When** searching for any import from `@colyseus/schema`, **Then** zero matches are found.
+1. **Given** the refactored `app/core/` directory, **When** searching for `room.broadcast`, `room.clients`, or `this.room`, **Then** zero matches are found.
 
-2. **Given** the refactored `app/core/simulation.ts`, **When** examining its class declaration, **Then** it does not extend `Schema` and has no `@type()` decorators.
+2. **Given** the refactored `app/core/simulation.ts`, **When** examining its constructor, **Then** it does not accept a `GameRoom` parameter and has no `room` property.
 
-3. **Given** the refactored `app/core/pokemon-entity.ts`, **When** examining its class declaration, **Then** it does not extend `Schema` and has no `@type()` decorators.
+3. **Given** the refactored `app/core/pokemon-entity.ts`, **When** examining `broadcastAbility()`, **Then** it appends to the Simulation's event buffer instead of iterating `room.clients`.
 
-4. **Given** the refactored `app/core/dps.ts`, **When** examining its class declaration, **Then** it does not extend `Schema` and has no `@type()` decorators.
+4. **Given** the refactored `app/core/pokemon-state.ts`, **When** examining time checks, **Then** it uses `simulation.elapsedTime` instead of `room.state.time`.
 
 ---
 
@@ -87,26 +87,26 @@ As a developer, the Colyseus `@type()` decorators and `Schema` inheritance remai
 
 ### Functional Requirements
 
-- **FR-001**: The battle simulation engine (Simulation, PokemonEntity, PokemonState, Board, MovingState, AttackingState, DPS, Effects) MUST have zero imports from `@colyseus/schema` in any file under `app/core/`.
+- **FR-001**: All `room.broadcast()`, `client.send()`, `room.clients`, and `room.state` access MUST be removed from files under `app/core/`. Note: `@colyseus/schema` imports for `extends Schema` and `@type()` decorators are temporarily retained for Colyseus auto-sync backward compatibility; full removal is deferred to Phase 4 after the client data source changes.
 - **FR-002**: The `Simulation` class MUST NOT hold a reference to `GameRoom` or any network-layer object. It MUST accept only plain data at construction time.
 - **FR-003**: The `PokemonEntity` class MUST NOT call `broadcastAbility()` with room access. Instead, ability usage MUST be appended to the Simulation's event buffer, returned by the next `update(dt)` call.
 - **FR-004**: All 8 direct `room.broadcast()` calls in `simulation.ts` and all 6 indirect `room.broadcast()` calls in `pokemon-state.ts` MUST be replaced with event buffer appends.
 - **FR-005**: The engine MUST define a `BattleEvent` discriminated union type covering all event categories: ability used, damage dealt, heal received, shield applied, entity spawned, entity died, weather effect triggered, simulation ended. The `update(dt)` method MUST return `BattleEvent[]` and clear the internal buffer after each call.
-- **FR-006**: `MapSchema` usage in core engine files MUST be replaced with standard `Map<string, T>`. `ArraySchema` MUST be replaced with standard `Array<T>`.
-- **FR-007**: The `Simulation` constructor MUST accept a plain configuration object containing team data, weather, stage level, game rules, and ghost battle flag — not Player or GameRoom instances. The class name `Simulation` is preserved; no renaming.
+- **FR-006**: `MapSchema` and `ArraySchema` replacement in core engine files is deferred to Phase 4. These types are required for Colyseus `@type()` decorators and auto-sync. Phase 0 focuses on removing `GameRoom` dependency; collection type replacement follows Schema stripping.
+- **FR-007**: The `Simulation` constructor MUST NOT accept `GameRoom` instances. Player parameters MUST be typed as `ISimulationPlayer` (a narrow interface satisfied by the existing Player class via structural typing). The constructor also accepts weather, stage level, game rules, and ghost battle flag. The class name `Simulation` is preserved; no renaming.
 - **FR-008**: The existing GameRoom MUST be adapted to call `simulation.update(dt)`, iterate over the returned `BattleEvent[]`, and broadcast each event to clients — preserving all current client-facing behavior.
-- **FR-009**: The `Dps` class MUST be a plain TypeScript class without Schema inheritance while maintaining its current tracking functionality.
+- **FR-009**: The `Dps` class Schema inheritance removal is deferred to Phase 4. The class has no `room` access and is a pure data container; Schema stripping is low risk but belongs in the same batch as Simulation/PokemonEntity Schema removal.
 - **FR-010**: `pokemon-state.ts` MUST NOT access `pokemon.simulation.room` for time checks or broadcasts. Fighting phase duration MUST be tracked within the Simulation itself.
 - **FR-011**: The `effect.ts` interfaces MUST NOT reference `GameRoom` type. Effect arguments MUST use engine-internal types only.
 - **FR-012**: The application MUST build successfully (`npm run build`) after each incremental change, per the constitution's Atomic Traceability principle.
 
 ### Key Entities
 
-- **Simulation**: The existing class, refactored in-place. Stripped of `extends Schema` and `room: GameRoom`. Accepts plain config, runs the update loop, accumulates events in an internal buffer, returns `BattleEvent[]` from each `update(dt)` call.
-- **BattleEvent**: A discriminated union type representing all observable simulation outcomes (ability, damage, heal, shield, spawn, death, weather, end). Replaces direct `room.broadcast()` calls.
-- **SimulationConfig**: Plain data object passed to Simulation constructor. Contains teams, weather, stage level, game rules. Replaces the current constructor's GameRoom/Player parameters. (Name subject to planning phase.)
-- **PokemonEntity**: Battle unit with state machine (Moving/Attacking/Idle). Refactored to remove Schema inheritance and room access. Appends events to its parent Simulation's buffer instead of broadcasting.
-- **Dps**: Damage/heal tracking data class. Refactored to remove Schema inheritance.
+- **Simulation**: The existing class, refactored in-place. `room: GameRoom` property removed. Accepts `ISimulationPlayer` and configuration params. Runs the update loop, accumulates events in an internal buffer, returns `BattleEvent[]` from each `update(dt)` call. `extends Schema` temporarily retained for Colyseus auto-sync (Phase 4 removal).
+- **BattleEvent**: A discriminated union type representing all observable simulation outcomes (ability, damage, heal, board effect, simulation end, player income/damage). Replaces direct `room.broadcast()` calls.
+- **ISimulationPlayer**: Narrow interface satisfied by the existing Player class via structural typing. Defines the fields and methods Simulation actually accesses during battle and onFinish.
+- **PokemonEntity**: Battle unit with state machine (Moving/Attacking/Idle). Room access removed; appends events to its parent Simulation's buffer instead of broadcasting. `extends Schema` temporarily retained (Phase 4 removal).
+- **Dps**: Damage/heal tracking data class. Schema removal deferred to Phase 4 (no room access, pure data).
 
 ### Assumptions
 
@@ -120,8 +120,8 @@ As a developer, the Colyseus `@type()` decorators and `Schema` inheritance remai
 ### Measurable Outcomes
 
 - **SC-001**: A battle simulation can be instantiated and run to completion without any network context — `new Simulation(config)` followed by repeated `update(dt)` calls returns `BattleEvent[]` arrays and eventually a battle-end event.
-- **SC-002**: Zero files under `app/core/` import from `@colyseus/schema` after refactoring (currently 8 files do).
+- **SC-002**: Zero files under `app/core/` access `GameRoom`, `room.broadcast()`, `room.clients`, or `room.state` after refactoring. Note: `@colyseus/schema` imports for Schema inheritance and `@type()` decorators are temporarily retained; full removal is deferred to Phase 4.
 - **SC-003**: The multiplayer game is functionally identical before and after the refactoring — same battle outcomes, same client-visible events, same animations and damage numbers.
 - **SC-004**: Every incremental change compiles successfully (`npm run build` passes at every commit).
 - **SC-005**: All 14 direct and indirect `room.broadcast()` / `client.send()` calls in the core engine are replaced with event buffer appends returned via `update(dt)`.
-- **SC-006**: The Simulation constructor accepts only plain data — no class instances from the networking layer (GameRoom, Player, MapSchema).
+- **SC-006**: The Simulation constructor accepts no `GameRoom` instance. Player parameters are typed as `ISimulationPlayer` (narrow interface). The existing Player class satisfies this interface via structural typing — zero call-site changes in GameRoom.
