@@ -1,8 +1,9 @@
 <!--
   Sync Impact Report
-  Version change: 0.0.0 → 1.0.0
-  Added sections: All (initial constitution)
-  Templates requiring updates: N/A (initial setup)
+  Version change: 1.0.0 → 1.1.0
+  Modified sections: Refactoring Phases (extracted to PHASE.md)
+  Added files: PHASE.md (detailed roadmap with metrics)
+  Templates requiring updates: N/A
   Follow-up TODOs: None
 -->
 
@@ -115,17 +116,9 @@ The following dependencies and modules are **explicitly marked for removal** acr
 
 ## Refactoring Phases
 
-Each phase is a self-contained spec (`specs/NNN-*`) with its own plan and task list:
+See **[PHASE.md](PHASE.md)** for the complete roadmap with dependency graph, per-phase Before/After states, impact analysis, file counts, and completion criteria.
 
-| Phase | Spec | Goal | Depends On |
-|-------|------|------|------------|
-| 0 | `001-extract-game-engine` | Decouple Simulation & PokemonEntity from Colyseus Schema | — |
-| 1 | `002-remove-mongodb` | Replace all MongoDB persistence with IndexedDB | — |
-| 2 | `003-remove-colyseus` | Replace network layer with local game engine | 001 |
-| 3 | `004-remove-server` | Delete Express/Node.js server, build as static SPA | 001, 002, 003 |
-| 4 | `005-cleanup-schemas` | Remove all Colyseus @type decorators and Schema residue | 003 |
-
-Phase 0 and Phase 1 have **no dependency on each other** and may proceed in parallel.
+Summary: 5 phases (extract engine → remove MongoDB → remove Colyseus → remove server → cleanup schemas). Phase 0 and Phase 1 are independent and may proceed in parallel.
 
 ## Development Workflow
 
@@ -172,4 +165,4 @@ This constitution is the **supreme authority** for all refactoring decisions. Wh
 
 Amendments to this constitution require updating this file with a version bump and a commit: `[constitution] amend: <reason>`.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-05 | **Last Amended**: 2026-03-05
+**Version**: 1.1.0 | **Ratified**: 2026-03-05 | **Last Amended**: 2026-03-05
