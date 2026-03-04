@@ -100,3 +100,10 @@ Four Colyseus rooms, each a game phase:
 - MongoDB (local or Atlas)
 - Firebase project (for auth — needs `.env` with Firebase config)
 - See `.env` template in README for required variables
+
+## Active Technologies
+- TypeScript 5.x (strict mode, target es2016, commonjs) + Colyseus 0.15.x (Schema, MapSchema), Phaser 3, React 19, Redux Toolki (001-extract-game-engine)
+- N/A for this phase (001-extract-game-engine)
+
+## Recent Changes
+- 001-extract-game-engine: Added TypeScript 5.x (strict mode, target es2016, commonjs) + Colyseus 0.15.x (Schema, MapSchema), Phaser 3, React 19, Redux Toolki
