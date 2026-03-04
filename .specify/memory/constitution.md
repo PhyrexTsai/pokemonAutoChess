@@ -116,7 +116,7 @@ The following dependencies and modules are **explicitly marked for removal** acr
 
 ## Refactoring Phases
 
-See **[PHASE.md](PHASE.md)** for the complete roadmap with dependency graph, per-phase Before/After states, impact analysis, file counts, and completion criteria.
+See **[PHASE.md](../../PHASE.md)** (project root) for the complete roadmap with dependency graph, per-phase Before/After states, impact analysis, file counts, and completion criteria.
 
 Summary: 5 phases (extract engine → remove MongoDB → remove Colyseus → remove server → cleanup schemas). Phase 0 and Phase 1 are independent and may proceed in parallel.
 
