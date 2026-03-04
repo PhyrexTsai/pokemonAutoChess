@@ -16,7 +16,7 @@
 
 ### User Story 1 - Simulation Runs Without Network Context (Priority: P1)
 
-As a developer, I can instantiate and run a complete battle simulation without any Colyseus Room, WebSocket connection, or network context. The Simulation accepts plain configuration objects, and each `update(dt)` call returns an array of typed battle events describing everything that happened during that tick.
+As a developer, I can instantiate and run a complete battle simulation without any Colyseus Room, WebSocket connection, or network context. The Simulation accepts `ISimulationPlayer` interfaces and configuration parameters, and each `update(dt)` call returns an array of typed battle events describing everything that happened during that tick.
 
 **Why this priority**: This is the foundation of the entire single-player migration. Nothing else can proceed until the engine is self-contained. If Simulation still requires a GameRoom to function, Phase 2 (remove Colyseus) and Phase 4 (cleanup schemas) are blocked.
 
@@ -48,7 +48,7 @@ As a developer maintaining the multiplayer version during the transition period,
 
 2. **Given** a GameRoom calling `simulation.update(dt)`, **When** the returned array contains damage/heal/shield events, **Then** the GameRoom translates them into `Transfer.POKEMON_DAMAGE` and `Transfer.POKEMON_HEAL` broadcasts identical to the current format.
 
-3. **Given** a GameRoom calling `simulation.update(dt)`, **When** the returned array contains a simulation-end event, **Then** the GameRoom computes round damage, updates player HP, distributes income, ranks players, and broadcasts `Transfer.SIMULATION_STOP` — exactly as it does today.
+3. **Given** a GameRoom calling `simulation.update(dt)`, **When** the returned array contains a simulation-end event, **Then** the GameRoom reads round damage from the event, applies it to player HP, distributes income, ranks players, and broadcasts `Transfer.SIMULATION_STOP` — preserving identical client-facing behavior.
 
 4. **Given** a full game session (lobby → preparation → battle → results), **When** played through from start to finish, **Then** no observable difference exists in client behavior compared to the pre-refactoring version.
 
@@ -88,10 +88,10 @@ As a developer, the `app/core/` files have zero references to `GameRoom`, `room.
 ### Functional Requirements
 
 - **FR-001**: All `room.broadcast()`, `client.send()`, `room.clients`, and `room.state` access MUST be removed from files under `app/core/`. Note: `@colyseus/schema` imports for `extends Schema` and `@type()` decorators are temporarily retained for Colyseus auto-sync backward compatibility; full removal is deferred to Phase 4 after the client data source changes.
-- **FR-002**: The `Simulation` class MUST NOT hold a reference to `GameRoom` or any network-layer object. It MUST accept only plain data at construction time.
+- **FR-002**: The `Simulation` class MUST NOT hold a reference to `GameRoom` or any network-layer object at construction time.
 - **FR-003**: The `PokemonEntity` class MUST NOT call `broadcastAbility()` with room access. Instead, ability usage MUST be appended to the Simulation's event buffer, returned by the next `update(dt)` call.
 - **FR-004**: All 8 direct `room.broadcast()` calls in `simulation.ts` and all 6 indirect `room.broadcast()` calls in `pokemon-state.ts` MUST be replaced with event buffer appends.
-- **FR-005**: The engine MUST define a `BattleEvent` discriminated union type covering all event categories: ability used, damage dealt, heal received, shield applied, entity spawned, entity died, weather effect triggered, simulation ended. The `update(dt)` method MUST return `BattleEvent[]` and clear the internal buffer after each call.
+- **FR-005**: The engine MUST define a `BattleEvent` discriminated union type covering all event categories: ability used (`ABILITY`), damage dealt (`POKEMON_DAMAGE`), heal received (`POKEMON_HEAL`), board effect (`BOARD_EVENT`), simulation ended (`SIMULATION_END`), player income (`PLAYER_INCOME`), player damage (`PLAYER_DAMAGE`). The `update(dt)` method MUST return `BattleEvent[]` and clear the internal buffer after each call.
 - **FR-006**: `MapSchema` and `ArraySchema` replacement in core engine files is deferred to Phase 4. These types are required for Colyseus `@type()` decorators and auto-sync. Phase 0 focuses on removing `GameRoom` dependency; collection type replacement follows Schema stripping.
 - **FR-007**: The `Simulation` constructor MUST NOT accept `GameRoom` instances. Player parameters MUST be typed as `ISimulationPlayer` (a narrow interface satisfied by the existing Player class via structural typing). The constructor also accepts weather, stage level, game rules, and ghost battle flag. The class name `Simulation` is preserved; no renaming.
 - **FR-008**: The existing GameRoom MUST be adapted to call `simulation.update(dt)`, iterate over the returned `BattleEvent[]`, and broadcast each event to clients — preserving all current client-facing behavior.
