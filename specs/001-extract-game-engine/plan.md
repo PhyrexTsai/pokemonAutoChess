@@ -29,7 +29,7 @@ Remove the `GameRoom` dependency from `Simulation` so the battle engine can run 
 | Principle | Status | Notes |
 |-----------|--------|-------|
 | I. Zero External Dependencies | ✅ Aligned | Phase 0 removes room dependency; full dependency removal across later phases |
-| II. Game Engine Independence | ⚠️ Partial | Room dependency fully removed. Schema inheritance temporarily kept for Colyseus sync — see Complexity Tracking |
+| II. Game Engine Independence | ⚠️ Partial | Room dependency removed from core simulation loop; optional `room?: GameRoom` retained for 3 abilities (null-guarded, deferred to Phase 2). Schema inheritance temporarily kept for Colyseus sync — see Complexity Tracking |
 | III. Gameplay Fidelity | ✅ Aligned | Zero behavior change. Same events, same data, same timing. Tests verify. |
 | IV. Atomic Traceability | ✅ Aligned | Each step is one commit. Build gate enforced. |
 | V. Incremental Viability | ✅ Aligned | Multiplayer works at every commit. GameRoom adapter processes events. |
@@ -70,7 +70,7 @@ app/
 │   ├── game-room.ts               # Add processBattleEvent() method
 │   └── commands/game-commands.ts   # Wire update() return to processBattleEvent, update constructor calls
 ├── types/
-│   ├── index.ts                   # Update ISimulation interface (remove room)
+│   ├── index.ts                   # Update ISimulation interface (make room optional)
 │   └── BattleEvent.ts             # NEW: BattleEvent type definition
 └── package.json                   # Add vitest devDependency
 ```
@@ -132,7 +132,7 @@ app/
 - **Format conversions**: PLAYER_INCOME/PLAYER_DAMAGE are sent via `client.send(Transfer.X, amount)` as raw numbers. processBattleEvent finds the target client by playerId and sends `event.amount`
 - **ABILITY routing**: broadcastAbility previously iterated room.clients to find spectators. processBattleEvent replaces this: iterates clients, checks spectatedPlayerId → player.simulationId match, sends to matching clients only
 - This is the ONE new function in GameRoom (~60 lines)
-- Simulation constructor calls are also in game-commands.ts (lines 1931, 1986) — will be updated in Step 9 when removing the `room` parameter
+- Simulation constructor calls are also in game-commands.ts (lines 1931, 1986) — will be updated in Step 9 when making the `room` parameter optional
 - At this point: events buffer is empty, processBattleEvent is a no-op, existing broadcasts still work
 - **This step MUST come before Steps 6-8** so there is a consumer ready when broadcasts are replaced
 

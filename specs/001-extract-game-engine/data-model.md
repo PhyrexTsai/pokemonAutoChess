@@ -62,11 +62,11 @@ The existing `Player` class satisfies this interface via structural typing. Zero
 ### Simulation (existing class, modified)
 
 **Removed**:
-- `room: GameRoom` property
 - All `this.room.broadcast()` calls
 - All `this.room.clients` access
 - `this.room.computeRoundDamage()` calls
 - `this.room.rankPlayers()` calls
+- `delete this.room` GC cleanup (line 1477)
 
 **Added**:
 - `private events: BattleEvent[]` — internal event buffer
@@ -75,8 +75,9 @@ The existing `Player` class satisfies this interface via structural typing. Zero
 - `pushEvent(event: BattleEvent): void` — helper to append to buffer
 
 **Modified**:
+- `room: GameRoom` → `room?: GameRoom` (optional, retained for 3 abilities that access shop/spawn; full removal Phase 2)
 - `update(dt: number): BattleEvent[]` — returns events (previously void)
-- Constructor: removes `room: GameRoom` param, adds `specialGameRule` param
+- Constructor: `room` moves to last position as optional; adds `specialGameRule` param
 
 ### PokemonEntity (existing class, modified)
 
