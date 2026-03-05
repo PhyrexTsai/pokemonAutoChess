@@ -75,7 +75,7 @@ The existing `Player` class satisfies this interface via structural typing. Zero
 - `pushEvent(event: BattleEvent): void` — helper to append to buffer
 
 **Modified**:
-- `room: GameRoom` → `room?: GameRoom` (optional, retained for 3 abilities that access shop/spawn; full removal Phase 2)
+- `room: GameRoom` → `room?: GameRoom` (optional, retained for 5 abilities that access clock/shop/spawn/evolution methods; full removal Phase 2)
 - `update(dt: number): BattleEvent[]` — returns events (previously void)
 - Constructor: `room` moves to last position as optional; adds `specialGameRule` param
 
