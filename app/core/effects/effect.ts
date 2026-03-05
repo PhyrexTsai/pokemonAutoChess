@@ -73,7 +73,7 @@ export class OnItemRemovedEffect extends Effect {
 interface OnStageStartEffectArgs {
   player: Player
   pokemon?: Pokemon
-  room: GameRoom
+  room?: GameRoom
 }
 
 // applied in between rounds at the start of the picking phase
@@ -109,7 +109,7 @@ interface OnItemDroppedEffectArgs {
   pokemon: Pokemon
   player: Player
   item: Item
-  room: GameRoom
+  room?: GameRoom
 }
 
 // called when an item is dragged to a pokemon ; return false to prevent equipping the item

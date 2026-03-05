@@ -505,7 +505,7 @@ const MilceryFlavorEffect = new OnStageStartEffect(({ player, pokemon }) => {
 
 const PachirisuBerryEffect = new OnStageStartEffect(
   ({ pokemon, room, player }) => {
-    if (!pokemon || !player) return
+    if (!pokemon || !player || !room) return
     room.clock.setTimeout(() => {
       if (chance(0.3, pokemon)) {
         room.broadcast(Transfer.DIG, {

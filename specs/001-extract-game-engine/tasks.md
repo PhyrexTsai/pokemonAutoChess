@@ -72,7 +72,7 @@
 - [x] T009 [P] [US3] Replace 3 `simulation.room.broadcast()` calls in `app/core/board.ts` with `simulation.pushEvent()`: line 522 (BOARD_EVENT), line 548 (CLEAR_BOARD_EVENT), line 560 (CLEAR_BOARD_EVENT with null effect)
 - [x] T010 [P] [US3] Replace 6 room references in `app/core/pokemon-state.ts`: 3 `room.broadcast()` at lines 330, 367, 728 → `pokemon.simulation.pushEvent()`; 3 `room.state.time` at lines 329, 366, 957 → `pokemon.simulation.elapsedTime`
 - [x] T011 [US3] Replace `broadcastAbility()` body in `app/core/pokemon-entity.ts` (lines 1686-1711) with `this.simulation.pushEvent({ type: "ABILITY", ... })` — move client filtering logic to GameRoom's processBattleEvent (T006)
-- [ ] T012 [US3] Remove `room: GameRoom` from `OnStageStartEffectArgs` and `OnItemDroppedEffectArgs` interfaces in `app/core/effects/effect.ts` — replace with `simulation: ISimulation` where effect implementations need simulation access, or remove parameter entirely if unused
+- [x] T012 [US3] Remove `room: GameRoom` from `OnStageStartEffectArgs` and `OnItemDroppedEffectArgs` interfaces in `app/core/effects/effect.ts` — replace with `simulation: ISimulation` where effect implementations need simulation access, or remove parameter entirely if unused
 
 **Build gate**: `npm run build` passes — events now flow through buffer → processBattleEvent → clients
 
