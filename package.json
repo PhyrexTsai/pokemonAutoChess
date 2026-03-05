@@ -45,7 +45,8 @@
     "colyseus-post-deploy": "npx colyseus-post-deploy",
     "deploy-live": "pm2 deploy production update",
     "setup-live": "pm2 deploy production setup",
-    "check-circular-refs": "npx madge ./app -- --circular --exclude '^public/dist'"
+    "check-circular-refs": "npx madge ./app -- --circular --exclude '^public/dist'",
+    "test": "vitest run"
   },
   "dependencies": {
     "@colyseus/command": "^0.3.1",
@@ -127,6 +128,7 @@
     "openapi-typescript": "^7.1.2",
     "pm2": "^6.0.8",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.18"
   }
 }
