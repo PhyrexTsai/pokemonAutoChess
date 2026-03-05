@@ -112,9 +112,9 @@
 
 **Purpose**: Cross-cutting validation ensuring all stories work together
 
-- [ ] T019 Run `npm run build` to verify full compilation (quickstart.md Scenario 1)
-- [ ] T020 Run quickstart.md Scenario 4 grep validation: `grep -rn "room\.broadcast\|room\.clients" app/core/` (expect 0), `grep -rn "\.room\." app/core/` (expect exactly 8 matches in abilities.ts/hidden-power.ts/synergies.ts)
-- [ ] T021 Run `npx vitest run` to verify all tests pass (quickstart.md Scenarios 2-3)
+- [x] T019 Run `npm run build` to verify full compilation (quickstart.md Scenario 1)
+- [x] T020 Run quickstart.md Scenario 4 grep validation: `grep -rn "room\.broadcast\|room\.clients" app/core/` (expect 0), `grep -rn "\.room\." app/core/` (expect exactly 8 matches in abilities.ts/hidden-power.ts/synergies.ts)
+- [x] T021 Run `npx vitest run` to verify all tests pass (quickstart.md Scenarios 2-3)
 - [ ] T022 Manual multiplayer test: `npm run dev`, play through battle phase, verify identical behavior (quickstart.md Scenario 5)
 
 **Checkpoint**: All quickstart.md validation scenarios pass — feature complete
