@@ -25,7 +25,7 @@
   "main": "public/dist/server/app/index.js",
   "scripts": {
     "dev-client": "node esbuild.js --dev",
-    "dev-server": "ts-node-dev --watch \"src/**/*\" --respawn --transpile-only ./app/index.ts",
+    "dev-server": "tsx --tsconfig tsconfig.tsx.json watch ./app/index.ts",
     "dev": "npm-run-all --parallel dev-*",
     "lint": "npx @biomejs/biome lint app/",
     "format": "npx @biomejs/biome format app/ --write",
@@ -128,7 +128,11 @@
     "openapi-typescript": "^7.1.2",
     "pm2": "^6.0.8",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.7.3",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "rou3": "0.5.1"
   }
 }
