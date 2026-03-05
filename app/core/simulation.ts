@@ -52,6 +52,7 @@ import {
 import { values } from "../utils/schemas"
 import { AbilityStrategies, SurfStrategy } from "./abilities/abilities"
 import { Board } from "./board"
+import { computeRoundDamage } from "./compute-round-damage"
 import { DishEffects } from "./dishes"
 import Dps from "./dps"
 import {
@@ -1593,7 +1594,7 @@ export default class Simulation extends Schema implements ISimulation {
         }
       } else {
         // LOSE
-        const playerDamage = this.room.computeRoundDamage(
+        const playerDamage = computeRoundDamage(
           opponentTeam,
           this.stageLevel
         )
