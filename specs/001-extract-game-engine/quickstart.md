@@ -23,11 +23,18 @@ npx vitest run app/core/__tests__/simulation-events.test.ts
 # Expected: update(dt) returns BattleEvent[] with ability/damage/heal events
 ```
 
-### 4. Zero room.broadcast() in core engine
+### 4. Zero room.broadcast()/room.clients in core engine
 
 ```bash
-grep -rn "room\.broadcast\|room\.clients\|this\.room" app/core/
+grep -rn "room\.broadcast\|room\.clients" app/core/
 # Expected: zero matches
+
+grep -rn "\.room\." app/core/
+# Expected: exactly 7 matches, ALL in these files only:
+#   app/core/abilities/abilities.ts (3 matches — lines 291, 13519, 13523)
+#   app/core/abilities/hidden-power.ts (3 matches — lines 112, 117, 405)
+#   app/core/effects/synergies.ts (1 match — line 216)
+# All must have null guards (if (!...room) return) nearby
 ```
 
 ### 5. Multiplayer game works identically

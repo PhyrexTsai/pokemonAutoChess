@@ -56,17 +56,17 @@ As a developer maintaining the multiplayer version during the transition period,
 
 ### User Story 3 - GameRoom Dependency Fully Removed from Core (Priority: P3)
 
-As a developer, the `app/core/` files have zero references to `GameRoom`, `room.broadcast()`, `room.clients`, or `room.state`. The engine is testable in isolation without any network context. Schema inheritance (`extends Schema`) and `@type()` decorators are temporarily retained for Colyseus auto-sync backward compatibility — their full removal is deferred to Phase 4 after Phase 2 changes the client data source.
+As a developer, the `app/core/` simulation loop files (`simulation.ts`, `pokemon-state.ts`, `board.ts`, `pokemon-entity.ts`) have zero `room.broadcast()`, `room.clients`, or `room.state.time` references. The engine is testable in isolation without any network context. 7 null-guarded room references remain in ability/synergy files for 3 specific abilities (MAGNET_PULL, UNOWN fishing, synergy delayed effect) — these silently skip when room is absent and are fully removed in Phase 2. Schema inheritance (`extends Schema`) and `@type()` decorators are temporarily retained for Colyseus auto-sync backward compatibility — their full removal is deferred to Phase 4.
 
-**Why this priority**: Removing room access is the actual decoupling that enables single-player mode. Schema inheritance is inert — it doesn't prevent standalone execution. Phase 4 handles Schema stripping after the client no longer depends on it.
+**Why this priority**: Removing room access from the core simulation loop is the actual decoupling that enables single-player mode. The 7 remaining ability references are edge cases that don't affect core battle flow. Schema inheritance is inert — it doesn't prevent standalone execution. Phase 4 handles Schema stripping after the client no longer depends on it.
 
-**Independent Test**: Run `grep -rn "room\.broadcast\|room\.clients\|this\.room" app/core/` and verify zero matches. The core directory has no GameRoom dependency.
+**Independent Test**: Run `grep -rn "room\.broadcast\|room\.clients" app/core/` and verify zero matches. Run `grep -rn "\.room\." app/core/` and verify only 7 matches remain, all in `abilities/abilities.ts`, `abilities/hidden-power.ts`, and `effects/synergies.ts`, all with null guards.
 
 **Acceptance Scenarios**:
 
-1. **Given** the refactored `app/core/` directory, **When** searching for `room.broadcast`, `room.clients`, or `this.room`, **Then** zero matches are found.
+1. **Given** the refactored `app/core/` directory, **When** searching for `room.broadcast` or `room.clients`, **Then** zero matches are found. **When** searching for `.room.`, **Then** only 7 matches remain in ability/synergy files, all null-guarded.
 
-2. **Given** the refactored `app/core/simulation.ts`, **When** examining its constructor, **Then** it does not accept a `GameRoom` parameter and has no `room` property.
+2. **Given** the refactored `app/core/simulation.ts`, **When** examining its constructor, **Then** `room` is an optional parameter (`room?: GameRoom`) at the end of the signature, not a required dependency.
 
 3. **Given** the refactored `app/core/pokemon-entity.ts`, **When** examining `broadcastAbility()`, **Then** it appends to the Simulation's event buffer instead of iterating `room.clients`.
 
@@ -82,13 +82,14 @@ As a developer, the `app/core/` files have zero references to `GameRoom`, `room.
 - What happens when fighting phase duration needs to be checked? The Simulation tracks its own elapsed time without accessing room state.
 - What happens when `specialGameRule` is needed inside PokemonEntity? The Simulation receives game rules as configuration at construction time, not by reaching through room state.
 - What happens when round damage needs to be computed at simulation end? This computation MUST either move into the Simulation or the simulation-end event includes enough data for the caller to compute it.
+- What happens when MAGNET_PULL or UNOWN fishing abilities trigger in standalone mode (no room)? The null guard checks `if (!simulation.room) return` — the ability effect silently skips. Core battle (damage, movement, other abilities) is unaffected. These abilities are fully implemented in Phase 2.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: All `room.broadcast()`, `client.send()`, `room.clients`, and `room.state` access MUST be removed from files under `app/core/`. Note: `@colyseus/schema` imports for `extends Schema` and `@type()` decorators are temporarily retained for Colyseus auto-sync backward compatibility; full removal is deferred to Phase 4 after the client data source changes.
-- **FR-002**: The `Simulation` class MUST NOT hold a reference to `GameRoom` or any network-layer object at construction time.
+- **FR-001**: All `room.broadcast()`, `client.send()`, `room.clients`, and `room.state.time` access MUST be removed from files under `app/core/`. Exception: 7 room references in `abilities/abilities.ts` (3), `abilities/hidden-power.ts` (3), and `effects/synergies.ts` (1) are null-guarded and retained for multiplayer backward compatibility — these access `room.clock`, `room.state.shop`, and room spawn methods for 3 specific abilities (MAGNET_PULL, UNOWN fishing, synergy delayed effect). Full removal deferred to Phase 2 when Colyseus is removed entirely. Note: `@colyseus/schema` imports for `extends Schema` and `@type()` decorators are temporarily retained for Colyseus auto-sync backward compatibility; full removal is deferred to Phase 4 after the client data source changes.
+- **FR-002**: The `Simulation` class MUST NOT REQUIRE a `GameRoom` to function. An optional `room?: GameRoom` reference is retained for 3 specific abilities that access shop/spawn methods across the simulation boundary. These abilities silently skip when room is absent (standalone/test mode). Full removal of the optional room reference is deferred to Phase 2.
 - **FR-003**: The `PokemonEntity` class MUST NOT call `broadcastAbility()` with room access. Instead, ability usage MUST be appended to the Simulation's event buffer, returned by the next `update(dt)` call.
 - **FR-004**: All 8 room operations in `simulation.ts` (5 `room.broadcast()`, 1 `room.clients.find()`, 1 `room.computeRoundDamage()`, 1 `room.rankPlayers()`), all 6 room references in `pokemon-state.ts` (3 `room.broadcast()`, 3 `room.state.time` accesses), and all 3 room broadcasts in `board.ts` (1 `Transfer.BOARD_EVENT`, 2 `Transfer.CLEAR_BOARD_EVENT` via `simulation.room.broadcast()`) MUST be replaced with event buffer appends or engine-internal equivalents.
 - **FR-005**: The engine MUST define a `BattleEvent` discriminated union type covering all 9 event categories: ability used (`ABILITY`), damage dealt (`POKEMON_DAMAGE`), heal received (`POKEMON_HEAL`), board effect (`BOARD_EVENT`), clear board (`CLEAR_BOARD`), clear board effect (`CLEAR_BOARD_EVENT`), simulation ended (`SIMULATION_END`), player income (`PLAYER_INCOME`), player damage (`PLAYER_DAMAGE`). `CLEAR_BOARD` and `CLEAR_BOARD_EVENT` are distinct Transfer enums with different payloads. The `update(dt)` method MUST return `BattleEvent[]` and clear the internal buffer after each call.
@@ -102,7 +103,7 @@ As a developer, the `app/core/` files have zero references to `GameRoom`, `room.
 
 ### Key Entities
 
-- **Simulation**: The existing class, refactored in-place. `room: GameRoom` property removed. Accepts `ISimulationPlayer` and configuration params. Runs the update loop, accumulates events in an internal buffer, returns `BattleEvent[]` from each `update(dt)` call. `extends Schema` temporarily retained for Colyseus auto-sync (Phase 4 removal).
+- **Simulation**: The existing class, refactored in-place. `room` changed from required to optional (`room?: GameRoom`) — retained for 3 specific abilities that access shop/spawn methods. Accepts `ISimulationPlayer` and configuration params. Runs the update loop, accumulates events in an internal buffer, returns `BattleEvent[]` from each `update(dt)` call. `extends Schema` temporarily retained for Colyseus auto-sync (Phase 4 removal). Optional room fully removed in Phase 2.
 - **BattleEvent**: A discriminated union type representing all observable simulation outcomes (ability, damage, heal, board effect, simulation end, player income/damage). Replaces direct `room.broadcast()` calls.
 - **ISimulationPlayer**: Narrow interface satisfied by the existing Player class via structural typing. Defines the fields and methods Simulation actually accesses during battle and onFinish.
 - **PokemonEntity**: Battle unit with state machine (Moving/Attacking/Idle). Room access removed; appends events to its parent Simulation's buffer instead of broadcasting. `extends Schema` temporarily retained (Phase 4 removal).
@@ -120,7 +121,7 @@ As a developer, the `app/core/` files have zero references to `GameRoom`, `room.
 ### Measurable Outcomes
 
 - **SC-001**: A battle simulation can be instantiated and run to completion without any network context — `new Simulation(config)` followed by repeated `update(dt)` calls returns `BattleEvent[]` arrays and eventually a battle-end event.
-- **SC-002**: Zero files under `app/core/` access `GameRoom`, `room.broadcast()`, `room.clients`, or `room.state` after refactoring. Note: `@colyseus/schema` imports for Schema inheritance and `@type()` decorators are temporarily retained; full removal is deferred to Phase 4.
+- **SC-002**: Zero `room.broadcast()`, `room.clients`, or `room.state.time` calls remain in `app/core/` after refactoring. Exception: 7 null-guarded room references in `abilities.ts` (3), `hidden-power.ts` (3), `synergies.ts` (1) access `room.clock`/`room.state.shop`/room spawn methods for 3 specific abilities — these silently skip when room is absent. Note: `@colyseus/schema` imports for Schema inheritance and `@type()` decorators are temporarily retained; full removal is deferred to Phase 4.
 - **SC-003**: The multiplayer game is functionally identical before and after the refactoring — same battle outcomes, same client-visible events, same animations and damage numbers.
 - **SC-004**: Every incremental change compiles successfully (`npm run build` passes at every commit).
 - **SC-005**: All 17 room operations in `simulation.ts` (8), `pokemon-state.ts` (6), and `board.ts` (3) — including broadcasts, `room.clients`, `room.state`, and room method calls — are replaced with event buffer appends or engine-internal equivalents, returned via `update(dt)`.

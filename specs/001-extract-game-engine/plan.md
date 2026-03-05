@@ -6,7 +6,7 @@
 
 ## Summary
 
-Remove the `GameRoom` dependency from `Simulation` so the battle engine can run without any network context. Replace all 17 room operations (broadcasts, client access, room method calls, room.state reads) with an event buffer that `update(dt)` returns as `BattleEvent[]`. GameRoom processes the returned events and broadcasts them to clients. Keep class names (`Simulation`, `PokemonEntity`, `Dps`) unchanged. Keep `extends Schema` temporarily for Colyseus auto-sync backward compatibility — deferred to Phase 4.
+Remove the `GameRoom` dependency from `Simulation` so the battle engine can run without any network context. Replace 17 room operations (broadcasts, client access, room method calls, room.state reads) with an event buffer that `update(dt)` returns as `BattleEvent[]`. GameRoom processes the returned events and broadcasts them to clients. 7 additional room references in ability/synergy files (shop/spawn/clock) are null-guarded and retained as optional — full removal deferred to Phase 2. Keep class names (`Simulation`, `PokemonEntity`, `Dps`) unchanged. Keep `extends Schema` temporarily for Colyseus auto-sync backward compatibility — deferred to Phase 4.
 
 **User constraint**: "以最小改動來進行修改，使用既有函數盡可能減少創建新函數，並且需要撰寫測試來確保結果正確"
 
@@ -58,7 +58,10 @@ app/
 │   ├── pokemon-entity.ts          # Replace broadcastAbility() with pushEvent()
 │   ├── pokemon-state.ts           # Replace room.broadcast() with pushEvent()
 │   ├── board.ts                   # Replace simulation.room.broadcast() with simulation.pushEvent()
-│   ├── effects/effect.ts          # Remove GameRoom type from interfaces
+│   ├── abilities/abilities.ts      # Add null guards for room-dependent abilities (2 lines)
+│   ├── abilities/hidden-power.ts   # Add null guards for UNOWN room-dependent abilities (3 lines)
+│   ├── effects/synergies.ts        # Add null guard for clock.setTimeout (1 line)
+│   ├── effects/effect.ts           # Remove GameRoom type from interfaces
 │   ├── compute-round-damage.ts    # NEW: extracted pure function (10 lines)
 │   └── __tests__/                 # NEW: test directory
 │       ├── compute-round-damage.test.ts
@@ -166,15 +169,22 @@ app/
 - The filtering logic (which client sees which simulation) moves to GameRoom event processing
 - ~40 lines deleted, ~3 lines added
 
-**Step 9**: Remove `room` property from Simulation
-- Delete `room: GameRoom` field and `this.room = room` in constructor
-- Remove `room` parameter from constructor
+**Step 9**: Make `room` optional on Simulation + add null guards
+- Change `room: GameRoom` to `room?: GameRoom` (optional property)
+- Move `room` to end of constructor signature: `constructor(id, blueBoard, redBoard, bluePlayer, redPlayer, stageLevel, weather, specialGameRule, isGhostBattle?, room?)`
 - Promote `specialGameRule` from internal cache (Step 4) to constructor parameter
 - Replace `this.specialGameRule = this.room.state.specialGameRule ?? null` with `this.specialGameRule = specialGameRule`
-- Delete `import GameRoom from "..."` line
-- Update `ISimulation` interface in `app/types/index.ts` (lines 359-374) to remove `room` field
-- Update Simulation constructor calls in `game-commands.ts` (lines 1931, 1986): remove `room` argument, add `specialGameRule` argument
-- All room references already eliminated in Steps 4, 6-8 (includes board.ts in Step 6); this is pure cleanup
+- Remove `delete this.room` at line 1477 (GC cleanup no longer needed — room is optional)
+- Update `ISimulation` interface in `app/types/index.ts` (lines 359-374): `room` becomes `room?: GameRoom`
+- Update Simulation constructor calls in `game-commands.ts` (lines 1931, 1986): add `specialGameRule` argument, pass `this.room` as final optional `room` argument
+- Add null guards to 7 remaining room references in ability/synergy files:
+  - `abilities.ts:291` — already guarded at line 295 (`!pokemon.simulation.room ||`)
+  - `abilities.ts:13519,13523` — add `if (!pokemon.simulation.room) return` before magnetPull block
+  - `hidden-power.ts:112,117,405` — add `if (!unown.simulation.room) return` before each room access block
+  - `synergies.ts:216` — add `if (!pokemon.simulation.room) return` before clock.setTimeout
+- **Multiplayer**: GameRoom passes `this` as room → all abilities work identically
+- **Standalone/tests**: room is undefined → 3 abilities (MAGNET_PULL, UNOWN fishing, synergy clock) silently skip via null guards, core battle unaffected
+- All broadcast/clients/state.time references already eliminated in Steps 4, 6-8; this step handles the remaining edge cases
 
 ### Sub-phase B: Interface Cleanup
 
@@ -205,6 +215,7 @@ app/
 - File: `app/core/__tests__/simulation-events.test.ts`
 - Create mock `ISimulationPlayer` objects with required fields and stub mutation methods
 - Create minimal board configurations (1v1 Pokemon for fast battles)
+- **Important**: Use simple Pokemon (basic attackers) that don't trigger room-dependent abilities (avoid MAGNET_PULL, UNOWN, and synergies that use clock.setTimeout). Room is not passed in tests — these abilities would silently skip via null guards, but avoiding them ensures cleaner test assertions.
 - Verify `update(dt)` returns non-empty `BattleEvent[]` after combat starts
 - Verify SIMULATION_END event is emitted when one team is eliminated
 - ~100-120 lines (includes mock setup boilerplate for ISimulationPlayer, board data, Pokemon placement)
@@ -218,6 +229,7 @@ app/
 | Strip `extends Schema` from Dps | FR-009 | Phase 4 | Low impact, but same category. Schema stripping deferred per spec. |
 | Replace `MapSchema` with `Map` in Simulation fields | FR-006 | Phase 4 | MapSchema is needed for `@type()` decorator and Colyseus sync. Deferred per spec. |
 | Pure data constructor (no Player mutation) | Ideal | Future cleanup | onFinish() mutates Player directly. Making it pure requires restructuring 150+ lines. Not minimal. |
+| Remove optional `room?: GameRoom` from Simulation | FR-001, FR-002 | Phase 2 | 7 ability/synergy references access `room.clock.setTimeout` (2), `room.state.shop` (2), `room.spawnOnBench/spawnWanderingPokemon` (2), `room.checkEvolutionsAfterPokemonAcquired` (1). These are specific abilities (MAGNET_PULL, UNOWN fishing, synergy delayed effect) that cross the simulation boundary into shop/bench state. Replacing them requires restructuring ability control flow or introducing compound events. Phase 2 removes Colyseus entirely — these abilities MUST be rewritten then, making it the natural time to handle them. Null guards added in Phase 0 ensure standalone mode works (abilities silently skip). |
 
 ## Complexity Tracking
 
@@ -228,3 +240,4 @@ app/
 | Schema inheritance kept in app/core/ (violates Principle II partially) | Colyseus auto-sync of battle state (Pokemon positions, HP, status) to clients requires Schema. Removing it breaks rendering. | Creating Schema wrapper classes adds ~500 lines of new code — opposite of "minimal change" constraint. Phase 2 changes client to not need Schema sync, then Phase 4 strips it. |
 | One new function in GameRoom (`processBattleEvent`) | Processes the BattleEvent[] returned by Simulation.update(). Required to translate events back into broadcasts. | Keeping broadcast logic in Simulation would mean keeping the room dependency — defeats the purpose. |
 | One new file (`compute-round-damage.ts`) | Extracted pure function, 10 lines. Required to remove room.computeRoundDamage() call from Simulation. | Inlining the computation in Simulation is an option but makes it less testable and duplicates logic. |
+| Optional `room?: GameRoom` kept on Simulation (violates FR-002 partially) | 3 specific abilities (MAGNET_PULL, UNOWN fishing, synergy clock) access shop/spawn/clock methods that cross the simulation boundary. They need room synchronously — can't be made event-based without restructuring ability control flow. | Making room fully removed requires either: (a) compound events + restructure 3 abilities (~80 lines), or (b) callback interface injection (~30 lines new abstraction). Both violate "minimal change" and "no new abstractions" constraints. Null guards (7 lines total) achieve 90% decoupling with zero risk. Phase 2 handles the remaining 10%. |
