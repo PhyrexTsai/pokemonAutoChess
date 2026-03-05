@@ -99,8 +99,8 @@
 
 ### Tests for User Story 1
 
-- [ ] T017 [P] [US1] Write `computeRoundDamage()` unit tests in `app/core/__tests__/compute-round-damage.test.ts` — test cases: empty team, team with spawns (excluded), standard team, stage level scaling (~30 lines)
-- [ ] T018 [US1] Write Simulation event generation integration test in `app/core/__tests__/simulation-events.test.ts` — mock `ISimulationPlayer` objects, 1v1 Pokemon battle, verify `update(dt)` returns non-empty `BattleEvent[]`, verify SIMULATION_END emitted when team eliminated. Use simple Pokemon only (avoid MIND_BLOWN, MAGNET_PULL, UNOWN, FIELD synergy). (~100-120 lines)
+- [x] T017 [P] [US1] Write `computeRoundDamage()` unit tests in `app/core/__tests__/compute-round-damage.test.ts` — test cases: empty team, team with spawns (excluded), standard team, stage level scaling (~30 lines)
+- [x] T018 [US1] Write Simulation event generation integration test in `app/core/__tests__/simulation-events.test.ts` — mock `ISimulationPlayer` objects, 1v1 Pokemon battle, verify `update(dt)` returns non-empty `BattleEvent[]`, verify SIMULATION_END emitted when team eliminated. Use simple Pokemon only (avoid MIND_BLOWN, MAGNET_PULL, UNOWN, FIELD synergy). (~100-120 lines)
 
 **Build gate**: `npm run build` passes, `npx vitest run` passes
 
