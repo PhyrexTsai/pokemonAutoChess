@@ -68,11 +68,11 @@
 
 ### Implementation for User Story 3
 
-- [ ] T008 [P] [US3] Replace 8 room operations in `app/core/simulation.ts` with pushEvent/direct calls: 5 `room.broadcast()` at lines 750, 1432, 1475, 1740, 1749 → `pushEvent()`; `room.clients.find()` at line 1565 → PLAYER_INCOME/PLAYER_DAMAGE events; `room.computeRoundDamage()` at line 1584 → call extracted function (T004); `room.rankPlayers()` at line 1623 → include data in SIMULATION_END event
+- [ ] T008 [P] [US3] Replace 7 remaining room operations in `app/core/simulation.ts` with pushEvent/direct calls (1 of 8 already handled by T004 at line 1584): 5 `room.broadcast()` at lines 750, 1432, 1475, 1740, 1749 → `pushEvent()`; `room.clients.find()` at line 1565 → PLAYER_INCOME/PLAYER_DAMAGE events; `room.rankPlayers()` at line 1623 → processBattleEvent calls `this.rankPlayers()` when receiving SIMULATION_END (event already includes roundDamage/weather per data-model.md)
 - [ ] T009 [P] [US3] Replace 3 `simulation.room.broadcast()` calls in `app/core/board.ts` with `simulation.pushEvent()`: line 522 (BOARD_EVENT), line 548 (CLEAR_BOARD_EVENT), line 560 (CLEAR_BOARD_EVENT with null effect)
 - [ ] T010 [P] [US3] Replace 6 room references in `app/core/pokemon-state.ts`: 3 `room.broadcast()` at lines 330, 367, 728 → `pokemon.simulation.pushEvent()`; 3 `room.state.time` at lines 329, 366, 957 → `pokemon.simulation.elapsedTime`
 - [ ] T011 [US3] Replace `broadcastAbility()` body in `app/core/pokemon-entity.ts` (lines 1686-1711) with `this.simulation.pushEvent({ type: "ABILITY", ... })` — move client filtering logic to GameRoom's processBattleEvent (T006)
-- [ ] T012 [US3] Remove `room: GameRoom` from `OnStageStartEffectArgs` and `OnItemDroppedEffectArgs` interfaces in `app/core/effects/effect.ts`
+- [ ] T012 [US3] Remove `room: GameRoom` from `OnStageStartEffectArgs` and `OnItemDroppedEffectArgs` interfaces in `app/core/effects/effect.ts` — replace with `simulation: ISimulation` where effect implementations need simulation access, or remove parameter entirely if unused
 
 **Build gate**: `npm run build` passes — events now flow through buffer → processBattleEvent → clients
 
@@ -90,8 +90,8 @@
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Make `room` optional (`room?: GameRoom`) on Simulation, move to last constructor param position, promote `specialGameRule` to constructor param (replacing cache from T005), remove `delete this.room` (line 1477), update `ISimulation` interface in `app/types/index.ts` (lines 359-374) in `app/core/simulation.ts`
-- [ ] T014 [P] [US1] Add 5 null guards (`if (!...simulation.room) return`) to 8 room references: `app/core/abilities/abilities.ts` before lines 291 and 13519; `app/core/abilities/hidden-power.ts` before lines 112 and 405; `app/core/effects/synergies.ts` before line 216
+- [ ] T013 [US1] Add 5 null guards (`if (!...simulation.room) return`) to 8 room references: `app/core/abilities/abilities.ts` before lines 291 and 13519; `app/core/abilities/hidden-power.ts` before lines 112 and 405; `app/core/effects/synergies.ts` before line 216 — guards compile as redundant while room is still required, enabling T014 to make room optional without breaking build
+- [ ] T014 [US1] Make `room` optional (`room?: GameRoom`) on Simulation, move to last constructor param position, promote `specialGameRule` to constructor param (replacing cache from T005), remove `delete this.room` (line 1477), update `ISimulation` interface in `app/types/index.ts` (lines 359-374) in `app/core/simulation.ts`
 - [ ] T015 [US1] Update Simulation constructor calls in `app/rooms/commands/game-commands.ts` (lines 1931, 1986): add `specialGameRule` argument, pass `this.room` as final optional `room` argument
 - [ ] T016 [US1] Define `ISimulationPlayer` interface (20 fields/methods per data-model.md) in `app/types/interfaces/`; change Simulation constructor player parameter types from `Player` to `ISimulationPlayer` in `app/core/simulation.ts`
 
@@ -135,7 +135,7 @@ Phase 1 tasks can run in parallel┘
 - **Foundational (Phase 2)**: Depends on Phase 1 — T003 → T004 → T005 (all touch simulation.ts, sequential)
 - **US2 (Phase 3)**: Depends on Phase 2 — processBattleEvent must exist before broadcasts are replaced
 - **US3 (Phase 4)**: Depends on Phase 3 — T008 ∥ T009 ∥ T010 (different files), then T011, T012
-- **US1 (Phase 5)**: Depends on Phase 4 — T013 ∥ T014 (different files), then T015, T016, T017 ∥ T018
+- **US1 (Phase 5)**: Depends on Phase 4 — T013 → T014 (null guards before room optional), then T015, T016, T017 ∥ T018
 - **Polish (Phase 6)**: Depends on Phase 5 — T019 → T020 → T021 → T022
 
 ### Why Implementation Order ≠ Priority Order
@@ -156,7 +156,6 @@ Phase 1 tasks can run in parallel┘
 
 **Phase 1**: T001 ∥ T002 (package.json ∥ new type file)
 **Phase 4**: T008 ∥ T009 ∥ T010 (simulation.ts ∥ board.ts ∥ pokemon-state.ts)
-**Phase 5**: T013 ∥ T014 (simulation.ts+game-commands.ts ∥ abilities.ts+hidden-power.ts+synergies.ts)
 **Phase 5 tests**: T017 ∥ T018 (pure function test ∥ integration test)
 
 ---
@@ -165,7 +164,7 @@ Phase 1 tasks can run in parallel┘
 
 ```bash
 # These 3 tasks modify different files and can run in parallel:
-T008: "Replace 8 room operations in app/core/simulation.ts"
+T008: "Replace 7 remaining room operations in app/core/simulation.ts"
 T009: "Replace 3 simulation.room.broadcast() in app/core/board.ts"
 T010: "Replace 6 room references in app/core/pokemon-state.ts"
 
@@ -201,7 +200,7 @@ Each phase adds value and the build passes at every step:
 One commit per task (per constitution's Atomic Traceability principle). Each commit:
 - Passes `npm run build`
 - Does not break multiplayer
-- Has a clear, descriptive message: `[001] T0XX: description`
+- Has a clear, descriptive message: `[spec-001] <type>: T0XX description` (per constitution format)
 
 ---
 
