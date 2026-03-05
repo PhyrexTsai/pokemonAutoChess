@@ -1,5 +1,5 @@
 import { ARMOR_FACTOR } from "../config"
-import Player from "../models/colyseus-models/player"
+import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
 import { SynergyEffects } from "../models/effects"
 import { IPokemonEntity } from "../types"
 import { EffectEnum } from "../types/enum/Effect"
@@ -851,7 +851,7 @@ export default abstract class PokemonState {
     pokemon: PokemonEntity,
     dt: number,
     board: Board,
-    player: Player | undefined
+    player: ISimulationPlayer | undefined
   ) {
     this.updateCommands(pokemon, dt)
     pokemon.status.updateAllStatus(dt, pokemon, board)

@@ -8,7 +8,7 @@ import Count from "../models/colyseus-models/count"
 import ExperienceManager from "../models/colyseus-models/experience-manager"
 import { IPokemonRecord } from "../models/colyseus-models/game-record"
 import HistoryItem from "../models/colyseus-models/history-item"
-import Player from "../models/colyseus-models/player"
+import type { ISimulationPlayer } from "./interfaces/ISimulationPlayer"
 import { Pokemon } from "../models/colyseus-models/pokemon"
 import { PokemonCustoms } from "../models/colyseus-models/pokemon-customs"
 import Status from "../models/colyseus-models/status"
@@ -493,7 +493,7 @@ export interface IPokemonEntity {
   ): void
   addItem(item: Item, permanent?: boolean): void
   removeItem(item: Item, permanent?: boolean): void
-  update(dt: number, board: Board, player: Player | undefined): void
+  update(dt: number, board: Board, player: ISimulationPlayer | undefined): void
   skydiveTo(x: number, y: number, board: Board): void
   toIdleState(): void
   toMovingState(): void

@@ -1,7 +1,7 @@
 import { MapSchema, Schema, type } from "@colyseus/schema"
 import { BattleEvent } from "../types/BattleEvent"
 import { BOARD_HEIGHT, BOARD_WIDTH } from "../config"
-import Player from "../models/colyseus-models/player"
+import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
 import { Pokemon } from "../models/colyseus-models/pokemon"
 import { getSynergyStep } from "../models/colyseus-models/synergies"
 import { SynergyEffects } from "../models/effects"
@@ -99,8 +99,8 @@ export default class Simulation extends Schema implements ISimulation {
   blueFlowerSpawn: number = 0
   redFlowerSpawn: number = 0
   stageLevel = 0
-  bluePlayer: Player | undefined
-  redPlayer: Player | undefined
+  bluePlayer: ISimulationPlayer | undefined
+  redPlayer: ISimulationPlayer | undefined
   blueAbilitiesCast: Ability[] = []
   redAbilitiesCast: Ability[] = []
   stormLightningTimer = 0
@@ -114,8 +114,8 @@ export default class Simulation extends Schema implements ISimulation {
     id: string,
     blueBoard: MapSchema<Pokemon>,
     redBoard: MapSchema<Pokemon>,
-    bluePlayer: Player,
-    redPlayer: Player | undefined,
+    bluePlayer: ISimulationPlayer,
+    redPlayer: ISimulationPlayer | undefined,
     stageLevel: number,
     weather: Weather,
     specialGameRule: SpecialGameRule | null = null,
@@ -138,7 +138,7 @@ export default class Simulation extends Schema implements ISimulation {
 
     // beforeSimulationStart hooks
     const playerEffects: [
-      Player | undefined,
+      ISimulationPlayer | undefined,
       Set<EffectEnum>,
       Set<EffectEnum>
     ][] = [
@@ -492,7 +492,7 @@ export default class Simulation extends Schema implements ISimulation {
     dish: Item,
     pokemon: Pokemon,
     entity: PokemonEntity | undefined,
-    player: Player
+    player: ISimulationPlayer
   ) {
     const dishEffects = DishEffects[dish]
     if (!dishEffects) return

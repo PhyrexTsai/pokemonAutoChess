@@ -9,7 +9,8 @@ import {
   ON_ATTACK_MANA
 } from "../config"
 import Count from "../models/colyseus-models/count"
-import Player from "../models/colyseus-models/player"
+import type Player from "../models/colyseus-models/player"
+import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
 import { Pokemon, PokemonClasses } from "../models/colyseus-models/pokemon"
 import Status from "../models/colyseus-models/status"
 import { SynergyEffects } from "../models/effects"
@@ -210,7 +211,7 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     this.changePassive(pokemon.passive)
   }
 
-  update(dt: number, board: Board, player: Player | undefined) {
+  update(dt: number, board: Board, player: ISimulationPlayer | undefined) {
     this.state.update(this, dt, board, player)
   }
 
@@ -263,16 +264,12 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     )
   }
 
-  get player(): Player | undefined {
+  get player(): ISimulationPlayer | undefined {
     const player =
       this.baseTeam === Team.BLUE_TEAM
         ? this.simulation.bluePlayer
         : this.simulation.redPlayer
-    if (player instanceof Player) {
-      return player
-    } else {
-      return undefined // PvE or ghost player
-    }
+    return player ?? undefined
   }
 
   get inSpotlight(): boolean {
@@ -1742,7 +1739,7 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     if (this.stacks === this.stacksRequired) {
       const pokemonEvolved = this.refToBoardPokemon.evolutionRule.tryEvolve(
         this.refToBoardPokemon as Pokemon,
-        this.player,
+        this.player as Player,
         this.simulation.stageLevel
       )
       if (pokemonEvolved) {

@@ -2031,9 +2031,9 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
             type: WandererType.UNOWN_SPELL,
             behavior: WandererBehavior.SPECTATE
           })
-          player.wanderers.set(id, wanderer)
+          ;(player as Player).wanderers.set(id, wanderer)
           this.clock.setTimeout(() => {
-            player.wanderers.delete(id)
+            ;(player as Player).wanderers.delete(id)
             if (simulation.finished) return
             const caster = new PokemonEntity(
               PokemonFactory.createPokemonFromName(unown),
