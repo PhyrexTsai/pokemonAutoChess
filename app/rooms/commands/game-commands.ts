@@ -1938,13 +1938,15 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
           const weather = getWeather(player, null, pveBoard)
           const simulation = new Simulation(
             nanoid(),
-            this.room,
             player.board,
             pveBoard,
             player,
             undefined,
             this.state.stageLevel,
-            weather
+            weather,
+            this.state.specialGameRule ?? null,
+            false,
+            this.room
           )
           player.simulationId = simulation.id
           this.state.simulations.set(simulation.id, simulation)
@@ -1993,14 +1995,15 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
 
         const simulation = new Simulation(
           simulationId,
-          this.room,
           bluePlayer.board,
           redPlayer.board,
           bluePlayer,
           redPlayer,
           this.state.stageLevel,
           weather,
-          matchup.ghost
+          this.state.specialGameRule ?? null,
+          matchup.ghost,
+          this.room
         )
 
         this.state.simulations.set(simulation.id, simulation)

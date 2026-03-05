@@ -357,7 +357,7 @@ export interface IExperienceManager {
 }
 
 export interface ISimulation {
-  room: GameRoom
+  room?: GameRoom
   specialGameRule: import("./enum/SpecialGameRule").SpecialGameRule | null
   board: Board
   id: string

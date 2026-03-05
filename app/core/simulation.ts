@@ -91,7 +91,7 @@ export default class Simulation extends Schema implements ISimulation {
   @type("string") redPlayerId: string
   @type("boolean") isGhostBattle: boolean
   @type("boolean") started: boolean
-  room: GameRoom
+  room?: GameRoom
   blueEffects = new Set<EffectEnum>()
   redEffects = new Set<EffectEnum>()
   board: Board = new Board(BOARD_HEIGHT, BOARD_WIDTH)
@@ -112,19 +112,20 @@ export default class Simulation extends Schema implements ISimulation {
 
   constructor(
     id: string,
-    room: GameRoom,
     blueBoard: MapSchema<Pokemon>,
     redBoard: MapSchema<Pokemon>,
     bluePlayer: Player,
     redPlayer: Player | undefined,
     stageLevel: number,
     weather: Weather,
-    isGhostBattle = false
+    specialGameRule: SpecialGameRule | null = null,
+    isGhostBattle = false,
+    room?: GameRoom
   ) {
     super()
     this.id = id
     this.room = room
-    this.specialGameRule = this.room.state.specialGameRule ?? null
+    this.specialGameRule = specialGameRule
     this.bluePlayer = bluePlayer
     this.redPlayer = redPlayer
     this.bluePlayerId = bluePlayer.id
@@ -1495,8 +1496,7 @@ export default class Simulation extends Schema implements ISimulation {
 
     this.weather = Weather.NEUTRAL
     this.winnerId = ""
-    // @ts-ignore: room shouldnt be used after simulation stop, so we can safely delete it
-    delete this.room // remove circular reference to help garbage collection
+    this.room = undefined
   }
 
   onFinish() {
