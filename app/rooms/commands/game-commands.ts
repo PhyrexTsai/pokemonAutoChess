@@ -1036,7 +1036,12 @@ export class OnUpdateCommand extends Command<
 
         this.state.simulations.forEach((simulation) => {
           if (!simulation.finished) {
-            if (simulation.started) simulation.update(deltaTime)
+            if (simulation.started) {
+              const events = simulation.update(deltaTime)
+              for (const event of events) {
+                this.room.processBattleEvent(event)
+              }
+            }
             everySimulationFinished = false
           }
         })

@@ -52,7 +52,7 @@
 ### Implementation for User Story 2
 
 - [x] T006 [US2] Implement `processBattleEvent(event: BattleEvent, simulation: Simulation)` method on GameRoom with switch for all 9 event types in `app/rooms/game-room.ts` — handle field name conversions (attackType→type, healType→type), format conversions (PLAYER_INCOME/DAMAGE as raw numbers via client.send), and ABILITY routing (spectator client filtering)
-- [ ] T007 [US2] Wire `OnUpdateCommand` to capture `simulation.update(deltaTime)` return value and call `this.room.processBattleEvent()` for each event in `app/rooms/commands/game-commands.ts` (line 1039)
+- [x] T007 [US2] Wire `OnUpdateCommand` to capture `simulation.update(deltaTime)` return value and call `this.room.processBattleEvent()` for each event in `app/rooms/commands/game-commands.ts` (line 1039)
 
 **Build gate**: `npm run build` passes — processBattleEvent exists but no events flow yet (buffer is empty)
 
