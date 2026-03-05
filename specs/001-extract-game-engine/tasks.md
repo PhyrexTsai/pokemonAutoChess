@@ -68,9 +68,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T008 [P] [US3] Replace 7 remaining room operations in `app/core/simulation.ts` with pushEvent/direct calls (1 of 8 already handled by T004 at line 1584): 5 `room.broadcast()` at lines 750, 1432, 1475, 1740, 1749 → `pushEvent()`; `room.clients.find()` at line 1565 → PLAYER_INCOME/PLAYER_DAMAGE events; `room.rankPlayers()` at line 1623 → processBattleEvent calls `this.rankPlayers()` when receiving SIMULATION_END (event already includes roundDamage/weather per data-model.md)
-- [ ] T009 [P] [US3] Replace 3 `simulation.room.broadcast()` calls in `app/core/board.ts` with `simulation.pushEvent()`: line 522 (BOARD_EVENT), line 548 (CLEAR_BOARD_EVENT), line 560 (CLEAR_BOARD_EVENT with null effect)
-- [ ] T010 [P] [US3] Replace 6 room references in `app/core/pokemon-state.ts`: 3 `room.broadcast()` at lines 330, 367, 728 → `pokemon.simulation.pushEvent()`; 3 `room.state.time` at lines 329, 366, 957 → `pokemon.simulation.elapsedTime`
+- [x] T008 [P] [US3] Replace 7 remaining room operations in `app/core/simulation.ts` with pushEvent/direct calls (1 of 8 already handled by T004 at line 1584): 5 `room.broadcast()` at lines 750, 1432, 1475, 1740, 1749 → `pushEvent()`; `room.clients.find()` at line 1565 → PLAYER_INCOME/PLAYER_DAMAGE events; `room.rankPlayers()` at line 1623 → processBattleEvent calls `this.rankPlayers()` when receiving SIMULATION_END (event already includes roundDamage/weather per data-model.md)
+- [x] T009 [P] [US3] Replace 3 `simulation.room.broadcast()` calls in `app/core/board.ts` with `simulation.pushEvent()`: line 522 (BOARD_EVENT), line 548 (CLEAR_BOARD_EVENT), line 560 (CLEAR_BOARD_EVENT with null effect)
+- [x] T010 [P] [US3] Replace 6 room references in `app/core/pokemon-state.ts`: 3 `room.broadcast()` at lines 330, 367, 728 → `pokemon.simulation.pushEvent()`; 3 `room.state.time` at lines 329, 366, 957 → `pokemon.simulation.elapsedTime`
 - [ ] T011 [US3] Replace `broadcastAbility()` body in `app/core/pokemon-entity.ts` (lines 1686-1711) with `this.simulation.pushEvent({ type: "ABILITY", ... })` — move client filtering logic to GameRoom's processBattleEvent (T006)
 - [ ] T012 [US3] Remove `room: GameRoom` from `OnStageStartEffectArgs` and `OnItemDroppedEffectArgs` interfaces in `app/core/effects/effect.ts` — replace with `simulation: ISimulation` where effect implementations need simulation access, or remove parameter entirely if unused
 

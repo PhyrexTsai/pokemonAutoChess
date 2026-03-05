@@ -1,7 +1,7 @@
-import { ARMOR_FACTOR, FIGHTING_PHASE_DURATION } from "../config"
+import { ARMOR_FACTOR } from "../config"
 import Player from "../models/colyseus-models/player"
 import { SynergyEffects } from "../models/effects"
-import { IPokemonEntity, Transfer } from "../types"
+import { IPokemonEntity } from "../types"
 import { EffectEnum } from "../types/enum/Effect"
 import {
   AttackType,
@@ -326,10 +326,11 @@ export default abstract class PokemonState {
       pokemon.hp += healReceived
 
       if (caster && healReceived > 0) {
-        if (pokemon.simulation.room.state.time < FIGHTING_PHASE_DURATION) {
-          pokemon.simulation.room.broadcast(Transfer.POKEMON_HEAL, {
+        if (pokemon.simulation.elapsedTime > 0) {
+          pokemon.simulation.pushEvent({
+            type: "POKEMON_HEAL",
             index: caster.index,
-            type: HealType.HEAL,
+            healType: HealType.HEAL,
             amount: Math.round(healReceived),
             x: pokemon.positionX,
             y: pokemon.positionY,
@@ -363,10 +364,11 @@ export default abstract class PokemonState {
       shield = Math.round(shield)
       pokemon.shield = min(0)(pokemon.shield + shield)
       if (caster && shield > 0) {
-        if (pokemon.simulation.room.state.time < FIGHTING_PHASE_DURATION) {
-          pokemon.simulation.room.broadcast(Transfer.POKEMON_HEAL, {
+        if (pokemon.simulation.elapsedTime > 0) {
+          pokemon.simulation.pushEvent({
+            type: "POKEMON_HEAL",
             index: caster.index,
-            type: HealType.SHIELD,
+            healType: HealType.SHIELD,
             amount: Math.round(shield),
             x: pokemon.positionX,
             y: pokemon.positionY,
@@ -725,9 +727,10 @@ export default abstract class PokemonState {
             }
           }
 
-          pokemon.simulation.room.broadcast(Transfer.POKEMON_DAMAGE, {
+          pokemon.simulation.pushEvent({
+            type: "POKEMON_DAMAGE",
             index: attacker.index,
-            type: attackType,
+            attackType,
             amount: Math.round(takenDamage),
             x: pokemon.positionX,
             y: pokemon.positionY,
@@ -954,7 +957,7 @@ export default abstract class PokemonState {
 
     if (
       pokemon.simulation.weather === Weather.ZENITH &&
-      Math.floor(pokemon.simulation.room.state.time / 1000) % 2 === 0
+      Math.floor(pokemon.simulation.elapsedTime / 1000) % 2 === 0
     ) {
       const nbSunStones = pokemon.player
         ? count(pokemon.player.items, Item.SUN_STONE)

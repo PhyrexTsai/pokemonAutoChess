@@ -1766,6 +1766,9 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
     this.state.simulations.forEach((simulation) => {
       if (!simulation.finished) {
         simulation.onFinish()
+        for (const event of simulation.flushEvents()) {
+          this.room.processBattleEvent(event)
+        }
       }
       simulation.stop()
     })
