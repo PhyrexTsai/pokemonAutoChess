@@ -1,4 +1,5 @@
 import { MapSchema, Schema, type } from "@colyseus/schema"
+import { BattleEvent } from "../types/BattleEvent"
 import { BOARD_HEIGHT, BOARD_WIDTH } from "../config"
 import Player from "../models/colyseus-models/player"
 import { Pokemon } from "../models/colyseus-models/pokemon"
@@ -104,6 +105,8 @@ export default class Simulation extends Schema implements ISimulation {
   stormLightningTimer = 0
   tidalWaveTimer = 0
   tidalWaveCounter = 0
+  private events: BattleEvent[] = []
+  elapsedTime: number = 0
 
   constructor(
     id: string,
@@ -1359,7 +1362,12 @@ export default class Simulation extends Schema implements ISimulation {
     }
   }
 
-  update(dt: number) {
+  pushEvent(event: BattleEvent) {
+    this.events.push(event)
+  }
+
+  update(dt: number): BattleEvent[] {
+    this.elapsedTime += dt
     if (this.blueTeam.size === 0 || this.redTeam.size === 0) {
       this.onFinish()
     }
@@ -1453,6 +1461,10 @@ export default class Simulation extends Schema implements ISimulation {
         }
       }
     }
+
+    const flushed = this.events
+    this.events = []
+    return flushed
   }
 
   stop() {

@@ -371,6 +371,8 @@ export interface ISimulation {
   redDpsMeter: MapSchema<Dps>
   bluePlayerId: string
   redPlayerId: string
+  elapsedTime: number
+  pushEvent(event: import("./BattleEvent").BattleEvent): void
 }
 
 export interface ISimulationCommand {
