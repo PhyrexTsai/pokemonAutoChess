@@ -36,6 +36,7 @@ import {
 import { Passive } from "../types/enum/Passive"
 import { Pkm } from "../types/enum/Pokemon"
 import { Synergy } from "../types/enum/Synergy"
+import { SpecialGameRule } from "../types/enum/SpecialGameRule"
 import { Weather, WeatherEffects } from "../types/enum/Weather"
 import { IPokemonData } from "../types/interfaces/PokemonData"
 import { count, isIn, removeInArray } from "../utils/array"
@@ -106,6 +107,7 @@ export default class Simulation extends Schema implements ISimulation {
   stormLightningTimer = 0
   tidalWaveTimer = 0
   tidalWaveCounter = 0
+  specialGameRule: SpecialGameRule | null = null
   private events: BattleEvent[] = []
   elapsedTime: number = 0
 
@@ -123,6 +125,7 @@ export default class Simulation extends Schema implements ISimulation {
     super()
     this.id = id
     this.room = room
+    this.specialGameRule = this.room.state.specialGameRule ?? null
     this.bluePlayer = bluePlayer
     this.redPlayer = redPlayer
     this.bluePlayerId = bluePlayer.id

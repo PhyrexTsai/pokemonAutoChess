@@ -1270,7 +1270,7 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
 
     if (
       this.player &&
-      this.simulation.room.state.specialGameRule ===
+      this.simulation.specialGameRule ===
         SpecialGameRule.BLOOD_MONEY &&
       !target.isSpawn
     ) {

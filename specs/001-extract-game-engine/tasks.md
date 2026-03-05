@@ -18,8 +18,8 @@
 
 **Purpose**: Testing framework and type definitions that all stories depend on
 
-- [ ] T001 Install Vitest as devDependency, add `"test": "vitest run"` to scripts in `package.json`
-- [ ] T002 [P] Create `BattleEvent` discriminated union type (9 variants) in `app/types/BattleEvent.ts` per data-model.md
+- [x] T001 Install Vitest as devDependency, add `"test": "vitest run"` to scripts in `package.json`
+- [x] T002 [P] Create `BattleEvent` discriminated union type (9 variants) in `app/types/BattleEvent.ts` per data-model.md
 
 **Build gate**: `npm run build` passes
 
@@ -33,7 +33,7 @@
 
 - [ ] T003 Add `private events: BattleEvent[]`, `pushEvent()`, `private elapsedTime: number` to Simulation; modify `update(dt)` to drain buffer and return `BattleEvent[]` in `app/core/simulation.ts`
 - [ ] T004 Extract `computeRoundDamage()` as pure function to `app/core/compute-round-damage.ts` (10 lines); update import and call site in `app/core/simulation.ts` (line 1584)
-- [ ] T005 Cache `specialGameRule` from `this.room.state.specialGameRule` as Simulation property in constructor; replace `this.simulation.room.state.specialGameRule` access in `app/core/pokemon-entity.ts` (line 1273) with `this.simulation.specialGameRule`
+- [x] T005 Cache `specialGameRule` from `this.room.state.specialGameRule` as Simulation property in constructor; replace `this.simulation.room.state.specialGameRule` access in `app/core/pokemon-entity.ts` (line 1273) with `this.simulation.specialGameRule`
 
 **Build gate**: `npm run build` passes — update() returns empty arrays, existing broadcasts still work
 
