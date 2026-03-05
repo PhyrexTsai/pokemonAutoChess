@@ -213,6 +213,7 @@ export class OnFieldDeathEffect extends OnDeathEffect {
       const effectsIndex = SynergyEffects[Synergy.FIELD].indexOf(effect)
       const heal = FIELD_HEAL_PER_SYNERGY_LEVEL[effectsIndex] ?? 0
       const speedBoost = FIELD_SPEED_BUFF_PER_SYNERGY_LEVEL[effectsIndex] ?? 0
+      if (!pokemon.simulation.room) return
       pokemon.simulation.room.clock.setTimeout(() => {
         board.forEach((x, y, value) => {
           if (

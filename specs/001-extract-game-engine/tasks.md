@@ -90,7 +90,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T013 [US1] Add 5 null guards (`if (!...simulation.room) return`) to 8 room references: `app/core/abilities/abilities.ts` before lines 291 and 13519; `app/core/abilities/hidden-power.ts` before lines 112 and 405; `app/core/effects/synergies.ts` before line 216 — guards compile as redundant while room is still required, enabling T014 to make room optional without breaking build
+- [x] T013 [US1] Add 5 null guards (`if (!...simulation.room) return`) to 8 room references: `app/core/abilities/abilities.ts` before lines 291 and 13519; `app/core/abilities/hidden-power.ts` before lines 112 and 405; `app/core/effects/synergies.ts` before line 216 — guards compile as redundant while room is still required, enabling T014 to make room optional without breaking build
 - [ ] T014 [US1] Make `room` optional (`room?: GameRoom`) on Simulation, move to last constructor param position, promote `specialGameRule` to constructor param (replacing cache from T005), remove `delete this.room` (line 1477), update `ISimulation` interface in `app/types/index.ts` (lines 359-374) in `app/core/simulation.ts`
 - [ ] T015 [US1] Update Simulation constructor calls in `app/rooms/commands/game-commands.ts` (lines 1931, 1986): add `specialGameRule` argument, pass `this.room` as final optional `room` argument
 - [ ] T016 [US1] Define `ISimulationPlayer` interface (20 fields/methods per data-model.md) in `app/types/interfaces/`; change Simulation constructor player parameter types from `Player` to `ISimulationPlayer` in `app/core/simulation.ts`

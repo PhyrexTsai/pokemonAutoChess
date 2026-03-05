@@ -288,6 +288,7 @@ export class MindBlownStrategy extends AbilityStrategy {
         - Yellow: Deal [20,SP] TRUE and FLINCH for 5 seconds.
         - White: Give [20,SP] SHIELD and cure status afflictions for allies.
       */
+      if (!pokemon.simulation.room) return
       pokemon.simulation.room.clock.setTimeout(
         () => {
           if (
@@ -13515,7 +13516,7 @@ export class MagnetPullStrategy extends AbilityStrategy {
   requiresTarget = false
   process(pokemon: PokemonEntity, board: Board, target: null, crit: boolean) {
     super.process(pokemon, board, target, crit)
-    if (pokemon.player) {
+    if (pokemon.player && pokemon.simulation.room) {
       const randomSteelPkm = pokemon.simulation.room.state.shop.magnetPull(
         pokemon,
         pokemon.player

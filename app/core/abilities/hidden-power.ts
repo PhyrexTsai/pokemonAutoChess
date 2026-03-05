@@ -107,7 +107,7 @@ export class HiddenPowerFStrategy extends HiddenPowerStrategy {
     const nbFishes = 2
     const player = unown.player
 
-    if (player && !unown.isGhostOpponent && !player.isBot) {
+    if (player && !unown.isGhostOpponent && !player.isBot && unown.simulation.room) {
       for (let i = 0; i < nbFishes; i++) {
         const fish = unown.simulation.room.state.shop.pickFish(
           player,
@@ -402,7 +402,7 @@ export class HiddenPowerWStrategy extends HiddenPowerStrategy {
         pokemon.positionX = x
         pokemon.positionY = 0
         player.board.set(pokemon.id, pokemon)
-        unown.simulation.room.checkEvolutionsAfterPokemonAcquired(player.id)
+        unown.simulation.room?.checkEvolutionsAfterPokemonAcquired(player.id)
       }
     }
   }
