@@ -30,11 +30,12 @@ grep -rn "room\.broadcast\|room\.clients" app/core/
 # Expected: zero matches
 
 grep -rn "\.room\." app/core/
-# Expected: exactly 7 matches, ALL in these files only:
+# Expected: exactly 8 matches, ALL in these files only:
 #   app/core/abilities/abilities.ts (3 matches — lines 291, 13519, 13523)
-#   app/core/abilities/hidden-power.ts (3 matches — lines 112, 117, 405)
+#   app/core/abilities/hidden-power.ts (4 matches — lines 112, 115, 117, 405)
+#     Note: lines 112 and 115 are the same pickFish() call spanning multiple lines
 #   app/core/effects/synergies.ts (1 match — line 216)
-# All must have null guards (if (!...room) return) nearby
+# All must have null guards (if (!...room) return) before each room access block
 ```
 
 ### 5. Multiplayer game works identically

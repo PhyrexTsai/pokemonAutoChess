@@ -10,7 +10,7 @@
 - Create Schema wrapper classes that mirror engine state → Violates "minimal change" constraint, adds ~500 lines of new wrapper code
 - Keep Schema inheritance temporarily → Pragmatic, zero client impact, deferred to Phase 4
 
-**Impact on spec**: FR-001 (zero @colyseus/schema in core) and SC-002 are partially deferred. The `room` dependency (the real coupling) is fully removed. Schema decoration remains as inert inheritance until Phase 2 changes the client.
+**Impact on spec**: FR-001 (zero @colyseus/schema in core) and SC-002 are partially deferred. The `room` dependency (the real coupling) is made optional (`room?: GameRoom`) — 8 room references in ability/synergy files are null-guarded, full removal deferred to Phase 2. Schema decoration remains as inert inheritance until Phase 4.
 
 ## R2: computeRoundDamage() Extractability
 
@@ -41,9 +41,9 @@ export function computeRoundDamage(
 
 **Rationale**: Simulation reads from Player during battle (`id`, `effects`, `items`, `synergies`, `board`) and writes during `onFinish()` (`life`, `addMoney()`, `addBattleResult()`, etc.). Defining an interface decouples the import without changing behavior.
 
-**Fields needed**:
-- Constructor: `id`, `board` (for spawning), `effects` (team effects)
-- Battle: `items` (item conditionals), `synergies` (synergy checks)
+**Fields needed** (see data-model.md for definitive ISimulationPlayer interface):
+- Constructor: `id`, `simulationId`, `board` (for spawning), `effects` (team effects)
+- Battle: `items` (item conditionals), `synergies` (synergy checks), `titles`, `pokemonsPlayed`
 - onFinish: `life`, `opponentId`, `opponentName`, `opponentAvatar`, `weatherRocks`, `totalPlayerDamageDealt`, `addBattleResult()`, `addMoney()`, `completeMissionOrder()`, `updateWeatherRocks()`
 
 **Why not pure data**: Simulation mutates Player fields in `onFinish()`. Making it pure (return data, caller mutates) is ideal but NOT minimal — it requires restructuring 150+ lines of onFinish logic. Deferred to future cleanup.

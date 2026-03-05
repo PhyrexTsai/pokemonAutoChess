@@ -6,7 +6,7 @@
 
 ## Summary
 
-Remove the `GameRoom` dependency from `Simulation` so the battle engine can run without any network context. Replace 17 room operations (broadcasts, client access, room method calls, room.state reads) with an event buffer that `update(dt)` returns as `BattleEvent[]`. GameRoom processes the returned events and broadcasts them to clients. 7 additional room references in ability/synergy files (shop/spawn/clock) are null-guarded and retained as optional — full removal deferred to Phase 2. Keep class names (`Simulation`, `PokemonEntity`, `Dps`) unchanged. Keep `extends Schema` temporarily for Colyseus auto-sync backward compatibility — deferred to Phase 4.
+Remove the `GameRoom` dependency from `Simulation` so the battle engine can run without any network context. Replace 17 room operations (broadcasts, client access, room method calls, room.state reads) with an event buffer that `update(dt)` returns as `BattleEvent[]`. GameRoom processes the returned events and broadcasts them to clients. 8 additional room references in ability/synergy files (shop/spawn/clock) are null-guarded and retained as optional — full removal deferred to Phase 2. Keep class names (`Simulation`, `PokemonEntity`, `Dps`) unchanged. Keep `extends Schema` temporarily for Colyseus auto-sync backward compatibility — deferred to Phase 4.
 
 **User constraint**: "以最小改動來進行修改，使用既有函數盡可能減少創建新函數，並且需要撰寫測試來確保結果正確"
 
@@ -54,7 +54,7 @@ specs/001-extract-game-engine/
 ```text
 app/
 ├── core/
-│   ├── simulation.ts              # Remove room, add event buffer, return BattleEvent[]
+│   ├── simulation.ts              # Make room optional, replace room operations with event buffer, return BattleEvent[]
 │   ├── pokemon-entity.ts          # Replace broadcastAbility() with pushEvent()
 │   ├── pokemon-state.ts           # Replace room.broadcast() with pushEvent()
 │   ├── board.ts                   # Replace simulation.room.broadcast() with simulation.pushEvent()
@@ -177,10 +177,11 @@ app/
 - Remove `delete this.room` at line 1477 (GC cleanup no longer needed — room is optional)
 - Update `ISimulation` interface in `app/types/index.ts` (lines 359-374): `room` becomes `room?: GameRoom`
 - Update Simulation constructor calls in `game-commands.ts` (lines 1931, 1986): add `specialGameRule` argument, pass `this.room` as final optional `room` argument
-- Add null guards to 7 remaining room references in ability/synergy files:
-  - `abilities.ts:291` — already guarded at line 295 (`!pokemon.simulation.room ||`)
+- Add null guards to 8 remaining room references in ability/synergy files:
+  - `abilities.ts:291` — add `if (!pokemon.simulation.room) return` before `room.clock.setTimeout()` call (existing line 295 guard is inside the callback — does NOT protect the setTimeout call itself)
   - `abilities.ts:13519,13523` — add `if (!pokemon.simulation.room) return` before magnetPull block
-  - `hidden-power.ts:112,117,405` — add `if (!unown.simulation.room) return` before each room access block
+  - `hidden-power.ts:112,115,117` — add `if (!unown.simulation.room) return` before fishing block (lines 112 and 115 are the same `pickFish()` call spanning multiple lines; one guard covers all 3 grep matches)
+  - `hidden-power.ts:405` — add `if (!unown.simulation.room) return` before checkEvolutions call
   - `synergies.ts:216` — add `if (!pokemon.simulation.room) return` before clock.setTimeout
 - **Multiplayer**: GameRoom passes `this` as room → all abilities work identically
 - **Standalone/tests**: room is undefined → 3 abilities (MAGNET_PULL, UNOWN fishing, synergy clock) silently skip via null guards, core battle unaffected
@@ -229,7 +230,7 @@ app/
 | Strip `extends Schema` from Dps | FR-009 | Phase 4 | Low impact, but same category. Schema stripping deferred per spec. |
 | Replace `MapSchema` with `Map` in Simulation fields | FR-006 | Phase 4 | MapSchema is needed for `@type()` decorator and Colyseus sync. Deferred per spec. |
 | Pure data constructor (no Player mutation) | Ideal | Future cleanup | onFinish() mutates Player directly. Making it pure requires restructuring 150+ lines. Not minimal. |
-| Remove optional `room?: GameRoom` from Simulation | FR-001, FR-002 | Phase 2 | 7 ability/synergy references access `room.clock.setTimeout` (2), `room.state.shop` (2), `room.spawnOnBench/spawnWanderingPokemon` (2), `room.checkEvolutionsAfterPokemonAcquired` (1). These are specific abilities (MAGNET_PULL, UNOWN fishing, synergy delayed effect) that cross the simulation boundary into shop/bench state. Replacing them requires restructuring ability control flow or introducing compound events. Phase 2 removes Colyseus entirely — these abilities MUST be rewritten then, making it the natural time to handle them. Null guards added in Phase 0 ensure standalone mode works (abilities silently skip). |
+| Remove optional `room?: GameRoom` from Simulation | FR-001, FR-002 | Phase 2 | 8 room references (grep `\.room\.` matches) across 7 logical operations: `room.clock.setTimeout` (2), `room.state.shop` (2 grep lines for 1 pickFish call + 1 magnetPull), `room.spawnOnBench/spawnWanderingPokemon` (2), `room.checkEvolutionsAfterPokemonAcquired` (1). These are specific abilities (MAGNET_PULL, UNOWN fishing, synergy delayed effect) that cross the simulation boundary into shop/bench state. Replacing them requires restructuring ability control flow or introducing compound events. Phase 2 removes Colyseus entirely — these abilities MUST be rewritten then, making it the natural time to handle them. Null guards added in Phase 0 ensure standalone mode works (abilities silently skip). |
 
 ## Complexity Tracking
 
