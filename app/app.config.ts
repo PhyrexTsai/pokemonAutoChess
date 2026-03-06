@@ -150,6 +150,8 @@ export const server = defineServer({
     app.use(express.json())
     app.use(express.static(clientSrc))
     app.use(express.static(path.join(clientSrc, "pokechess")))
+    // serve raw src assets (ui/, etc.) not included in pokechess dist
+    app.use("/assets", express.static(path.join(__dirname, "public", "src", "assets")))
 
     app.get("/", (req, res) => {
       res.sendFile(viewsSrc)
