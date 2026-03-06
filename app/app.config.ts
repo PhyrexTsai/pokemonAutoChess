@@ -149,6 +149,7 @@ export const server = defineServer({
     app.use(cors())
     app.use(express.json())
     app.use(express.static(clientSrc))
+    app.use(express.static(path.join(clientSrc, "pokechess")))
 
     app.get("/", (req, res) => {
       res.sendFile(viewsSrc)
