@@ -5,7 +5,7 @@ import { List, useDynamicRowHeight } from "react-window"
 import {
   fetchMetaV2,
   IMetaV2
-} from "../../../../../models/mongo-models/meta-v2"
+} from "../../../api/meta"
 import TeamComp from "./team-comp"
 import "./composition-report.css"
 

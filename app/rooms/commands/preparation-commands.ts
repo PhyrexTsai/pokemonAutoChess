@@ -2,8 +2,7 @@ import { memoryUsage } from "node:process"
 import { setTimeout } from "node:timers/promises"
 import { Command } from "@colyseus/command"
 import { Client, matchMaker } from "colyseus"
-import { UserRecord } from "firebase-admin/lib/auth/user-record"
-import { FilterQuery } from "mongoose"
+import { LocalAuth } from "../preparation-room"
 import {
   EloRankThreshold,
   MAX_PLAYERS_PER_GAME,
@@ -15,8 +14,8 @@ import {
   setPendingGame
 } from "../../core/pending-game-manager"
 import { GameUser, IGameUser } from "../../models/colyseus-models/game-user"
-import { BotV2, IBot } from "../../models/mongo-models/bot-v2"
-import UserMetadata from "../../models/mongo-models/user-metadata"
+import { getPlayer, getBotsInEloRange } from "../../models/local-store"
+import { IBot } from "../../types/interfaces/bot"
 import { Role } from "../../types"
 import { CloseCodes } from "../../types/enum/CloseCodes"
 import { EloRank } from "../../types/enum/EloRank"
@@ -33,9 +32,9 @@ import PreparationRoom from "../preparation-room"
 export class OnJoinCommand extends Command<
   PreparationRoom,
   {
-    client: Client<{ auth: UserRecord }>
+    client: Client<{ auth: LocalAuth }>
     options: any
-    auth: UserRecord
+    auth: LocalAuth
   }
 > {
   async execute({ client, options, auth }) {
@@ -61,7 +60,7 @@ export class OnJoinCommand extends Command<
         this.state.ownerId = auth.uid
       }
 
-      const u = await UserMetadata.findOne({ uid: auth.uid })
+      const u = getPlayer()
       if (!u) {
         client.leave(CloseCodes.USER_NOT_AUTHENTICATED)
         return
@@ -426,7 +425,7 @@ export class OnRoomChangeSpecialRule extends Command<
 > {
   async execute({ client, specialRule }) {
     try {
-      const u = await UserMetadata.findOne({ uid: client.auth?.uid })
+      const u = getPlayer()
       if (!u) {
         client.leave(CloseCodes.USER_NOT_AUTHENTICATED)
         return
@@ -673,18 +672,11 @@ export class InitializeBotsCommand extends Command<
 > {
   async execute({ ownerId }) {
     try {
-      const user = await UserMetadata.findOne({ uid: ownerId })
+      const user = getPlayer()
       if (user) {
-        const difficulty = { $gt: user.elo - 100, $lt: user.elo + 100 }
+        const bots = getBotsInEloRange(user.elo - 100, user.elo + 100).slice(0, 7)
 
-        const bots = await BotV2.find({ elo: difficulty }, [
-          "avatar",
-          "elo",
-          "name",
-          "id"
-        ]).limit(7)
-
-        if (bots) {
+        if (bots.length > 0) {
           bots.forEach((bot) => {
             this.state.users.set(
               bot.id,
@@ -730,25 +722,25 @@ export class OnAddBotCommand extends Command<PreparationRoom, OnAddBotPayload> {
       const { type } = data
       let bot: IBot | undefined
       if (typeof type === "object") {
-        // pick a specific bot chosen by the user
         bot = type
       } else {
-        // pick a random bot per difficulty
         const difficulty = type
-        let elo: FilterQuery<IBot> | undefined
-
+        let minElo = 0
+        let maxElo = Infinity
         switch (difficulty) {
           case BotDifficulty.EASY:
-            elo = { $lt: 800 }
+            maxElo = 800
             break
           case BotDifficulty.MEDIUM:
-            elo = { $gte: 800, $lt: 1100 }
+            minElo = 800
+            maxElo = 1100
             break
           case BotDifficulty.HARD:
-            elo = { $gte: 1100, $lt: 1400 }
+            minElo = 1100
+            maxElo = 1400
             break
           case BotDifficulty.EXTREME:
-            elo = { $gte: 1400 }
+            minElo = 1400
             break
         }
 
@@ -759,9 +751,8 @@ export class OnAddBotCommand extends Command<PreparationRoom, OnAddBotPayload> {
           }
         })
 
-        const bots = await BotV2.find(
-          { id: { $nin: existingBots }, elo, approved: true },
-          ["avatar", "elo", "name", "id"]
+        const bots = getBotsInEloRange(minElo, maxElo).filter(
+          (b) => !existingBots.includes(b.id) && b.approved
         )
 
         if (bots.length <= 0) {

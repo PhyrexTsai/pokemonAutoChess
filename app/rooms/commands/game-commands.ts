@@ -47,8 +47,8 @@ import Player from "../../models/colyseus-models/player"
 import { Pokemon, PokemonClasses } from "../../models/colyseus-models/pokemon"
 import { getSynergyStep } from "../../models/colyseus-models/synergies"
 import { Wanderer } from "../../models/colyseus-models/wanderer"
-import { IDetailledPokemon } from "../../models/mongo-models/bot-v2"
-import UserMetadata from "../../models/mongo-models/user-metadata"
+import { IDetailledPokemon } from "../../types/interfaces/bot"
+import { getPlayer } from "../../models/local-store"
 import PokemonFactory, {
   getPokemonBaseline
 } from "../../models/pokemon-factory"
@@ -236,7 +236,7 @@ export class OnPokemonCatchCommand extends Command<
         const shardsGained = wanderer.shiny
           ? SHARDS_PER_SHINY_UNOWN_WANDERER
           : SHARDS_PER_UNOWN_WANDERER
-        const u = await UserMetadata.findOne({ uid: client.auth.uid })
+        const u = getPlayer()
         if (u) {
           const c = u.pokemonCollection.get(unownIndex)
           if (c) {
@@ -251,7 +251,6 @@ export class OnPokemonCatchCommand extends Command<
               played: 0
             })
           }
-          u.save()
         }
       }
     } else if (wanderer.type === WandererType.CATCHABLE) {

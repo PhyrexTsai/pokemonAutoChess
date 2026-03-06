@@ -1,4 +1,3 @@
-import { HydratedDocument } from "mongoose"
 import {
   BoosterRarityProbability,
   EmotionCost,
@@ -315,8 +314,8 @@ export class CollectionUtils {
   }
 }
 
-export async function migrateShardsOfAltForms(
-  mongoUser: HydratedDocument<IUserMetadataMongo>
+export function migrateShardsOfAltForms(
+  mongoUser: IUserMetadataMongo
 ) {
   let modified = false
 
@@ -350,7 +349,5 @@ export async function migrateShardsOfAltForms(
     }
   }
 
-  if (modified) {
-    return await mongoUser.save()
-  }
+  return modified
 }

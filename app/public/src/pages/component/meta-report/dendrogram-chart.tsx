@@ -7,7 +7,7 @@ import {
   IBranchProfile,
   IClusterProfile,
   IDendrogram
-} from "../../../../../models/mongo-models/dendrogram"
+} from "../../../api/meta"
 import { Pkm, PkmIndex } from "../../../../../types/enum/Pokemon"
 import { Synergy } from "../../../../../types/enum/Synergy"
 import SynergyIcon from "../icons/synergy-icon"

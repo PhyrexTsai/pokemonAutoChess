@@ -14,9 +14,6 @@ import { logger, matchMaker } from "colyseus"
 import { CronJob } from "cron"
 import { server as app } from "./app.config"
 import { initializeMetrics } from "./metrics"
-import { initCronJobs } from "./services/cronjobs"
-import { fetchLeaderboards } from "./services/leaderboard"
-import { fetchMetaReports } from "./services/meta"
 
 /*
 Changed buffer size to 512kb to avoid warnings from colyseus. We need to scale down the amount of data we're sending so it gets sent in multiple packets or increase the buffer size even more.
@@ -31,23 +28,14 @@ async function main() {
     initializeMetrics()
     await listen(app)
     if (port === 2569) {
-      // only the first thread of the first instance will create the lobby and init cron jobs
+      // only the first thread of the first instance will create the lobby
       await matchMaker.createRoom("lobby", {})
       checkLobby()
-      initCronJobs()
     }
   } else {
     await listen(app, process.env.PORT ? parseInt(process.env.PORT) : 9000)
     await matchMaker.createRoom("lobby", {})
-    initCronJobs()
   }
-
-  logger.info("Fetching leaderboards...")
-  fetchLeaderboards()
-  setInterval(() => fetchLeaderboards(), 1000 * 60 * 10) // refresh every 10 minutes
-  logger.info("Fetching meta reports...")
-  fetchMetaReports()
-  setInterval(() => fetchMetaReports(), 1000 * 60 * 60 * 24) // refresh every 24 hours
 }
 
 function checkLobby() {

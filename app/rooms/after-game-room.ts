@@ -1,8 +1,7 @@
 import { Dispatcher } from "@colyseus/command"
 import { Client, CloseCode, Room } from "colyseus"
-import admin from "firebase-admin"
+import { getPlayer } from "../models/local-store"
 import AfterGamePlayer from "../models/colyseus-models/after-game-player"
-import UserMetadata from "../models/mongo-models/user-metadata"
 import { IAfterGamePlayer } from "../types"
 import { GameMode } from "../types/enum/Game"
 import { logger } from "../utils/logger"
@@ -55,16 +54,18 @@ export default class AfterGameRoom extends Room<{ state: AfterGameState }> {
   async onAuth(client: Client, options, context) {
     try {
       super.onAuth(client, options, context)
-      const token = await admin.auth().verifyIdToken(options.idToken)
-      const user = await admin.auth().getUser(token.uid)
-      const userProfile = await UserMetadata.findOne({ uid: user.uid })
-
-      if (!user.displayName) {
+      const player = getPlayer()
+      const uid = options.uid ?? options.idToken ?? player?.uid ?? "local"
+      const displayName = options.displayName ?? player?.displayName
+      if (!displayName) {
         throw "No display name"
-      } else if (userProfile?.banned) {
-        throw "User banned"
-      } else {
-        return user
+      }
+      return {
+        uid,
+        displayName,
+        email: "local@player",
+        photoURL: "",
+        metadata: { language: player?.language ?? "en" }
       }
     } catch (error) {
       logger.error(error)

@@ -1,5 +1,4 @@
 import { Room } from "@colyseus/sdk"
-import firebase from "firebase/compat/app"
 import { GameObjects, Scene } from "phaser"
 import OutlinePlugin from "phaser3-rex-plugins/plugins/outlinepipeline-plugin"
 import {
@@ -21,6 +20,7 @@ import {
   Transfer
 } from "../../../../types"
 import { DungeonMusic, DungeonPMDO } from "../../../../types/enum/Dungeon"
+import store from "../../stores"
 import { GamePhaseState } from "../../../../types/enum/Game"
 import { Item, ItemRecipe, Mulches } from "../../../../types/enum/Item"
 import { Pkm } from "../../../../types/enum/Pokemon"
@@ -87,7 +87,7 @@ export default class GameScene extends Scene {
     this.tilemaps = new Map()
     this.room = data.room
     this.spectate = data.spectate
-    this.uid = firebase.auth().currentUser?.uid
+    this.uid = store.getState().network.uid
     this.started = false
   }
 

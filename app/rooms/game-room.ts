@@ -1,7 +1,7 @@
 import { Dispatcher } from "@colyseus/command"
 import { MapSchema } from "@colyseus/schema"
 import { Client, CloseCode, Room } from "colyseus"
-import admin from "firebase-admin"
+import { getPlayer, pushGameHistory } from "../models/local-store"
 import { nanoid } from "nanoid"
 import {
   AdditionalPicksStages,
@@ -32,9 +32,7 @@ import { IGameUser } from "../models/colyseus-models/game-user"
 import Player from "../models/colyseus-models/player"
 import { Pokemon } from "../models/colyseus-models/pokemon"
 import { Wanderer } from "../models/colyseus-models/wanderer"
-import { BotV2, IDetailledPokemon } from "../models/mongo-models/bot-v2"
-import DetailledStatistic from "../models/mongo-models/detailled-statistic-v2"
-import UserMetadata from "../models/mongo-models/user-metadata"
+import { IDetailledPokemon } from "../types/interfaces/bot"
 import PokemonFactory from "../models/pokemon-factory"
 import {
   getPokemonData,
@@ -42,7 +40,6 @@ import {
 } from "../models/precomputed/precomputed-pokemon-data"
 import { PRECOMPUTED_POKEMONS_PER_RARITY } from "../models/precomputed/precomputed-rarity"
 import { getAdditionalsTier1, getSellPrice } from "../models/shop"
-import { fetchEventLeaderboard } from "../services/leaderboard"
 import { notificationsService } from "../services/notifications"
 import {
   IDragDropCombineMessage,
@@ -53,7 +50,6 @@ import {
   IGameMetadata,
   IPokemon,
   IPokemonEntity,
-  ISimplePlayer,
   Role,
   Title,
   Transfer
@@ -72,6 +68,7 @@ import {
   PkmProposition,
   PkmRegionalVariants
 } from "../types/enum/Pokemon"
+import { DungeonPMDO } from "../types/enum/Dungeon"
 import { SpecialGameRule } from "../types/enum/SpecialGameRule"
 import { Synergy } from "../types/enum/Synergy"
 import { WandererBehavior, WandererType } from "../types/enum/Wanderer"
@@ -280,7 +277,7 @@ export default class GameRoom extends Room<{ state: GameState }> {
           this.state.players.set(user.uid, player)
           this.state.botManager.addBot(player)
         } else {
-          const user = await UserMetadata.findOne({ uid: id })
+          const user = getPlayer()
           if (user) {
             // init player
             const player = new Player(
@@ -627,27 +624,25 @@ export default class GameRoom extends Room<{ state: GameState }> {
   async onAuth(client: Client, options, context) {
     try {
       super.onAuth(client, options, context)
-      const token = await admin.auth().verifyIdToken(options.idToken)
-      const user = await admin.auth().getUser(token.uid)
-
-      if (!user.displayName) {
-        logger.error("No display name for this account", user.uid)
-        throw new Error(
-          "No display name for this account. Please report this error."
-        )
+      const player = getPlayer()
+      const uid = options.uid ?? options.idToken ?? player?.uid ?? "local"
+      const displayName = options.displayName ?? player?.displayName
+      if (!displayName) {
+        throw new Error("No display name for this account.")
       }
-
-      return user
+      return {
+        uid,
+        displayName,
+        email: "local@player",
+        photoURL: "",
+        metadata: { language: player?.language ?? "en" }
+      }
     } catch (error) {
       logger.error(error)
     }
   }
 
   async onJoin(client: Client) {
-    const userProfile = await UserMetadata.findOne({ uid: client.auth.uid })
-    if (userProfile?.banned) {
-      throw "Account banned"
-    }
     this.dispatcher.dispatch(new OnJoinCommand(), { client })
     const pendingGame = await getPendingGame(this.presence, client.auth.uid)
     if (pendingGame?.gameId === this.roomId) {
@@ -782,29 +777,9 @@ export default class GameRoom extends Room<{ state: GameState }> {
         }
       })
 
-      const players: ISimplePlayer[] = [...humans, ...bots].map((p) =>
-        this.transformToSimplePlayer(p)
-      )
-
       if (this.state.stageLevel >= MinStageForGameToCount) {
         const eligibleToXP = this.state.players.size >= 2
         if (eligibleToXP) {
-          for (let i = 0; i < bots.length; i++) {
-            const botPlayer = bots[i]
-            const bot = await BotV2.findOne({ id: botPlayer.id })
-            if (bot) {
-              bot.elo = computeElo(
-                this.transformToSimplePlayer(botPlayer),
-                botPlayer.rank,
-                bot.elo,
-                players,
-                this.state.gameMode,
-                true
-              )
-              bot.save()
-            }
-          }
-
           for (let i = 0; i < humans.length; i++) {
             const player = humans[i]
             if (!player.hasLeftGame) {
@@ -855,8 +830,8 @@ export default class GameRoom extends Room<{ state: GameState }> {
     const rank = player.rank
     const exp = ExpPlace[rank - 1]
 
-    const usr = await UserMetadata.findOne({ uid: player.id })
-    if (usr) {
+    const usr = getPlayer()
+    if (usr && usr.uid === player.id) {
       // Track previous values for notifications
       const previousElo = usr.elo
       const previousRank = getRank(previousElo)
@@ -964,10 +939,14 @@ export default class GameRoom extends Room<{ state: GameState }> {
         player.synergies.forEach((v, k) => {
           v > 0 && synergiesMap.set(k, v)
         })
-        DetailledStatistic.create({
+        pushGameHistory({
           time: Date.now(),
           name: dbrecord.name,
-          pokemons: dbrecord.pokemons,
+          pokemons: dbrecord.pokemons.map((p) => ({
+            name: p.name,
+            avatar: p.avatar,
+            items: Array.from(p.items) as string[]
+          })),
           rank: dbrecord.rank,
           nbplayers: humans.length + bots.length,
           avatar: dbrecord.avatar,
@@ -975,43 +954,10 @@ export default class GameRoom extends Room<{ state: GameState }> {
           elo: elo,
           synergies: synergiesMap,
           gameMode: this.state.gameMode,
-          regions: player.regions
+          regions: player.regions as unknown as DungeonPMDO[]
         })
 
-        if (usr.eventFinishTime == null) {
-          const eventPointsGained = EventPointsPerRank[clamp(rank - 1, 0, 7)]
-          usr.eventPoints = clamp(
-            usr.eventPoints + eventPointsGained,
-            0,
-            MAX_EVENT_POINTS
-          )
-          usr.maxEventPoints = Math.max(usr.maxEventPoints, usr.eventPoints)
-          if (usr.maxEventPoints >= MAX_EVENT_POINTS) {
-            usr.eventFinishTime = new Date()
-
-            const nbFinishers = await UserMetadata.countDocuments({
-              eventFinishTime: { $ne: null }
-            })
-            if (nbFinishers === 0) {
-              player.titles.add(Title.VICTORIOUS)
-              this.presence.publish(
-                "announcement",
-                `${player.name} won the Victory Road race !`
-              )
-            }
-            player.titles.add(Title.FINISHER)
-            notificationsService.addNotification(
-              player.id,
-              "victory_road_finished",
-              `${nbFinishers + 1}`
-            )
-            fetchEventLeaderboard() // a new finisher is enough to justify fetching the leaderboard again immediately
-          }
-
-          if (usr.maxEventPoints >= 100) {
-            player.titles.add(Title.RUNNER)
-          }
-        }
+        // Event points removed (multiplayer-only feature)
       }
 
       if (player.life >= 100 && rank === 1) {
@@ -1033,7 +979,6 @@ export default class GameRoom extends Room<{ state: GameState }> {
         const pokemonCollectionItem = usr.pokemonCollection.get(index)
         if (pokemonCollectionItem) {
           pokemonCollectionItem.played = pokemonCollectionItem.played + 1
-          usr.markModified(`pokemonCollection.${index}.played`)
         } else {
           const newConfig: IPokemonCollectionItemMongo = {
             dust: 0,
@@ -1090,7 +1035,7 @@ export default class GameRoom extends Room<{ state: GameState }> {
 
       //logger.debug(usr);
       //usr.markModified('metadata');
-      usr.save()
+      // in-memory store — no explicit save needed
     }
   }
 

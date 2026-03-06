@@ -1,7 +1,7 @@
 import { Dispatcher } from "@colyseus/command"
 import { Client, IRoomCache, matchMaker, Room, subscribeLobby } from "colyseus"
 import { CronJob } from "cron"
-import admin from "firebase-admin"
+import { getPlayer } from "../models/local-store"
 import {
   INACTIVITY_TIMEOUT,
   MAX_CONCURRENT_PLAYERS_ON_LOBBY,
@@ -11,9 +11,6 @@ import {
 } from "../config"
 import Message from "../models/colyseus-models/message"
 import { TournamentSchema } from "../models/colyseus-models/tournament"
-import ChatV2 from "../models/mongo-models/chat-v2"
-import Tournament from "../models/mongo-models/tournament"
-import UserMetadata from "../models/mongo-models/user-metadata"
 import { notificationsService } from "../services/notifications"
 import { Emotion, Role, Title, Transfer } from "../types"
 import { CloseCodes } from "../types/enum/CloseCodes"
@@ -430,44 +427,27 @@ export default class CustomLobbyRoom extends Room {
   async onAuth(client: Client, options, context) {
     try {
       super.onAuth(client, options, context)
-      const token = await admin.auth().verifyIdToken(options.idToken)
-      const user = await admin.auth().getUser(token.uid)
-
-      if (!user.displayName) {
-        logger.error("No display name for this account", user.uid)
-        throw new Error(
-          "No display name for this account. Please report this error."
-        )
+      const player = getPlayer()
+      const uid = options.uid ?? options.idToken ?? player?.uid ?? "local"
+      const displayName = options.displayName ?? player?.displayName
+      if (!displayName) {
+        throw new Error("No display name for this account.")
       }
-
-      return user
+      return {
+        uid,
+        displayName,
+        email: "local@player",
+        photoURL: "",
+        metadata: { language: player?.language ?? "en" }
+      }
     } catch (error) {
       logger.error(`Error on authentication on lobby room`, error)
-      throw error // https://docs.colyseus.io/community/deny-player-join-a-room/
+      throw error
     }
   }
 
   async onJoin(client: Client) {
-    const user = await UserMetadata.findOne({ uid: client.auth.uid })
-    try {
-      if (user?.banned) {
-        throw new Error("Account banned")
-      } else if (
-        (this.state.ccu > MAX_CONCURRENT_PLAYERS_ON_SERVER ||
-          this.clients.length > MAX_CONCURRENT_PLAYERS_ON_LOBBY) &&
-        user?.role !== Role.ADMIN &&
-        user?.role !== Role.MODERATOR
-      ) {
-        throw new Error(
-          "This server is currently at maximum capacity. Please try again later or join another server."
-        )
-      }
-    } catch (error) {
-      //logger.info(error)
-      // biome-ignore lint/complexity/noUselessCatch: keep the option to log the error if needed
-      throw error // https://docs.colyseus.io/community/deny-player-join-a-room/
-    }
-
+    const user = getPlayer()
     this.dispatcher.dispatch(new OnJoinCommand(), { client, user })
   }
 
@@ -499,99 +479,11 @@ export default class CustomLobbyRoom extends Room {
   }
 
   async fetchChat() {
-    try {
-      const messages = await ChatV2.find({
-        time: { $gt: Date.now() - 86400000 }
-      })
-      if (messages) {
-        messages.forEach((message) => {
-          this.state.messages.push(
-            new Message(
-              message.id,
-              message.payload,
-              message.authorId,
-              message.author,
-              message.avatar,
-              message.time
-            )
-          )
-        })
-      }
-    } catch (error) {
-      logger.error(error)
-    }
+    // Chat history is transient in single-player mode (no MongoDB)
   }
 
   async fetchTournaments() {
-    try {
-      const tournaments = await Tournament.find().exec()
-      if (tournaments) {
-        this.state.tournaments.clear()
-        tournaments.forEach(async (tournament) => {
-          const startDate = new Date(tournament.startDate)
-
-          if (
-            tournament.finished &&
-            Date.now() > startDate.getTime() + TOURNAMENT_CLEANUP_DELAY
-          ) {
-            logger.debug(`Deleted old tournament ${tournament.name}`)
-            await Tournament.findByIdAndDelete(tournament.id)
-            return
-          }
-
-          this.state.tournaments.push(
-            new TournamentSchema(
-              tournament.id,
-              tournament.name,
-              tournament.startDate,
-              tournament.players,
-              tournament.brackets,
-              tournament.finished
-            )
-          )
-
-          if (
-            startDate.getTime() > Date.now() &&
-            this.tournamentCronJobs.has(tournament.id) === false
-          ) {
-            logger.debug(
-              "Start tournament cron job for",
-              new Date(tournament.startDate)
-            )
-            this.tournamentCronJobs.set(
-              tournament.id,
-              new CronJob(
-                startDate,
-                () => this.startTournament(tournament),
-                null,
-                true
-              )
-            )
-
-            if (
-              Date.now() <
-              startDate.getTime() - TOURNAMENT_REGISTRATION_TIME
-            ) {
-              logger.debug(
-                "Start tournament registrations opening cron job for",
-                new Date(startDate.getTime() - TOURNAMENT_REGISTRATION_TIME)
-              )
-              new CronJob(
-                new Date(startDate.getTime() - TOURNAMENT_REGISTRATION_TIME),
-                () =>
-                  this.state.addAnnouncement(
-                    `${tournament.name} is starting in one hour. Tournament registration is now open in the Tournament tab.`
-                  ),
-                null,
-                true
-              )
-            }
-          }
-        })
-      }
-    } catch (error) {
-      logger.error(error)
-    }
+    // Tournaments are multiplayer-only (no MongoDB)
   }
 
   startTournament(tournament: ITournament) {

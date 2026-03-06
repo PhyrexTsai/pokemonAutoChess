@@ -5,7 +5,7 @@ import { computeSynergies } from "../../../../../models/colyseus-models/synergie
 import {
   IBot,
   IDetailledPokemon
-} from "../../../../../models/mongo-models/bot-v2"
+} from "../../../../../types/interfaces/bot"
 import PokemonFactory from "../../../../../models/pokemon-factory"
 import { Emotion, PkmWithCustom, Role, Transfer } from "../../../../../types"
 import { Item } from "../../../../../types/enum/Item"
