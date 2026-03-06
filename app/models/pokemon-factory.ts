@@ -5,7 +5,7 @@ import { Pkm, PkmFamily, PkmIndex } from "../types/enum/Pokemon"
 import { TownEncounter, TownEncounters } from "../types/enum/TownEncounter"
 
 import { logger } from "../utils/logger"
-import Player from "./colyseus-models/player"
+import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
 import { Pokemon, PokemonClasses } from "./colyseus-models/pokemon"
 import { getPkmWithCustom } from "./colyseus-models/pokemon-customs"
 import { PVEStage } from "./pve-stages"
@@ -41,7 +41,7 @@ export default class PokemonFactory {
 
   static createPokemonFromName(
     name: Pkm,
-    custom?: PkmCustom | Player
+    custom?: PkmCustom | ISimulationPlayer
   ): Pokemon {
     let shiny = false
     let emotion = Emotion.NORMAL

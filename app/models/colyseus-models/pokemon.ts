@@ -58,6 +58,7 @@ import { clamp, min } from "../../utils/number"
 import { values } from "../../utils/schemas"
 import { SynergyEffects } from "../effects"
 import PokemonFactory from "../pokemon-factory"
+import type { ISimulationPlayer } from "../../types/interfaces/ISimulationPlayer"
 import Player from "./player"
 
 export class Pokemon extends Schema implements IPokemon {
@@ -211,7 +212,7 @@ export class Pokemon extends Schema implements IPokemon {
     simulationId: string
     isGhostBattle: boolean
     weather: Weather
-    player: Player
+    player: ISimulationPlayer
     teamEffects: Set<EffectEnum>
     opponentEffects: Set<EffectEnum>
   }) {
@@ -313,7 +314,7 @@ export class Pokemon extends Schema implements IPokemon {
     }
   }
 
-  applyStat(stat: Stat, value: number, player: Player | undefined) {
+  applyStat(stat: Stat, value: number, player: ISimulationPlayer | undefined) {
     switch (stat) {
       case Stat.ATK:
         this.addAttack(value)
@@ -402,7 +403,7 @@ export class Pokemon extends Schema implements IPokemon {
     this.speed = clamp(this.speed + value, 0, 300)
   }
 
-  addMaxHP(amount: number, player: Player | undefined) {
+  addMaxHP(amount: number, player: ISimulationPlayer | undefined) {
     this.hp = min(1)(this.hp + amount)
     this.maxHP = this.hp
     if (this.hp >= 1500 && player) {
@@ -6340,7 +6341,7 @@ export class Kecleon extends Pokemon {
   passive = Passive.PROTEAN2
 }
 
-function updateCastform(pokemon: Pokemon, weather: Weather, player: Player) {
+function updateCastform(pokemon: Pokemon, weather: Weather, player: ISimulationPlayer) {
   let weatherForm: Pkm = Pkm.CASTFORM
   if (weather === Weather.SNOW) {
     weatherForm = Pkm.CASTFORM_HAIL
@@ -6377,7 +6378,7 @@ export class Castform extends Pokemon {
   }: {
     isGhostBattle: boolean
     weather: Weather
-    player: Player
+    player: ISimulationPlayer
   }) {
     if (!isGhostBattle) {
       updateCastform(this, weather, player)
@@ -6410,7 +6411,7 @@ export class CastformSun extends Pokemon {
   }: {
     isGhostBattle: boolean
     weather: Weather
-    player: Player
+    player: ISimulationPlayer
   }) {
     if (!isGhostBattle) {
       updateCastform(this, weather, player)
@@ -6443,7 +6444,7 @@ export class CastformRain extends Pokemon {
   }: {
     isGhostBattle: boolean
     weather: Weather
-    player: Player
+    player: ISimulationPlayer
   }) {
     if (!isGhostBattle) {
       updateCastform(this, weather, player)
@@ -6476,7 +6477,7 @@ export class CastformHail extends Pokemon {
   }: {
     isGhostBattle: boolean
     weather: Weather
-    player: Player
+    player: ISimulationPlayer
   }) {
     if (!isGhostBattle) {
       updateCastform(this, weather, player)
@@ -14375,7 +14376,7 @@ export class Ursaluna extends Pokemon {
     player
   }: {
     weather: Weather
-    player: Player
+    player: ISimulationPlayer
   }) {
     if (weather === Weather.BLOODMOON) {
       player.transformPokemon(this, Pkm.URSALUNA_BLOODMOON)
@@ -14400,7 +14401,7 @@ export class UrsalunaBloodmoon extends Pokemon {
     player
   }: {
     weather: Weather
-    player: Player
+    player: ISimulationPlayer
   }) {
     if (weather !== Weather.BLOODMOON) {
       player.transformPokemon(this, Pkm.URSALUNA)
@@ -14684,7 +14685,7 @@ export class Rockruff extends Pokemon {
   skill = Ability.ACCELEROCK
 }
 
-function updateLycanroc(pokemon: Pokemon, weather: Weather, player: Player) {
+function updateLycanroc(pokemon: Pokemon, weather: Weather, player: ISimulationPlayer) {
   let weatherForm
   if (weather === Weather.NIGHT) {
     weatherForm = Pkm.LYCANROC_NIGHT

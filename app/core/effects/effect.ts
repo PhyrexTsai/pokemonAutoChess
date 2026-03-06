@@ -1,5 +1,6 @@
 import { MapSchema } from "@colyseus/schema"
 import Player from "../../models/colyseus-models/player"
+import type { ISimulationPlayer } from "../../types/interfaces/ISimulationPlayer"
 import { Pokemon } from "../../models/colyseus-models/pokemon"
 import GameRoom from "../../rooms/game-room"
 import { IPokemonEntity } from "../../types"
@@ -31,21 +32,21 @@ export class OnSpawnEffect extends Effect {
   constructor(
     effect?: (
       entity: PokemonEntity,
-      player?: Player,
+      player?: ISimulationPlayer,
       isSpawn?: boolean
     ) => void,
     origin?: EffectOrigin
   ) {
     super(effect, origin)
   }
-  override apply(entity: PokemonEntity, player?: Player, isSpawn?: boolean) {}
+  override apply(entity: PokemonEntity, player?: ISimulationPlayer, isSpawn?: boolean) {}
 }
 
 // effect applied when consuming a dish, either at the start of the fight or when eating a dish on the bench
 interface OnDishConsumedEffectArgs {
   pokemon: Pokemon
   dish: Item
-  player: Player
+  player: ISimulationPlayer
   entity?: PokemonEntity
 }
 export class OnDishConsumedEffect extends Effect {
@@ -73,7 +74,7 @@ export class OnItemRemovedEffect extends Effect {
 interface OnStageStartEffectArgs {
   player: Player
   pokemon?: Pokemon
-  room: GameRoom
+  room?: GameRoom
 }
 
 // applied in between rounds at the start of the picking phase
@@ -89,7 +90,7 @@ export class OnStageStartEffect extends Effect {
 
 interface OnSimulationStartEffectArgs {
   simulation: Simulation
-  player: Player
+  player: ISimulationPlayer
   team: MapSchema<IPokemonEntity>
   entity: PokemonEntity
 }
@@ -109,7 +110,7 @@ interface OnItemDroppedEffectArgs {
   pokemon: Pokemon
   player: Player
   item: Item
-  room: GameRoom
+  room?: GameRoom
 }
 
 // called when an item is dragged to a pokemon ; return false to prevent equipping the item

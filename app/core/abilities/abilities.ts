@@ -45,6 +45,7 @@ import { AccelerationEffect, FalinksFormationEffect } from "../effects/passives"
 import { FlyingProtectionEffect } from "../effects/synergies"
 import { getStrongestUnit, PokemonEntity } from "../pokemon-entity"
 import { DelayedCommand } from "../simulation-command"
+import type Player from "../../models/colyseus-models/player"
 import { AbilityStrategy } from "./ability-strategy"
 import {
   HiddenPowerAStrategy,
@@ -288,6 +289,7 @@ export class MindBlownStrategy extends AbilityStrategy {
         - Yellow: Deal [20,SP] TRUE and FLINCH for 5 seconds.
         - White: Give [20,SP] SHIELD and cure status afflictions for allies.
       */
+      if (!pokemon.simulation.room) return
       pokemon.simulation.room.clock.setTimeout(
         () => {
           if (
@@ -7531,7 +7533,7 @@ export class EggBombStrategy extends AbilityStrategy {
             pokemon.player &&
             chance(0.25, pokemon)
           ) {
-            giveRandomEgg(pokemon.player, false)
+            giveRandomEgg(pokemon.player as Player, false)
           }
           v.status.triggerArmorReduction(4000, v)
         }
@@ -13515,16 +13517,16 @@ export class MagnetPullStrategy extends AbilityStrategy {
   requiresTarget = false
   process(pokemon: PokemonEntity, board: Board, target: null, crit: boolean) {
     super.process(pokemon, board, target, crit)
-    if (pokemon.player) {
+    if (pokemon.player && pokemon.simulation.room) {
       const randomSteelPkm = pokemon.simulation.room.state.shop.magnetPull(
         pokemon,
-        pokemon.player
+        pokemon.player as Player
       )
       pokemon.simulation.room.spawnWanderingPokemon({
         pkm: randomSteelPkm,
         behavior: WandererBehavior.SPECTATE,
         type: WandererType.CATCHABLE,
-        player: pokemon.player
+        player: pokemon.player as Player
       })
     }
   }

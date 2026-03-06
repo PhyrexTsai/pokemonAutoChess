@@ -1,4 +1,4 @@
-import { IPokemonEntity, Transfer } from "../types"
+import { IPokemonEntity } from "../types"
 import { BoardEffect, EffectEnum } from "../types/enum/Effect"
 import { Orientation, OrientationKnockback, Team } from "../types/enum/Game"
 import { distanceC, distanceM } from "../utils/distance"
@@ -519,7 +519,8 @@ export class Board {
     if (!previousEffects.has(effect)) {
       this.boardEffects[y * this.columns + x].add(effect)
       // show anim effect client side
-      simulation.room.broadcast(Transfer.BOARD_EVENT, {
+      simulation.pushEvent({
+        type: "BOARD_EVENT",
         simulationId: simulation.id,
         effect,
         x,
@@ -545,7 +546,8 @@ export class Board {
         entityOnCell.effects.delete(effectToClear)
       }
       logger.debug(`Clearing board effect ${effectToClear} at (${x}, ${y})`)
-      simulation.room.broadcast(Transfer.CLEAR_BOARD_EVENT, {
+      simulation.pushEvent({
+        type: "CLEAR_BOARD_EVENT",
         simulationId: simulation.id,
         effect: effectToClear,
         x,
@@ -557,7 +559,8 @@ export class Board {
       if (entityOnCell) {
         existingEffects.forEach((effect) => entityOnCell.effects.delete(effect))
       }
-      simulation.room.broadcast(Transfer.CLEAR_BOARD_EVENT, {
+      simulation.pushEvent({
+        type: "CLEAR_BOARD_EVENT",
         simulationId: simulation.id,
         effect: null,
         x,

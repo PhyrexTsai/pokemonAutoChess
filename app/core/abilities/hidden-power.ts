@@ -1,4 +1,5 @@
 import { SetSchema } from "@colyseus/schema"
+import type Player from "../../models/colyseus-models/player"
 import { getUnownsPoolPerStage, RarityCost } from "../../config"
 import PokemonFactory from "../../models/pokemon-factory"
 import { getPokemonData } from "../../models/precomputed/precomputed-pokemon-data"
@@ -94,9 +95,9 @@ export class HiddenPowerEStrategy extends HiddenPowerStrategy {
   process(unown: PokemonEntity, board: Board, target: null, crit: boolean) {
     super.process(unown, board, target, crit)
     if (!unown.isGhostOpponent && unown.player) {
-      const egg = giveRandomEgg(unown.player, false)
+      const egg = giveRandomEgg(unown.player as Player, false)
       if (!egg) return
-      egg.stacks = egg.evolutionRule.getHatchTime(egg, unown.player) - 1
+      egg.stacks = egg.evolutionRule.getHatchTime(egg, unown.player as Player) - 1
     }
   }
 }
@@ -107,14 +108,14 @@ export class HiddenPowerFStrategy extends HiddenPowerStrategy {
     const nbFishes = 2
     const player = unown.player
 
-    if (player && !unown.isGhostOpponent && !player.isBot) {
+    if (player && !unown.isGhostOpponent && !player.isBot && unown.simulation.room) {
       for (let i = 0; i < nbFishes; i++) {
         const fish = unown.simulation.room.state.shop.pickFish(
-          player,
+          player as Player,
           Item.SUPER_ROD,
           unown.simulation.room.state
         )
-        unown.simulation.room.spawnOnBench(player, fish, "fishing")
+        unown.simulation.room.spawnOnBench(player as Player, fish, "fishing")
       }
     }
   }
@@ -402,7 +403,7 @@ export class HiddenPowerWStrategy extends HiddenPowerStrategy {
         pokemon.positionX = x
         pokemon.positionY = 0
         player.board.set(pokemon.id, pokemon)
-        unown.simulation.room.checkEvolutionsAfterPokemonAcquired(player.id)
+        unown.simulation.room?.checkEvolutionsAfterPokemonAcquired(player.id)
       }
     }
   }

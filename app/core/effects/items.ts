@@ -318,7 +318,7 @@ export class DojoTicketOnItemDroppedEffect extends OnItemDroppedEffect {
       player.pokemonsTrainingInDojo.push({
         pokemon: pokemonLeaving,
         ticketLevel,
-        returnStage: room.state.stageLevel + ([3, 4, 5][ticketLevel - 1] ?? 5)
+        returnStage: (room?.state.stageLevel ?? 0) + ([3, 4, 5][ticketLevel - 1] ?? 5)
       })
       removeInArray(player.items, item)
       return false // prevent item from being equipped
@@ -327,6 +327,7 @@ export class DojoTicketOnItemDroppedEffect extends OnItemDroppedEffect {
 }
 
 const chefCookEffect = new OnStageStartEffect(({ pokemon, player, room }) => {
+  if (!room) return
   if (!pokemon) return
   const chef = pokemon
 
@@ -424,6 +425,7 @@ const chefCookEffect = new OnStageStartEffect(({ pokemon, player, room }) => {
 export class FishingRodEffect extends OnStageStartEffect {
   constructor(rod: FishingRod) {
     super(({ player, room }) => {
+      if (!room) return
       const isAfterPVE = room.state.stageLevel - 1 in PVEStages
       if (
         rod &&
@@ -1195,7 +1197,7 @@ export const ItemEffects: { [i in Item]?: (Effect | (() => Effect))[] } = {
         pokemonEvolved.shiny = true
       }
 
-      room.checkEvolutionsAfterItemAcquired(player.id, pokemon)
+      room?.checkEvolutionsAfterItemAcquired(player.id, pokemon)
       player.updateSynergies()
       return false // prevent default logic after item equipped due to pokemon having evolved
     })

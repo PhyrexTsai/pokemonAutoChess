@@ -58,6 +58,7 @@ import {
   Title,
   Transfer
 } from "../types"
+import { BattleEvent } from "../types/BattleEvent"
 import { CloseCodes } from "../types/enum/CloseCodes"
 import { EloRank } from "../types/enum/EloRank"
 import { GameMode, PokemonActionState, Rarity } from "../types/enum/Game"
@@ -1401,6 +1402,103 @@ export default class GameRoom extends Room<{ state: GameState }> {
         player.rank = index + 1
       }
     })
+  }
+
+  processBattleEvent(event: BattleEvent) {
+    switch (event.type) {
+      case "ABILITY":
+        for (const client of this.clients) {
+          if (client.userData?.spectatedPlayerId) {
+            const spectatedPlayer = this.state.players.get(
+              client.userData.spectatedPlayerId
+            )
+            if (
+              spectatedPlayer &&
+              spectatedPlayer.simulationId === event.id
+            ) {
+              client.send(Transfer.ABILITY, {
+                id: event.id,
+                skill: event.skill,
+                ap: event.ap,
+                positionX: event.positionX,
+                positionY: event.positionY,
+                orientation: event.orientation,
+                targetX: event.targetX,
+                targetY: event.targetY,
+                delay: event.delay
+              })
+            }
+          }
+        }
+        break
+
+      case "POKEMON_DAMAGE":
+        this.broadcast(Transfer.POKEMON_DAMAGE, {
+          index: event.index,
+          type: event.attackType,
+          amount: event.amount,
+          x: event.x,
+          y: event.y,
+          id: event.id
+        })
+        break
+
+      case "POKEMON_HEAL":
+        this.broadcast(Transfer.POKEMON_HEAL, {
+          index: event.index,
+          type: event.healType,
+          amount: event.amount,
+          x: event.x,
+          y: event.y,
+          id: event.id
+        })
+        break
+
+      case "BOARD_EVENT":
+        this.broadcast(Transfer.BOARD_EVENT, {
+          simulationId: event.simulationId,
+          effect: event.effect,
+          x: event.x,
+          y: event.y
+        })
+        break
+
+      case "CLEAR_BOARD":
+        this.broadcast(Transfer.CLEAR_BOARD, {
+          simulationId: event.simulationId
+        })
+        break
+
+      case "CLEAR_BOARD_EVENT":
+        this.broadcast(Transfer.CLEAR_BOARD_EVENT, {
+          simulationId: event.simulationId,
+          effect: event.effect,
+          x: event.x,
+          y: event.y
+        })
+        break
+
+      case "SIMULATION_END":
+        this.broadcast(Transfer.SIMULATION_STOP)
+        this.rankPlayers()
+        break
+
+      case "PLAYER_INCOME": {
+        const incomeClient = this.clients.find(
+          (c) => c.auth?.uid === event.playerId
+        )
+        incomeClient?.send(Transfer.PLAYER_INCOME, event.amount)
+        break
+      }
+
+      case "PLAYER_DAMAGE": {
+        const damageClient = this.clients.find(
+          (c) => c.auth?.uid === event.playerId
+        )
+        damageClient?.send(Transfer.PLAYER_DAMAGE, event.amount)
+        break
+      }
+    }
   }
 
   onRoomDeleted(roomId) {

@@ -1036,7 +1036,12 @@ export class OnUpdateCommand extends Command<
 
         this.state.simulations.forEach((simulation) => {
           if (!simulation.finished) {
-            if (simulation.started) simulation.update(deltaTime)
+            if (simulation.started) {
+              const events = simulation.update(deltaTime)
+              for (const event of events) {
+                this.room.processBattleEvent(event)
+              }
+            }
             everySimulationFinished = false
           }
         })
@@ -1761,6 +1766,9 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
     this.state.simulations.forEach((simulation) => {
       if (!simulation.finished) {
         simulation.onFinish()
+        for (const event of simulation.flushEvents()) {
+          this.room.processBattleEvent(event)
+        }
       }
       simulation.stop()
     })
@@ -1930,13 +1938,15 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
           const weather = getWeather(player, null, pveBoard)
           const simulation = new Simulation(
             nanoid(),
-            this.room,
             player.board,
             pveBoard,
             player,
             undefined,
             this.state.stageLevel,
-            weather
+            weather,
+            this.state.specialGameRule ?? null,
+            false,
+            this.room
           )
           player.simulationId = simulation.id
           this.state.simulations.set(simulation.id, simulation)
@@ -1985,14 +1995,15 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
 
         const simulation = new Simulation(
           simulationId,
-          this.room,
           bluePlayer.board,
           redPlayer.board,
           bluePlayer,
           redPlayer,
           this.state.stageLevel,
           weather,
-          matchup.ghost
+          this.state.specialGameRule ?? null,
+          matchup.ghost,
+          this.room
         )
 
         this.state.simulations.set(simulation.id, simulation)
@@ -2020,9 +2031,9 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
             type: WandererType.UNOWN_SPELL,
             behavior: WandererBehavior.SPECTATE
           })
-          player.wanderers.set(id, wanderer)
+          ;(player as Player).wanderers.set(id, wanderer)
           this.clock.setTimeout(() => {
-            player.wanderers.delete(id)
+            ;(player as Player).wanderers.delete(id)
             if (simulation.finished) return
             const caster = new PokemonEntity(
               PokemonFactory.createPokemonFromName(unown),

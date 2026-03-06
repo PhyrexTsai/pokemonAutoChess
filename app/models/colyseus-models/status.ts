@@ -1,8 +1,8 @@
 import { Schema, type } from "@colyseus/schema"
-import { FIGHTING_PHASE_DURATION, ItemStats } from "../../config"
+import { ItemStats } from "../../config"
 import type { Board } from "../../core/board"
 import { PokemonEntity } from "../../core/pokemon-entity"
-import { IPokemonEntity, ISimulation, IStatus, Transfer } from "../../types"
+import { IPokemonEntity, ISimulation, IStatus } from "../../types"
 import { EffectEnum } from "../../types/enum/Effect"
 import { AttackType, Stat, Team } from "../../types/enum/Game"
 import { Item } from "../../types/enum/Item"
@@ -86,7 +86,7 @@ export default class Status extends Schema implements IStatus {
 
   constructor(simulation: ISimulation) {
     super()
-    const elapsedTime = FIGHTING_PHASE_DURATION - simulation.room.state.time
+    const elapsedTime = simulation.elapsedTime
     this.enrageDelay = this.enrageDelay - elapsedTime
   }
 
@@ -1059,7 +1059,8 @@ export default class Status extends Schema implements IStatus {
         attackType: AttackType.TRUE,
         shouldTargetGainMana: false
       })
-      pokemon.simulation.room.broadcast(Transfer.ABILITY, {
+      pokemon.simulation.pushEvent({
+        type: "ABILITY",
         id: pokemon.simulation.id,
         skill: "CURSE_EFFECT",
         positionX: pokemon.positionX,

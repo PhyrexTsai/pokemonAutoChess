@@ -9,14 +9,15 @@ import {
   ON_ATTACK_MANA
 } from "../config"
 import Count from "../models/colyseus-models/count"
-import Player from "../models/colyseus-models/player"
+import type Player from "../models/colyseus-models/player"
+import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
 import { Pokemon, PokemonClasses } from "../models/colyseus-models/pokemon"
 import Status from "../models/colyseus-models/status"
 import { SynergyEffects } from "../models/effects"
 import PokemonFactory from "../models/pokemon-factory"
 import { getPokemonData } from "../models/precomputed/precomputed-pokemon-data"
 import { getSellPrice } from "../models/shop"
-import { Emotion, IPokemon, IPokemonEntity, Title, Transfer } from "../types"
+import { Emotion, IPokemon, IPokemonEntity, Title } from "../types"
 import { Ability } from "../types/enum/Ability"
 import { EffectEnum } from "../types/enum/Effect"
 import {
@@ -210,7 +211,7 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     this.changePassive(pokemon.passive)
   }
 
-  update(dt: number, board: Board, player: Player | undefined) {
+  update(dt: number, board: Board, player: ISimulationPlayer | undefined) {
     this.state.update(this, dt, board, player)
   }
 
@@ -263,16 +264,12 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     )
   }
 
-  get player(): Player | undefined {
+  get player(): ISimulationPlayer | undefined {
     const player =
       this.baseTeam === Team.BLUE_TEAM
         ? this.simulation.bluePlayer
         : this.simulation.redPlayer
-    if (player instanceof Player) {
-      return player
-    } else {
-      return undefined // PvE or ghost player
-    }
+    return player ?? undefined
   }
 
   get inSpotlight(): boolean {
@@ -1270,7 +1267,7 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
 
     if (
       this.player &&
-      this.simulation.room.state.specialGameRule ===
+      this.simulation.specialGameRule ===
         SpecialGameRule.BLOOD_MONEY &&
       !target.isSpawn
     ) {
@@ -1683,32 +1680,19 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     targetY?: number
     delay?: number
   }) {
-    if (!this.simulation || !this.simulation.room) {
-      return
-    }
-    const room = this.simulation.room
-    const players = room.state.players
-    for (const client of room.clients) {
-      if (client.userData?.spectatedPlayerId) {
-        const spectatedPlayer = players.get(client.userData.spectatedPlayerId)
-        if (
-          spectatedPlayer &&
-          spectatedPlayer.simulationId === this.simulation.id
-        ) {
-          client.send(Transfer.ABILITY, {
-            id: this.simulation.id,
-            skill,
-            ap,
-            positionX,
-            positionY,
-            orientation,
-            targetX,
-            targetY,
-            delay
-          })
-        }
-      }
-    }
+    if (!this.simulation) return
+    this.simulation.pushEvent({
+      type: "ABILITY",
+      id: this.simulation.id,
+      skill,
+      positionX,
+      positionY,
+      orientation,
+      targetX,
+      targetY,
+      delay,
+      ap
+    })
   }
 
   changePassive(newPassive: Passive) {
@@ -1755,7 +1739,7 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     if (this.stacks === this.stacksRequired) {
       const pokemonEvolved = this.refToBoardPokemon.evolutionRule.tryEvolve(
         this.refToBoardPokemon as Pokemon,
-        this.player,
+        this.player as Player,
         this.simulation.stageLevel
       )
       if (pokemonEvolved) {

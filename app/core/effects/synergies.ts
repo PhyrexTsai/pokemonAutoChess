@@ -7,6 +7,7 @@ import {
   MONSTER_ATTACK_BUFF_PER_SYNERGY_LEVEL,
   MONSTER_MAX_HP_BUFF_FACTOR_PER_SYNERGY_LEVEL
 } from "../../config"
+import type Player from "../../models/colyseus-models/player"
 import { SynergyEffects } from "../../models/effects"
 import { Title } from "../../types"
 import { Ability } from "../../types/enum/Ability"
@@ -213,6 +214,7 @@ export class OnFieldDeathEffect extends OnDeathEffect {
       const effectsIndex = SynergyEffects[Synergy.FIELD].indexOf(effect)
       const heal = FIELD_HEAL_PER_SYNERGY_LEVEL[effectsIndex] ?? 0
       const speedBoost = FIELD_SPEED_BUFF_PER_SYNERGY_LEVEL[effectsIndex] ?? 0
+      if (!pokemon.simulation.room) return
       pokemon.simulation.room.clock.setTimeout(() => {
         board.forEach((x, y, value) => {
           if (
@@ -386,7 +388,7 @@ export const onFlowerMonDeath = new OnDeathEffect(({ pokemon, board }) => {
     pokemon.player.collectMulch(pokemon.stars)
   }
 
-  const potsAvailable = getFlowerPotsUnlocked(pokemon.player)
+  const potsAvailable = getFlowerPotsUnlocked(pokemon.player as Player)
   let nextPot: FlowerPot | undefined
   if (pokemon.team === Team.RED_TEAM) {
     nextPot = potsAvailable[pokemon.simulation.redFlowerSpawn]

@@ -1,6 +1,7 @@
 import { MapSchema, Schema, type } from "@colyseus/schema"
+import { BattleEvent } from "../types/BattleEvent"
 import { BOARD_HEIGHT, BOARD_WIDTH } from "../config"
-import Player from "../models/colyseus-models/player"
+import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
 import { Pokemon } from "../models/colyseus-models/pokemon"
 import { getSynergyStep } from "../models/colyseus-models/synergies"
 import { SynergyEffects } from "../models/effects"
@@ -12,8 +13,7 @@ import {
   IPokemon,
   IPokemonEntity,
   ISimulation,
-  Title,
-  Transfer
+  Title
 } from "../types"
 import { Ability } from "../types/enum/Ability"
 import { EffectEnum } from "../types/enum/Effect"
@@ -35,6 +35,7 @@ import {
 import { Passive } from "../types/enum/Passive"
 import { Pkm } from "../types/enum/Pokemon"
 import { Synergy } from "../types/enum/Synergy"
+import { SpecialGameRule } from "../types/enum/SpecialGameRule"
 import { Weather, WeatherEffects } from "../types/enum/Weather"
 import { IPokemonData } from "../types/interfaces/PokemonData"
 import { count, isIn, removeInArray } from "../utils/array"
@@ -51,6 +52,7 @@ import {
 import { values } from "../utils/schemas"
 import { AbilityStrategies, SurfStrategy } from "./abilities/abilities"
 import { Board } from "./board"
+import { computeRoundDamage } from "./compute-round-damage"
 import { DishEffects } from "./dishes"
 import Dps from "./dps"
 import {
@@ -89,7 +91,7 @@ export default class Simulation extends Schema implements ISimulation {
   @type("string") redPlayerId: string
   @type("boolean") isGhostBattle: boolean
   @type("boolean") started: boolean
-  room: GameRoom
+  room?: GameRoom
   blueEffects = new Set<EffectEnum>()
   redEffects = new Set<EffectEnum>()
   board: Board = new Board(BOARD_HEIGHT, BOARD_WIDTH)
@@ -97,28 +99,33 @@ export default class Simulation extends Schema implements ISimulation {
   blueFlowerSpawn: number = 0
   redFlowerSpawn: number = 0
   stageLevel = 0
-  bluePlayer: Player | undefined
-  redPlayer: Player | undefined
+  bluePlayer: ISimulationPlayer | undefined
+  redPlayer: ISimulationPlayer | undefined
   blueAbilitiesCast: Ability[] = []
   redAbilitiesCast: Ability[] = []
   stormLightningTimer = 0
   tidalWaveTimer = 0
   tidalWaveCounter = 0
+  specialGameRule: SpecialGameRule | null = null
+  private events: BattleEvent[] = []
+  elapsedTime: number = 0
 
   constructor(
     id: string,
-    room: GameRoom,
     blueBoard: MapSchema<Pokemon>,
     redBoard: MapSchema<Pokemon>,
-    bluePlayer: Player,
-    redPlayer: Player | undefined,
+    bluePlayer: ISimulationPlayer,
+    redPlayer: ISimulationPlayer | undefined,
     stageLevel: number,
     weather: Weather,
-    isGhostBattle = false
+    specialGameRule: SpecialGameRule | null = null,
+    isGhostBattle = false,
+    room?: GameRoom
   ) {
     super()
     this.id = id
     this.room = room
+    this.specialGameRule = specialGameRule
     this.bluePlayer = bluePlayer
     this.redPlayer = redPlayer
     this.bluePlayerId = bluePlayer.id
@@ -131,7 +138,7 @@ export default class Simulation extends Schema implements ISimulation {
 
     // beforeSimulationStart hooks
     const playerEffects: [
-      Player | undefined,
+      ISimulationPlayer | undefined,
       Set<EffectEnum>,
       Set<EffectEnum>
     ][] = [
@@ -485,7 +492,7 @@ export default class Simulation extends Schema implements ISimulation {
     dish: Item,
     pokemon: Pokemon,
     entity: PokemonEntity | undefined,
-    player: Player
+    player: ISimulationPlayer
   ) {
     const dishEffects = DishEffects[dish]
     if (!dishEffects) return
@@ -747,7 +754,8 @@ export default class Simulation extends Schema implements ISimulation {
                 pokemon.status.triggerProtect(2000)
                 pokemon.commands.push(
                   new DelayedCommand(() => {
-                    pokemon.simulation.room.broadcast(Transfer.ABILITY, {
+                    pokemon.simulation.pushEvent({
+                      type: "ABILITY",
                       id: pokemon.simulation.id,
                       skill: "COMET_CRASH",
                       positionX: farthestCoordinate.x,
@@ -1359,7 +1367,18 @@ export default class Simulation extends Schema implements ISimulation {
     }
   }
 
-  update(dt: number) {
+  pushEvent(event: BattleEvent) {
+    this.events.push(event)
+  }
+
+  flushEvents(): BattleEvent[] {
+    const flushed = this.events
+    this.events = []
+    return flushed
+  }
+
+  update(dt: number): BattleEvent[] {
+    this.elapsedTime += dt
     if (this.blueTeam.size === 0 || this.redTeam.size === 0) {
       this.onFinish()
     }
@@ -1429,7 +1448,8 @@ export default class Simulation extends Schema implements ISimulation {
             })
           }
         }
-        this.room.broadcast(Transfer.BOARD_EVENT, {
+        this.pushEvent({
+          type: "BOARD_EVENT",
           simulationId: this.id,
           effect: EffectEnum.LIGHTNING_STRIKE,
           x,
@@ -1453,6 +1473,10 @@ export default class Simulation extends Schema implements ISimulation {
         }
       }
     }
+
+    const flushed = this.events
+    this.events = []
+    return flushed
   }
 
   stop() {
@@ -1472,12 +1496,11 @@ export default class Simulation extends Schema implements ISimulation {
 
     this.weather = Weather.NEUTRAL
     this.winnerId = ""
-    this.room.broadcast(Transfer.SIMULATION_STOP)
-    // @ts-ignore: room shouldnt be used after simulation stop, so we can safely delete it
-    delete this.room // remove circular reference to help garbage collection
+    this.room = undefined
   }
 
   onFinish() {
+    if (this.finished) return
     this.finished = true
 
     if (this.blueTeam.size === 0 && this.redTeam.size > 0) {
@@ -1562,8 +1585,6 @@ export default class Simulation extends Schema implements ISimulation {
         )
       }
 
-      const client = this.room.clients.find((cli) => cli.auth.uid === playerId)
-
       // Handle win/loss outcomes
       if (this.winnerId === playerId) {
         // WIN
@@ -1573,7 +1594,11 @@ export default class Simulation extends Schema implements ISimulation {
             opponentPlayer?.items.includes(Item.LEADERS_CREST) ?? false
           const moneyGain = hasLeadersCrest ? 5 : 1
           player.addMoney(moneyGain, true, null)
-          client?.send(Transfer.PLAYER_INCOME, moneyGain)
+          this.pushEvent({
+            type: "PLAYER_INCOME",
+            playerId,
+            amount: moneyGain
+          })
           if (hasLeadersCrest && opponentPlayer) {
             removeInArray(opponentPlayer.items, Item.LEADERS_CREST)
             player.items.push(Item.LEADERS_CREST)
@@ -1581,14 +1606,18 @@ export default class Simulation extends Schema implements ISimulation {
         }
       } else {
         // LOSE
-        const playerDamage = this.room.computeRoundDamage(
+        const playerDamage = computeRoundDamage(
           opponentTeam,
           this.stageLevel
         )
         if (!isGhostPlayer) {
           player.life -= playerDamage
           if (playerDamage > 0) {
-            client?.send(Transfer.PLAYER_DAMAGE, playerDamage)
+            this.pushEvent({
+              type: "PLAYER_DAMAGE",
+              playerId,
+              amount: playerDamage
+            })
           }
         }
         if (opponentPlayer && !isGhostOpponent) {
@@ -1620,7 +1649,22 @@ export default class Simulation extends Schema implements ISimulation {
       }
     }
 
-    this.room.rankPlayers()
+    const loserId =
+      this.winnerId === this.bluePlayerId
+        ? this.redPlayerId
+        : this.winnerId === this.redPlayerId
+          ? this.bluePlayerId
+          : ""
+    this.pushEvent({
+      type: "SIMULATION_END",
+      visibleSimulationId: this.id,
+      visibleBluePlayerId: this.bluePlayerId,
+      visibleRedPlayerId: this.redPlayerId,
+      winnerId: this.winnerId,
+      loserId,
+      roundDamage: Math.ceil(this.stageLevel / 2),
+      weather: this.weather
+    })
   }
 
   applyCurse(effect: EffectEnum, opponentTeamNumber: number) {
@@ -1737,7 +1781,8 @@ export default class Simulation extends Schema implements ISimulation {
   ) {
     const isRed = team === Team.RED_TEAM
     const orientation = isRed ? Orientation.DOWN : Orientation.UP
-    this.room.broadcast(Transfer.ABILITY, {
+    this.pushEvent({
+      type: "ABILITY",
       id: this.id,
       skill: "TIDAL_WAVE",
       positionX: 0,
@@ -1746,7 +1791,8 @@ export default class Simulation extends Schema implements ISimulation {
       targetY: tidalWaveLevel - 1,
       orientation
     })
-    this.room.broadcast(Transfer.CLEAR_BOARD, {
+    this.pushEvent({
+      type: "CLEAR_BOARD",
       simulationId: this.id
     })
 
