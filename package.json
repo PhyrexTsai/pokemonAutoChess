@@ -25,7 +25,7 @@
   "main": "public/dist/server/app/index.js",
   "scripts": {
     "dev-client": "node esbuild.js --dev",
-    "dev-server": "tsx --tsconfig tsconfig.tsx.json watch ./app/index.ts",
+    "dev-server": "tsx watch --tsconfig tsconfig.tsx.json ./app/index.ts",
     "dev": "npm-run-all --parallel dev-*",
     "lint": "npx @biomejs/biome lint app/",
     "format": "npx @biomejs/biome format app/ --write",
