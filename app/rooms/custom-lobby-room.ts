@@ -1,7 +1,7 @@
 import { Dispatcher } from "@colyseus/command"
 import { Client, IRoomCache, matchMaker, Room, subscribeLobby } from "colyseus"
 import { CronJob } from "cron"
-import { getPlayer } from "../models/local-store"
+import { getPlayer, setPlayer } from "../models/local-store"
 import {
   INACTIVITY_TIMEOUT,
   MAX_CONCURRENT_PLAYERS_ON_LOBBY,
@@ -427,11 +427,34 @@ export default class CustomLobbyRoom extends Room {
   async onAuth(client: Client, options, context) {
     try {
       super.onAuth(client, options, context)
-      const player = getPlayer()
+      let player = getPlayer()
       const uid = options.uid ?? options.idToken ?? player?.uid ?? "local"
       const displayName = options.displayName ?? player?.displayName
       if (!displayName) {
         throw new Error("No display name for this account.")
+      }
+      // initialize server-side player on first connection
+      if (!player) {
+        setPlayer({
+          vispirite: "",
+          vispiriteStar: 0,
+          vispiriteLucky: false,
+          uid,
+          displayName,
+          elo: 1000,
+          level: 0,
+          exp: 0,
+          wins: 0,
+          booster: 0,
+          selectedEmotions: [],
+          pokemonCollection: new Map(),
+          titles: [],
+          title: "",
+          role: Role.BASIC,
+          avatar: "0019/Normal",
+          language: options.language ?? "en"
+        } as unknown as IUserMetadataMongo)
+        player = getPlayer()
       }
       return {
         uid,

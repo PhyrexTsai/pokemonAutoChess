@@ -84,7 +84,7 @@ export async function joinLobbyRoom(
           if (!room) {
             // otherwise, connect to the lobby room
             const idToken = await user.getIdToken()
-            room = await client.join<LobbyState>("lobby", { idToken })
+            room = await client.join<LobbyState>("lobby", { idToken, displayName: user.displayName })
           }
 
           if (!room) {
