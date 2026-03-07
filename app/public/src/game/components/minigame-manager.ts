@@ -1,7 +1,7 @@
 import { MapSchema } from "@colyseus/schema"
 import { t } from "i18next"
 import { TownEncounterSellPrice } from "../../../../config"
-import GameState from "../../../../rooms/states/game-state"
+import GameState from "../../../../models/colyseus-models/game-state"
 import {
   Emotion,
   IFloatingItem,

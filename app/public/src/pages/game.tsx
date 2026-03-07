@@ -8,7 +8,7 @@ import { IPokemonRecord } from "../../../models/colyseus-models/game-record"
 import { Wanderer } from "../../../models/colyseus-models/wanderer"
 import { PVEStages } from "../../../models/pve-stages"
 import AfterGameState from "../../../rooms/states/after-game-state"
-import GameState from "../../../rooms/states/game-state"
+import GameState from "../../../models/colyseus-models/game-state"
 import {
   IAfterGamePlayer,
   IBoardEvent,

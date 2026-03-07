@@ -103,7 +103,7 @@ import {
   OnSwitchBenchAndBoardCommand,
   OnUpdateCommand
 } from "./commands/game-commands"
-import GameState from "./states/game-state"
+import GameState from "../models/colyseus-models/game-state"
 
 export default class GameRoom extends Room<{ state: GameState }> {
   dispatcher: Dispatcher<this>

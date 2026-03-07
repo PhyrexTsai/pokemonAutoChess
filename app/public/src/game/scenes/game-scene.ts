@@ -12,7 +12,7 @@ import { FLOWER_POTS_POSITIONS_BLUE } from "../../../../core/flower-pots"
 import { canSell } from "../../../../core/pokemon-entity"
 import Player from "../../../../models/colyseus-models/player"
 import { PokemonClasses } from "../../../../models/colyseus-models/pokemon"
-import GameState from "../../../../rooms/states/game-state"
+import GameState from "../../../../models/colyseus-models/game-state"
 import {
   IDragDropCombineMessage,
   IDragDropItemMessage,

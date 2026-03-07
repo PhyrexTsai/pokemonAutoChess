@@ -33,7 +33,7 @@ import {
   UniquePool
 } from "../config"
 import { pickFirstPartners } from "../core/scribbles"
-import GameState from "../rooms/states/game-state"
+import GameState from "./colyseus-models/game-state"
 import { IPokemon, IPokemonEntity } from "../types"
 import { Ability } from "../types/enum/Ability"
 import { EffectEnum } from "../types/enum/Effect"

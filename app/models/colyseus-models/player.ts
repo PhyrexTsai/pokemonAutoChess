@@ -14,7 +14,7 @@ import {
 } from "../../core/evolution-rules"
 import { FlowerPot, FlowerPots, MulchStockCaps } from "../../core/flower-pots"
 import { PokemonEntity } from "../../core/pokemon-entity"
-import type GameState from "../../rooms/states/game-state"
+import type GameState from "./game-state"
 import { IPlayer, Role, Title } from "../../types"
 import { Ability } from "../../types/enum/Ability"
 import { DungeonPMDO } from "../../types/enum/Dungeon"

@@ -20,7 +20,7 @@ import { PokemonAvatarModel } from "../../../../models/colyseus-models/pokemon-a
 import PokemonFactory from "../../../../models/pokemon-factory"
 import { getPokemonData } from "../../../../models/precomputed/precomputed-pokemon-data"
 import { PVEStage, PVEStages } from "../../../../models/pve-stages"
-import GameState from "../../../../rooms/states/game-state"
+import GameState from "../../../../models/colyseus-models/game-state"
 import { IPokemon, IPokemonEntity } from "../../../../types"
 import { DungeonMusic } from "../../../../types/enum/Dungeon"
 import {
