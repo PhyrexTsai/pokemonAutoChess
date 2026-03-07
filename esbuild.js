@@ -13,12 +13,12 @@ let hashIndexPlugin = {
     build.onStart(() => {
       const files = fs.readdirSync("app/public/dist/client")
       files.forEach((file) => {
-        // remove old files
-        if (file.startsWith("index-") && file.endsWith(".js")) {
-          fs.unlinkSync(`app/public/dist/client/${file}`)
-        }
-        if (file.startsWith("index-") && file.endsWith(".css")) {
-          fs.unlinkSync(`app/public/dist/client/${file}`)
+        if (file.startsWith("index-") && (file.endsWith(".js") || file.endsWith(".css"))) {
+          try {
+            fs.unlinkSync(`app/public/dist/client/${file}`)
+          } catch (e) {
+            if (e.code !== "ENOENT") throw e
+          }
         }
       })
     })
