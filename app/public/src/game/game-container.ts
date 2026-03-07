@@ -1,5 +1,4 @@
-import { SchemaCallbackProxy } from "@colyseus/schema"
-import { getStateCallbacks, Room } from "@colyseus/sdk"
+import { getDecoderStateCallbacks, SchemaCallbackProxy } from "@colyseus/schema"
 import { t } from "i18next"
 import Phaser from "phaser"
 import MoveToPlugin from "phaser3-rex-plugins/plugins/moveto-plugin.js"
@@ -40,13 +39,13 @@ import {
 } from "../../../types/enum/Game"
 import { Weather } from "../../../types/enum/Weather"
 import type { NonFunctionPropNames } from "../../../types/HelperTypes"
-import { logger } from "../../../utils/logger"
 import { clamp, max } from "../../../utils/number"
 import { values } from "../../../utils/schemas"
 import { getCachedPortrait } from "../pages/component/game/game-pokemon-portrait"
 import { playSound, SOUNDS } from "../pages/utils/audio"
 import { transformBoardCoordinates } from "../pages/utils/utils"
 import { preference, subscribeToPreferences } from "../preferences"
+import { LocalGameEngine } from "../local-engine"
 import store from "../stores"
 import { changePlayer, setPlayer, setSimulation } from "../stores/GameStore"
 import { clearAbilityAnimations } from "./components/abilities-animations"
@@ -55,7 +54,7 @@ import { DEPTH } from "./depths"
 import GameScene from "./scenes/game-scene"
 
 class GameContainer {
-  room: Room<GameState>
+  engine: LocalGameEngine
   $: SchemaCallbackProxy<GameState>
   div: HTMLDivElement
   game: Phaser.Game | undefined
@@ -63,9 +62,9 @@ class GameContainer {
   simulation: Simulation | undefined
   uid: string
   spectate: boolean
-  constructor(div: HTMLDivElement, uid: string, room: Room<GameState>) {
-    this.room = room
-    this.$ = getStateCallbacks(room)
+  constructor(div: HTMLDivElement, uid: string, engine: LocalGameEngine) {
+    this.engine = engine
+    this.$ = getDecoderStateCallbacks(engine.decoder)
     this.div = div
     this.uid = uid
     this.spectate = false
@@ -305,7 +304,7 @@ class GameContainer {
     this.game = new Phaser.Game(config)
     this.game.domContainer.style.zIndex = DEPTH.PHASER_DOM_CONTAINER.toString()
     this.game.scene.start("gameScene", {
-      room: this.room,
+      engine: this.engine,
       spectate: this.spectate
     })
     this.game.scale.on("resize", this.resize, this)
@@ -341,10 +340,10 @@ class GameContainer {
   }
 
   initializeEvents() {
-    this.room.onMessage(Transfer.DRAG_DROP_CANCEL, (message) =>
+    this.engine.on(Transfer.DRAG_DROP_CANCEL, (message) =>
       this.handleDragDropCancel(message)
     )
-    const $state = this.$<GameState>(this.room.state)
+    const $state = this.$<GameState>(this.engine.clientState)
     $state.avatars.onAdd((avatar) => {
       const $avatar = this.$<PokemonAvatarModel>(avatar)
       this.gameScene?.minigameManager?.addPokemon(avatar)
@@ -429,13 +428,13 @@ class GameContainer {
       this.gameScene?.minigameManager?.removeSymbol(symbol)
     })
 
-    this.room.onError((err) => logger.error("room error", err))
+    // room.onError removed — no network errors in local engine
   }
 
   initializePlayer(player: Player) {
     //logger.debug("initializePlayer", player, player.id)
     if (this.uid == player.id || (this.spectate && !this.player)) {
-      this.room.send(Transfer.SPECTATE, this.uid) // always spectate yourself when loading the game initially
+      // In single-player, always spectate yourself (no-op, human is always the spectated player)
       this.setPlayer(player)
       this.initializeGame()
     }
@@ -604,7 +603,7 @@ class GameContainer {
   initializeSpectactor(uid: string) {
     if (this.uid === uid) {
       this.spectate = true
-      if (this.room.state.players.size > 0) {
+      if (this.engine.clientState.players.size > 0) {
         this.initializeGame()
       }
     }
@@ -757,7 +756,7 @@ class GameContainer {
 
   setPlayer(player: Player) {
     this.player = player
-    if (this.room.state.phase !== GamePhaseState.TOWN) {
+    if (this.engine.clientState.phase !== GamePhaseState.TOWN) {
       this.gameScene?.setMap(player.map)
     }
     this.gameScene && clearAbilityAnimations(this.gameScene)
@@ -776,15 +775,15 @@ class GameContainer {
   }
 
   onDragDrop(event: CustomEvent<IDragDropMessage>) {
-    this.room.send(Transfer.DRAG_DROP, event.detail)
+    this.engine.dragDropPokemon(event.detail)
   }
 
   onDragDropCombine(event: CustomEvent<IDragDropCombineMessage>) {
-    this.room.send(Transfer.DRAG_DROP_COMBINE, event.detail)
+    this.engine.dragDropCombine(event.detail)
   }
 
   onDragDropItem(event: CustomEvent<IDragDropItemMessage>) {
-    this.room.send(Transfer.DRAG_DROP_ITEM, event.detail)
+    this.engine.dragDropItem(event.detail)
   }
 }
 

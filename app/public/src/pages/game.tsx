@@ -40,7 +40,7 @@ import {
   useAppDispatch,
   useAppSelector
 } from "../hooks"
-import { authenticateUser, client, joinGame, rooms } from "../network"
+import { authenticateUser, client, engine, joinGame, rooms } from "../network"
 import store from "../stores"
 import {
   addDpsMeter,
@@ -108,7 +108,7 @@ export function getGameContainer(): GameContainer {
 }
 
 export function cyclePlayers(amt: number) {
-  const players = values(gameContainer.room?.state.players)
+  const players = values(gameContainer.engine?.clientState.players)
   playerClick(
     players[
       (players.findIndex((p) => p === gameContainer.player) +
@@ -121,14 +121,14 @@ export function cyclePlayers(amt: number) {
 
 export function playerClick(id: string) {
   const scene = getGameScene()
-  gameContainer?.room?.send(Transfer.SPECTATE, id)
+  // In single-player, spectate is a local operation
   if (scene?.spectate) {
-    if (gameContainer?.room?.state?.players) {
-      const spectatedPlayer = gameContainer?.room?.state?.players.get(id)
+    if (gameContainer?.engine?.clientState?.players) {
+      const spectatedPlayer = gameContainer?.engine?.clientState?.players.get(id)
       if (spectatedPlayer) {
         gameContainer.setPlayer(spectatedPlayer)
 
-        const simulation = gameContainer?.room?.state.simulations.get(
+        const simulation = gameContainer?.engine?.clientState.simulations.get(
           spectatedPlayer.simulationId
         )
         if (simulation) {
@@ -435,7 +435,7 @@ export default function Game() {
       logger.debug("initializing game")
       initialized.current = true
 
-      gameContainer = new GameContainer(container.current, uid, room)
+      gameContainer = new GameContainer(container.current, uid, engine)
 
       const gameElm = document.getElementById("game")
       gameElm?.addEventListener(Transfer.DRAG_DROP, ((
