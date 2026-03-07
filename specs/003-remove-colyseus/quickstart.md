@@ -12,23 +12,23 @@ The core strategy is **extract, don't rewrite**:
 
 1. Game logic from `game-commands.ts` → extracted as plain functions into `local-engine.ts`
 2. Game loop from `game-room.ts` → `setInterval` in `local-engine.ts`
-3. State listeners in `game.tsx` / `game-container.ts` → `EngineStateProxy` compatibility layer
-4. `network.ts` convenience functions → same names, body calls engine instead of room.send()
+3. State sync via **Schema encode/decode loopback** — `Encoder`/`Decoder` pair syncs `engineState` → `clientState` locally, all existing Schema listeners fire automatically. `game.tsx` / `game-container.ts` change only 1 line each (`getDecoderStateCallbacks(decoder)` replaces `getStateCallbacks(room)`)
+4. Transfer messages (ABILITY, DAMAGE, etc.) → simple EventEmitter on engine
+5. `network.ts` convenience functions → same names, body calls engine instead of room.send()
 
 ## Key Files to Create
 
 | File | Purpose | Estimated Lines |
 |------|---------|-----------------|
-| `app/public/src/local-engine.ts` | LocalGameEngine class + game loop | ~800 |
-| `app/public/src/engine-state-proxy.ts` | Compatibility layer for state listeners | ~150 |
+| `app/public/src/local-engine.ts` | LocalGameEngine class + game loop + loopback sync | ~1500 |
 
 ## Key Files to Modify
 
 | File | Change | Scope |
 |------|--------|-------|
 | `app/public/src/network.ts` | Replace Colyseus client with engine calls | Full rewrite (~260 lines) |
-| `app/public/src/pages/game.tsx` | Replace `getStateCallbacks(room)` with proxy | ~50 lines changed |
-| `app/public/src/game/game-container.ts` | Replace `getStateCallbacks(room)` with proxy | ~30 lines changed |
+| `app/public/src/pages/game.tsx` | Replace `getStateCallbacks(room)` with `getDecoderStateCallbacks(decoder)` | ~1 line changed |
+| `app/public/src/game/game-container.ts` | Replace `getStateCallbacks(room)` with `getDecoderStateCallbacks(decoder)` | ~1 line changed |
 | `app/public/src/game/lobby-logic.ts` | Simplify: remove room connection, add "Start Game" | ~200 lines changed |
 | `app/public/src/pages/preparation.tsx` | DELETE entirely | -265 lines |
 | `app/public/src/pages/after-game.tsx` | Read from engine state instead of room | ~30 lines changed |

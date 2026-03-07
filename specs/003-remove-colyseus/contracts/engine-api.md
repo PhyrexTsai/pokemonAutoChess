@@ -39,31 +39,33 @@ These replace `room.onMessage(Transfer.*, callback)` and `room.broadcast()`.
 | `Transfer.COOK` | `{pokemonId, dishes}` | server broadcast |
 | `Transfer.DIG` | `{pokemonId, buriedItem}` | server broadcast |
 
-## State Change Events (replaces Schema listeners)
+## State Change Events — Schema Encode/Decode Loopback
 
-| Event | Payload | Replaces |
-|-------|---------|----------|
-| `state:phase` | `(newPhase, oldPhase)` | `$state.listen("phase", cb)` |
-| `state:roundTime` | `(time)` | `$state.listen("roundTime", cb)` |
-| `state:stageLevel` | `(level)` | `$state.listen("stageLevel", cb)` |
-| `state:gameMode` | `(mode)` | `$state.listen("gameMode", cb)` |
-| `state:noElo` | `(value)` | `$state.listen("noElo", cb)` |
-| `state:specialGameRule` | `(rule)` | `$state.listen("specialGameRule", cb)` |
-| `playerAdded` | `(player)` | `$state.players.onAdd(cb)` |
-| `playerRemoved` | `(player)` | `$state.players.onRemove(cb)` |
-| `simulationAdded` | `(simulation, id)` | `$state.simulations.onAdd(cb)` |
-| `simulationRemoved` | `(simulation, id)` | `$state.simulations.onRemove(cb)` |
-| `player:shopChanged` | `(shop, index)` | `$player.shop.onChange(cb)` |
-| `player:boardAdded` | `(pokemon, id)` | `$player.board.onAdd(cb)` |
-| `player:boardRemoved` | `(pokemon, id)` | `$player.board.onRemove(cb)` |
-| `player:fieldChanged` | `(field, value, prev)` | `$player.listen(field, cb)` |
+**No custom event system needed.** State changes are handled automatically by the Schema encode/decode loopback:
+
+1. Engine mutates `engineState` (GameState Schema object)
+2. `encoder.encode(engineState)` produces binary patches
+3. `decoder.decode(patches, clientState)` applies patches to `clientState`
+4. All existing Schema callbacks fire automatically via `getDecoderStateCallbacks(decoder)`
+
+This means all existing listeners in `game.tsx` and `game-container.ts` work unchanged:
+- `$state.listen("phase", cb)` — fires when phase changes
+- `$state.players.onAdd(cb)` — fires when player added
+- `$player.board.onAdd(cb)` — fires when Pokemon added to board
+- `$(pokemon).listen("hp", cb)` — fires when Pokemon HP changes (every tick during battle)
+- etc.
+
+**Only Transfer messages** (ABILITY, DAMAGE, HEAL, etc. from Event Emissions above) need the EventEmitter — these are RPC-style events, not Schema state.
 
 ## Lifecycle
 
 ```
 engine = new LocalGameEngine()
-engine.startGame(config)    // initializes state, starts timer
-engine.on(event, callback)  // register listeners
+engine.startGame(config)    // initializes engineState+clientState, encoder/decoder, starts timer
+engine.on(event, callback)  // register Transfer message listeners
+const $ = getDecoderStateCallbacks(engine.decoder)  // Schema listener proxy
+const $state = $(engine.clientState)
+$state.listen("phase", cb)  // all existing listeners work unchanged
 // ... game plays ...
 engine.dispose()            // stops timer, saves to IndexedDB
 ```

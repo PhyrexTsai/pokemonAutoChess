@@ -12,24 +12,43 @@
 
 ## R2: State Listener Strategy
 
-**Decision**: Create an `EngineStateProxy` compatibility layer that wraps `LocalGameEngine` and provides `.listen()`, `.onAdd()`, `.onRemove()`, `.onChange()` methods matching the Colyseus `SchemaCallbackProxy` API. The engine emits fine-grained events after each mutation; the proxy maps them to the familiar listener interface.
+**Decision**: Use Schema encode/decode loopback — maintain two `GameState` instances (engine-side `engineState` + client-side `clientState`) connected via `Encoder`/`Decoder` from `@colyseus/schema`. After each engine tick or player action, call `encoder.encode(engineState)` → `decoder.decode(patch, clientState)`. All existing Schema callbacks (`.listen()`, `.onAdd()`, `.onRemove()`, `.onChange()`) fire automatically on `clientState`, exactly as they did when receiving server patches over WebSocket.
 
-**Rationale**: This minimizes changes in `game.tsx` (~300 lines of listeners) and `game-container.ts` (~200 lines). The conversion becomes:
-```
+**Rationale**: This is the **zero-change** approach for `game.tsx` and `game-container.ts`. The only change needed is replacing `getStateCallbacks(room)` with `getDecoderStateCallbacks(decoder)` — a 1-line substitution per file. All ~500 lines of Schema listeners across these files remain 100% untouched. Per-Pokemon field listeners (~20 fields each, every tick during battle) work automatically via Schema's `@type()` change tracking.
+
+```typescript
 // Before
 const $ = getStateCallbacks(room)
 const $state = $(room.state)
 $state.listen("phase", cb)
 
-// After
-const $state = createEngineStateProxy(engine)
-$state.listen("phase", cb)  // SAME callback, same API
+// After — only this line changes
+const $ = getDecoderStateCallbacks(decoder)
+const $state = $(engine.clientState)
+$state.listen("phase", cb)  // SAME callback, same API, ZERO changes
 ```
 
-**Why we can't use Schema callbacks directly**: `@colyseus/schema`'s `onAdd/onRemove/onChange` callbacks only fire on the decode path (when receiving encoded data from server). Direct `.set()` mutations don't trigger them. So we need our own event layer.
+**Verified**: `@colyseus/schema` v4.0.14 exports `Encoder`, `Decoder`, `getDecoderStateCallbacks` independently — no `@colyseus/sdk` or `Room` needed. The loopback pattern:
+
+```typescript
+import { Encoder, Decoder, getDecoderStateCallbacks } from "@colyseus/schema"
+
+const engineState = new GameState()   // engine mutates this
+const clientState = new GameState()   // client reads this
+const encoder = new Encoder(engineState)
+const decoder = new Decoder(clientState)
+
+// After mutations:
+const patches = encoder.encode(engineState)
+decoder.decode(patches, clientState)
+// → all .listen(), .onAdd(), .onRemove() fire automatically
+```
+
+**Why this beats EngineStateProxy**: The original EngineStateProxy approach required manually emitting events after every state mutation — hundreds of `emit()` calls, per-Pokemon field tracking (positionX, hp, shield, etc. changing every tick), and constant maintenance as new fields are added. The loopback approach delegates all change detection to Schema's existing `@type()` decorators, which is exactly what they were designed for.
 
 **Alternatives considered**:
-- Full listener rewrite (engine.on("phaseChanged", cb)): Cleaner but ~500+ line changes across 4 files. Violates "minimize changes".
+- EngineStateProxy (manual event emitter): Fatal flaw — requires manual emit after every mutation. Per-Pokemon field listeners (20+ fields × N entities × every tick) would be unmaintainable boilerplate.
+- Full listener rewrite: ~500+ line changes across 4 files. Violates "minimize changes".
 - Proxy/Object.defineProperty interception: Conflicts with Schema's own property setters.
 - Keep `@colyseus/sdk` for callbacks only: Defeats purpose of removing Colyseus.
 

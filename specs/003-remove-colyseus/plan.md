@@ -6,7 +6,7 @@
 
 ## Summary
 
-Replace the Colyseus networking layer with a `LocalGameEngine` that runs the game loop entirely in-browser. The engine reuses existing game logic (commands, simulation, shop, bot AI) extracted from `game-commands.ts` and `game-room.ts` as plain functions. Client-side state listeners are preserved via an `EngineStateProxy` compatibility layer that mimics the Colyseus `SchemaCallbackProxy` API, minimizing changes to `game.tsx` and `game-container.ts`. Networking packages (`@colyseus/sdk`, `colyseus`, `@colyseus/tools`, `@colyseus/drivers`) are removed; `@colyseus/schema` is retained for data structures (Phase 4 removal). Express server is retained for development (Phase 3 removal).
+Replace the Colyseus networking layer with a `LocalGameEngine` that runs the game loop entirely in-browser. The engine reuses existing game logic (commands, simulation, shop, bot AI) extracted from `game-commands.ts` and `game-room.ts` as plain functions. Client-side state listeners are preserved via a **Schema encode/decode loopback**: the engine maintains two `GameState` instances (engine-side + client-side) connected by `Encoder`/`Decoder` from `@colyseus/schema`. After each tick, patches are encoded and decoded locally, firing all existing Schema callbacks automatically — `game.tsx` and `game-container.ts` need only a 1-line change each (replace `getStateCallbacks(room)` with `getDecoderStateCallbacks(decoder)`). Transfer messages (ABILITY, DAMAGE, etc.) use a simple EventEmitter. Networking packages (`@colyseus/sdk`, `colyseus`, `@colyseus/tools`, `@colyseus/drivers`) are removed; `@colyseus/schema` is retained for data structures and loopback sync (Phase 4 removal). Express server is retained for development (Phase 3 removal).
 
 ## Technical Context
 
@@ -18,7 +18,7 @@ Replace the Colyseus networking layer with a `LocalGameEngine` that runs the gam
 **Project Type**: Browser game (SPA)
 **Performance Goals**: 60 FPS game loop, <16ms per tick
 **Constraints**: Offline-capable, zero server dependency for gameplay
-**Scale/Scope**: ~50 files modified, ~7600 lines deleted, ~1000 lines added
+**Scale/Scope**: ~50 files modified, ~7600 lines deleted, ~1500 lines added
 
 ## Constitution Check
 
@@ -31,7 +31,7 @@ Replace the Colyseus networking layer with a `LocalGameEngine` that runs the gam
 | III. Gameplay Fidelity | PASS | All game commands reused from existing code. Same logic, different delivery. |
 | IV. Atomic Traceability | PASS | Each task = one commit. Build must pass at every commit. |
 | V. Incremental Viability | PASS | App works at each step. Engine can coexist with server during transition. |
-| VI. Simplicity Over Abstraction | PASS | EngineStateProxy is a thin adapter (~150 lines), not a framework. No patterns "for flexibility". |
+| VI. Simplicity Over Abstraction | PASS | Schema encode/decode loopback reuses existing `@colyseus/schema` machinery. No custom abstraction needed. |
 
 **Gate result**: PASS — no violations.
 
@@ -71,16 +71,15 @@ app/
 ├── index.ts                        # Strip Colyseus, keep Express (Phase 3 deletes)
 ├── app.config.ts                   # Strip room defs, keep static routes
 └── public/src/
-    ├── local-engine.ts             # NEW: LocalGameEngine (~800 lines)
-    ├── engine-state-proxy.ts       # NEW: Compatibility layer (~150 lines)
+    ├── local-engine.ts             # NEW: LocalGameEngine + loopback sync (~1500 lines)
     ├── network.ts                  # REWRITE: engine calls replace room.send()
     ├── pages/
-    │   ├── game.tsx                # MODIFY: proxy replaces getStateCallbacks
+    │   ├── game.tsx                # MODIFY: getDecoderStateCallbacks replaces getStateCallbacks (~1 line)
     │   ├── after-game.tsx          # MODIFY: read engine state
     │   ├── preparation.tsx         # DELETE
     │   └── lobby.tsx               # MODIFY: add "Start Game", remove MP elements
     ├── game/
-    │   ├── game-container.ts       # MODIFY: proxy replaces getStateCallbacks
+    │   ├── game-container.ts       # MODIFY: getDecoderStateCallbacks replaces getStateCallbacks (~1 line)
     │   ├── lobby-logic.ts          # MODIFY: simplify for local flow
     │   └── scenes/game-scene.ts    # MINOR: remove room.send for loading
     └── stores/
@@ -90,7 +89,7 @@ app/
         └── NetworkStore.ts         # MODIFY: remove room references
 ```
 
-**Structure Decision**: Existing project structure preserved. Two new files added (`local-engine.ts`, `engine-state-proxy.ts`). No new directories. ~12 files deleted, ~15 files modified.
+**Structure Decision**: Existing project structure preserved. One new file added (`local-engine.ts`). `engine-state-proxy.ts` eliminated by Schema encode/decode loopback. No new directories. ~12 files deleted, ~15 files modified.
 
 ## Complexity Tracking
 

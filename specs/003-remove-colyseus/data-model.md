@@ -8,16 +8,20 @@ Central game controller replacing all 4 Colyseus rooms.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| state | GameState | Reuses existing Schema class (from game-state.ts) |
+| engineState | GameState | Engine-side state — mutated by game logic |
+| clientState | GameState | Client-side state — read by UI, updated via decode |
+| encoder | Encoder | `@colyseus/schema` Encoder for engineState |
+| decoder | Decoder | `@colyseus/schema` Decoder for clientState |
 | intervalId | number | Timer handle for game loop |
-| eventEmitter | EventEmitter | Typed event bus for Transfer + state events |
+| eventEmitter | EventEmitter | Typed event bus for Transfer messages (ABILITY, DAMAGE, etc.) |
 | humanPlayerId | string | The local player's ID |
 | botManager | BotManager | Reuses existing bot management logic |
 | miniGame | MiniGame | Reuses existing minigame class |
 
 **Methods (reuse existing command logic)**:
-- `startGame(config: GameConfig): void` — initializes state, players, shop, starts loop
-- `tick(deltaTime: number): void` — runs one game frame (reuses OnUpdateCommand logic)
+- `startGame(config: GameConfig): void` — initializes engineState+clientState, encoder/decoder, players, shop, starts loop
+- `tick(deltaTime: number): void` — runs one game frame (reuses OnUpdateCommand logic), then calls `syncState()`
+- `syncState(): void` — `encoder.encode(engineState)` → `decoder.decode(patches, clientState)` — fires all Schema callbacks
 - `buyPokemon(index: number): void` — reuses OnBuyPokemonCommand logic
 - `sellPokemon(pokemonId: string): void` — reuses OnSellPokemonCommand logic
 - `rerollShop(): void` — reuses OnShopRerollCommand logic
@@ -42,17 +46,9 @@ Configuration for starting a new game. Replaces preparation room state.
 | playerProfile | IUserMetadataJSON | Local player's profile from IndexedDB |
 | gameMode | GameMode | Default: RANKED or NORMAL |
 
-### EngineStateProxy (NEW)
+### EngineStateProxy — ELIMINATED
 
-Compatibility layer providing `.listen()` API over engine events.
-
-| Method | Signature | Maps to |
-|--------|-----------|---------|
-| listen | (prop, callback) => unsubscribe | engine.on(`state:${prop}`, callback) |
-| players.onAdd | (callback) => unsubscribe | engine.on("playerAdded", callback) |
-| players.onRemove | (callback) => unsubscribe | engine.on("playerRemoved", callback) |
-| simulations.onAdd | (callback) => unsubscribe | engine.on("simulationAdded", callback) |
-| simulations.onRemove | (callback) => unsubscribe | engine.on("simulationRemoved", callback) |
+**Not needed.** Replaced by Schema encode/decode loopback (see R2 in research.md). The `getDecoderStateCallbacks(decoder)` function from `@colyseus/schema` provides the exact same `.listen()`, `.onAdd()`, `.onRemove()`, `.onChange()` API that `getStateCallbacks(room)` did. No custom compatibility layer required.
 
 ### Existing Entities (PRESERVED, no changes)
 
