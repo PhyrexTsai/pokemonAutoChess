@@ -2,11 +2,32 @@ import React from "react"
 import { useTranslation } from "react-i18next"
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs"
 import { TOURNAMENT_REGISTRATION_TIME } from "../../../../../config"
-import { getTournamentStage } from "../../../../../core/tournament-logic"
 import {
   TournamentPlayerSchema,
   TournamentSchema
 } from "../../../../../models/colyseus-models/tournament"
+import type { ITournament, ITournamentPlayer } from "../../../../../types/interfaces/Tournament"
+
+function getRemainingPlayers(
+  tournament: ITournament
+): (ITournamentPlayer & { id: string })[] {
+  const remainingPlayers: (ITournamentPlayer & { id: string })[] = []
+  tournament.players.forEach((player, playerId) => {
+    if (!player.eliminated)
+      remainingPlayers.push({ id: playerId, ...player })
+  })
+  return remainingPlayers
+}
+
+function getTournamentStage(tournament: ITournament): string {
+  if (tournament.finished) return "Finished"
+  const remainingPlayers = getRemainingPlayers(tournament)
+  if (remainingPlayers.length <= 8) return "FINALS"
+  if (remainingPlayers.length <= 16) return "Semi-Finals"
+  if (remainingPlayers.length <= 32) return "Quarter-Finals"
+  const n = Math.floor(Math.log(remainingPlayers.length) / Math.log(2))
+  return `Round of ${Math.pow(2, n)}`
+}
 import { average } from "../../../../../utils/number"
 import { entries, values } from "../../../../../utils/schemas"
 import { useAppDispatch, useAppSelector } from "../../../hooks"
