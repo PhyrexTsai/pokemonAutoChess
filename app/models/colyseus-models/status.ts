@@ -84,8 +84,9 @@ export default class Status extends Schema implements IStatus {
   enrageDelay = 35000
   ccCooldown = 0
 
-  constructor(simulation: ISimulation) {
+  constructor(simulation?: ISimulation) {
     super()
+    if (!simulation) return // Schema Decoder creates instances without args
     const elapsedTime = simulation.elapsedTime
     this.enrageDelay = this.enrageDelay - elapsedTime
   }

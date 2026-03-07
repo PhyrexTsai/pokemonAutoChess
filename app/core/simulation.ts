@@ -86,11 +86,11 @@ export default class Simulation extends Schema implements ISimulation {
   @type({ map: PokemonEntity }) redTeam = new MapSchema<IPokemonEntity>()
   @type({ map: Dps }) blueDpsMeter = new MapSchema<Dps>()
   @type({ map: Dps }) redDpsMeter = new MapSchema<Dps>()
-  @type("string") id: string
-  @type("string") bluePlayerId: string
-  @type("string") redPlayerId: string
-  @type("boolean") isGhostBattle: boolean
-  @type("boolean") started: boolean
+  @type("string") id!: string
+  @type("string") bluePlayerId!: string
+  @type("string") redPlayerId!: string
+  @type("boolean") isGhostBattle!: boolean
+  @type("boolean") started!: boolean
   context?: IGameEngineContext
   blueEffects = new Set<EffectEnum>()
   redEffects = new Set<EffectEnum>()
@@ -111,27 +111,28 @@ export default class Simulation extends Schema implements ISimulation {
   elapsedTime: number = 0
 
   constructor(
-    id: string,
-    blueBoard: MapSchema<Pokemon>,
-    redBoard: MapSchema<Pokemon>,
-    bluePlayer: ISimulationPlayer,
-    redPlayer: ISimulationPlayer | undefined,
-    stageLevel: number,
-    weather: Weather,
+    id?: string,
+    blueBoard?: MapSchema<Pokemon>,
+    redBoard?: MapSchema<Pokemon>,
+    bluePlayer?: ISimulationPlayer,
+    redPlayer?: ISimulationPlayer | undefined,
+    stageLevel?: number,
+    weather?: Weather,
     specialGameRule: SpecialGameRule | null = null,
     isGhostBattle = false,
     context?: IGameEngineContext | any
   ) {
     super()
+    if (id === undefined) return // Schema Decoder creates instances without args
     this.id = id
     if (context) this.context = context as IGameEngineContext
     this.specialGameRule = specialGameRule
-    this.bluePlayer = bluePlayer
+    this.bluePlayer = bluePlayer!
     this.redPlayer = redPlayer
-    this.bluePlayerId = bluePlayer.id
+    this.bluePlayerId = bluePlayer!.id
     this.redPlayerId = redPlayer?.id ?? "pve"
-    this.stageLevel = stageLevel
-    this.weather = weather
+    this.stageLevel = stageLevel!
+    this.weather = weather!
     this.isGhostBattle = isGhostBattle
     this.board = new Board(BOARD_HEIGHT, BOARD_WIDTH)
     this.started = false
@@ -166,7 +167,7 @@ export default class Simulation extends Schema implements ISimulation {
       this.redEffects.add(weatherEffect)
     }
 
-    bluePlayer.effects.forEach((e) => this.blueEffects.add(e))
+    bluePlayer!.effects.forEach((e) => this.blueEffects.add(e))
     redPlayer?.effects.forEach((e) => this.redEffects.add(e))
 
     this.finished = false
@@ -180,7 +181,7 @@ export default class Simulation extends Schema implements ISimulation {
       this.tidalWaveTimer = 7000
     }
 
-    blueBoard.forEach((pokemon) => {
+    blueBoard!.forEach((pokemon) => {
       if (!isOnBench(pokemon)) {
         this.addPokemon(
           pokemon,
@@ -191,7 +192,7 @@ export default class Simulation extends Schema implements ISimulation {
       }
     })
 
-    redBoard.forEach((pokemon) => {
+    redBoard!.forEach((pokemon) => {
       if (!isOnBench(pokemon)) {
         this.addPokemon(
           pokemon,
@@ -202,7 +203,7 @@ export default class Simulation extends Schema implements ISimulation {
       }
     })
 
-    this.applyPostEffects(blueBoard, redBoard)
+    this.applyPostEffects(blueBoard!, redBoard!)
   }
 
   start() {
