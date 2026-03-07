@@ -3,21 +3,14 @@ import { Pkm } from "../../types/enum/Pokemon"
 import type { WandererBehavior, WandererType } from "../../types/enum/Wanderer"
 
 export class Wanderer extends Schema {
-  @type("string") id: string
-  @type("string") pkm: Pkm
+  @type("string") id!: string
+  @type("string") pkm!: Pkm
   @type("boolean") shiny: boolean = false
-  @type("string") type: WandererType
-  @type("string") behavior: WandererBehavior
+  @type("string") type!: WandererType
+  @type("string") behavior!: WandererBehavior
   @type("string") data: string = ""
 
-  constructor({
-    id,
-    pkm,
-    shiny,
-    type,
-    behavior,
-    data
-  }: {
+  constructor(params?: {
     id: string
     pkm: Pkm
     shiny: boolean
@@ -26,11 +19,12 @@ export class Wanderer extends Schema {
     data?: string
   }) {
     super()
-    this.id = id
-    this.pkm = pkm
-    this.shiny = shiny
-    this.type = type
-    this.behavior = behavior
-    this.data = data ?? ""
+    if (!params) return // Schema Decoder creates instances without args
+    this.id = params.id
+    this.pkm = params.pkm
+    this.shiny = params.shiny
+    this.type = params.type
+    this.behavior = params.behavior
+    this.data = params.data ?? ""
   }
 }
