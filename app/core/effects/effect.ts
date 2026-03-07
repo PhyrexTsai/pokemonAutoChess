@@ -2,8 +2,7 @@ import { MapSchema } from "@colyseus/schema"
 import Player from "../../models/colyseus-models/player"
 import type { ISimulationPlayer } from "../../types/interfaces/ISimulationPlayer"
 import { Pokemon } from "../../models/colyseus-models/pokemon"
-import GameRoom from "../../rooms/game-room"
-import { IPokemonEntity } from "../../types"
+import { IGameEngineContext, IPokemonEntity } from "../../types"
 import { Ability } from "../../types/enum/Ability"
 import { EffectEnum } from "../../types/enum/Effect"
 import { AttackType } from "../../types/enum/Game"
@@ -74,7 +73,7 @@ export class OnItemRemovedEffect extends Effect {
 interface OnStageStartEffectArgs {
   player: Player
   pokemon?: Pokemon
-  room?: GameRoom
+  context?: IGameEngineContext
 }
 
 // applied in between rounds at the start of the picking phase
@@ -110,7 +109,7 @@ interface OnItemDroppedEffectArgs {
   pokemon: Pokemon
   player: Player
   item: Item
-  room?: GameRoom
+  context?: IGameEngineContext
 }
 
 // called when an item is dragged to a pokemon ; return false to prevent equipping the item

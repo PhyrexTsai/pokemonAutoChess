@@ -717,7 +717,7 @@ export class OnDragDropItemCommand extends Command<
         pokemon,
         player,
         item,
-        room: this.room
+        context: this.room as any
       })
       if (shouldEquipItem === false) {
         client.send(Transfer.DRAG_DROP_CANCEL, message)
@@ -1666,7 +1666,7 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
           (p) => p instanceof OnStageStartEffect
         ) ?? []
       passiveEffects.forEach((effect) =>
-        effect.apply({ pokemon, player, room: this.room })
+        effect.apply({ pokemon, player, context: this.room as any })
       )
 
       // Held item effects on stage start
@@ -1675,7 +1675,7 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
           .flatMap((item) => ItemEffects[item])
           ?.filter((p) => p instanceof OnStageStartEffect) ?? []
       itemEffects.forEach((effect) =>
-        effect.apply({ pokemon, player, room: this.room })
+        effect.apply({ pokemon, player, context: this.room as any })
       )
 
       // Condition based evolutions on stage start
@@ -1688,7 +1688,7 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
     player.items.forEach((item) => {
       const itemEffects =
         ItemEffects[item]?.filter((p) => p instanceof OnStageStartEffect) ?? []
-      itemEffects.forEach((effect) => effect.apply({ player, room: this.room }))
+      itemEffects.forEach((effect) => effect.apply({ player, context: this.room as any }))
     })
   }
 
@@ -1870,7 +1870,7 @@ export class OnUpdatePhaseCommand extends Command<GameRoom> {
       minigamePhaseDuration += nbPlayersAlive * 2000
     }
     this.state.time = minigamePhaseDuration
-    this.room.miniGame.initialize(this.state, this.room)
+    this.room.miniGame.initialize(this.state)
 
     this.state.players.forEach((player: Player) => {
       if (player.alive) {

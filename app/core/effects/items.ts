@@ -298,7 +298,7 @@ const ogerponMaskEffect = new OnItemDroppedEffect(
 
 export class DojoTicketOnItemDroppedEffect extends OnItemDroppedEffect {
   constructor(ticketLevel: number) {
-    super(({ pokemon, player, room, item }) => {
+    super(({ pokemon, player, context, item }) => {
       if (NonPkm.includes(pokemon.name)) return false
       const substitute = PokemonFactory.createPokemonFromName(
         Pkm.SUBSTITUTE,
@@ -318,7 +318,7 @@ export class DojoTicketOnItemDroppedEffect extends OnItemDroppedEffect {
       player.pokemonsTrainingInDojo.push({
         pokemon: pokemonLeaving,
         ticketLevel,
-        returnStage: (room?.state.stageLevel ?? 0) + ([3, 4, 5][ticketLevel - 1] ?? 5)
+        returnStage: (context?.state.stageLevel ?? 0) + ([3, 4, 5][ticketLevel - 1] ?? 5)
       })
       removeInArray(player.items, item)
       return false // prevent item from being equipped
@@ -326,8 +326,8 @@ export class DojoTicketOnItemDroppedEffect extends OnItemDroppedEffect {
   }
 }
 
-const chefCookEffect = new OnStageStartEffect(({ pokemon, player, room }) => {
-  if (!room) return
+const chefCookEffect = new OnStageStartEffect(({ pokemon, player, context }) => {
+  if (!context) return
   if (!pokemon) return
   const chef = pokemon
 
@@ -370,12 +370,12 @@ const chefCookEffect = new OnStageStartEffect(({ pokemon, player, room }) => {
     if (dish === Item.SWEETS) {
       dishes = pickNRandomIn(Sweets, nbDishes)
     }
-    room.clock.setTimeout(async () => {
-      room.broadcast(Transfer.COOK, {
+    context.addDelayedAction(1000, () => {
+      context.emit(Transfer.COOK, {
         pokemonId: chef.id,
         dishes
       })
-      room.clock.setTimeout(() => {
+      context.addDelayedAction(2000, () => {
         dishes.forEach((dish, i) => {
           if (DishesGoingToInventory.includes(dish)) {
             player.items.push(dish)
@@ -417,25 +417,25 @@ const chefCookEffect = new OnStageStartEffect(({ pokemon, player, room }) => {
             pokemon.action = PokemonActionState.EAT
           }
         })
-      }, 2000)
-    }, 1000)
+      })
+    })
   }
 })
 
 export class FishingRodEffect extends OnStageStartEffect {
   constructor(rod: FishingRod) {
-    super(({ player, room }) => {
-      if (!room) return
-      const isAfterPVE = room.state.stageLevel - 1 in PVEStages
+    super(({ player, context }) => {
+      if (!context) return
+      const isAfterPVE = context.state.stageLevel - 1 in PVEStages
       if (
         rod &&
         getFreeSpaceOnBench(player.board) > 0 &&
         !isAfterPVE &&
-        room.state.stageLevel > 3 &&
+        context.state.stageLevel > 3 &&
         !player.isBot
       ) {
-        const fish = room.state.shop.pickFish(player, rod, room.state)
-        room.spawnOnBench(player, fish, "fishing")
+        const fish = context.state.shop.pickFish(player, rod, context.state)
+        context.spawnOnBench(player, fish, "fishing")
       }
     })
   }
@@ -1082,7 +1082,7 @@ export const ItemEffects: { [i in Item]?: (Effect | (() => Effect))[] } = {
   ],
 
   [Item.EXCHANGE_TICKET]: [
-    new OnItemDroppedEffect(({ pokemon, player, item, room }) => {
+    new OnItemDroppedEffect(({ pokemon, player, item, context }) => {
       return false // prevent item from being equipped
     })
   ],
@@ -1144,37 +1144,37 @@ export const ItemEffects: { [i in Item]?: (Effect | (() => Effect))[] } = {
   ),
 
   [Item.BLACK_AUGURITE]: [
-    new OnItemDroppedEffect(({ pokemon, player, item, room }) => {
+    new OnItemDroppedEffect(({ pokemon, player, item, context }) => {
       return pokemon.passive === Passive.SCYTHER // is then consummed by ItemEvolutionRule
     })
   ],
 
   [Item.MALICIOUS_ARMOR]: [
-    new OnItemDroppedEffect(({ pokemon, player, room, item }) => {
+    new OnItemDroppedEffect(({ pokemon, player, context, item }) => {
       return pokemon.passive === Passive.CHARCADET // is then consummed by ItemEvolutionRule
     })
   ],
 
   [Item.AUSPICIOUS_ARMOR]: [
-    new OnItemDroppedEffect(({ pokemon, player, room, item }) => {
+    new OnItemDroppedEffect(({ pokemon, player, context, item }) => {
       return pokemon.passive === Passive.CHARCADET // is then consummed by ItemEvolutionRule
     })
   ],
 
   [Item.SCROLL_OF_DARKNESS]: [
-    new OnItemDroppedEffect(({ pokemon, player, room, item }) => {
+    new OnItemDroppedEffect(({ pokemon, player, context, item }) => {
       return pokemon.passive === Passive.KUBFU // is then consummed by ItemEvolutionRule
     })
   ],
 
   [Item.SCROLL_OF_WATERS]: [
-    new OnItemDroppedEffect(({ pokemon, player, room, item }) => {
+    new OnItemDroppedEffect(({ pokemon, player, context, item }) => {
       return pokemon.passive === Passive.KUBFU // is then consummed by ItemEvolutionRule
     })
   ],
 
   [Item.RARE_CANDY]: [
-    new OnItemDroppedEffect(({ pokemon, player, room, item }) => {
+    new OnItemDroppedEffect(({ pokemon, player, context, item }) => {
       const evolution = pokemon.evolutionRule?.getEvolution(pokemon, player)
       if (
         !evolution ||
@@ -1197,7 +1197,7 @@ export const ItemEffects: { [i in Item]?: (Effect | (() => Effect))[] } = {
         pokemonEvolved.shiny = true
       }
 
-      room?.checkEvolutionsAfterItemAcquired(player.id, pokemon)
+      context?.checkEvolutionsAfterItemAcquired(player.id, pokemon)
       player.updateSynergies()
       return false // prevent default logic after item equipped due to pokemon having evolved
     })

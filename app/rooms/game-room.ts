@@ -117,7 +117,7 @@ export default class GameRoom extends Room<{ state: GameState }> {
     this.additionalUncommonPool = new Array<Pkm>()
     this.additionalRarePool = new Array<Pkm>()
     this.additionalEpicPool = new Array<Pkm>()
-    this.miniGame = new MiniGame(this)
+    this.miniGame = new MiniGame(this as any)
   }
 
   // When room is initialized
@@ -618,7 +618,7 @@ export default class GameRoom extends Room<{ state: GameState }> {
       }
     })
     this.state.botManager.updateBots()
-    this.miniGame.initialize(this.state, this)
+    this.miniGame.initialize(this.state)
   }
 
   async onAuth(client: Client, options, context) {

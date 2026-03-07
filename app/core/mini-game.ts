@@ -1,5 +1,5 @@
 import { MapSchema } from "@colyseus/schema"
-import { logger } from "colyseus"
+// logger replaced: was import { logger } from "colyseus"
 import {
   Bodies,
   Body,
@@ -21,9 +21,8 @@ import Player from "../models/colyseus-models/player"
 import { PokemonAvatarModel } from "../models/colyseus-models/pokemon-avatar"
 import { Portal, SynergySymbol } from "../models/colyseus-models/portal"
 import { getSynergyStep } from "../models/colyseus-models/synergies"
-import GameRoom from "../rooms/game-room"
 import GameState from "../models/colyseus-models/game-state"
-import { Transfer } from "../types"
+import { IGameEngineContext, Transfer } from "../types"
 import { DungeonPMDO } from "../types/enum/Dungeon"
 import { PokemonActionState } from "../types/enum/Game"
 import {
@@ -78,8 +77,10 @@ export class MiniGame {
   centerY: number = 235
   timeElapsed: number = 0
   rotationDirection: number = 1
+  context: IGameEngineContext
 
-  constructor(room: GameRoom) {
+  constructor(context: IGameEngineContext) {
+    this.context = context
     this.engine = Engine.create({ gravity: { x: 0, y: 0 } })
     this.bodies = new Map<string, Body>()
     this.alivePlayers = []
@@ -164,28 +165,25 @@ export class MiniGame {
           const itemBody = this.items?.has(bodyA.label) ? bodyA : bodyB
           const avatar = this.avatars.get(avatarBody.label)
           const item = this.items.get(itemBody.label)
-          const encounter = room.state.townEncounter
+          const encounter = this.context.state.townEncounter
 
           if (avatar?.itemId === "" && item?.avatarId === "") {
             if (encounter && encounter in TownEncounterSellPrice) {
-              const player = room.state.players.get(avatar.id)
-              const client = room.clients.find(
-                (cli) => cli.auth.uid === avatar.id
-              )
+              const player = this.context.state.players.get(avatar.id)
               const price =
-                room.state.specialGameRule === SpecialGameRule.TOWN_FESTIVAL
+                this.context.state.specialGameRule === SpecialGameRule.TOWN_FESTIVAL
                   ? 0
                   : TownEncounterSellPrice[encounter]!
               if ((player?.money ?? 0) < price) {
                 // too poor to buy one item from kecleon's shop
-                client?.send(Transfer.NPC_DIALOG, {
+                this.context.emit(Transfer.NPC_DIALOG, {
                   npc: encounter,
                   dialog: "npc_dialog.tell_price",
                   price: price
                 })
                 return
               } else {
-                client?.send(Transfer.NPC_DIALOG, {
+                this.context.emit(Transfer.NPC_DIALOG, {
                   npc: encounter,
                   dialog: "npc_dialog.thank_you"
                 })
@@ -256,7 +254,7 @@ export class MiniGame {
     this.symbols = symbols
   }
 
-  initialize(state: GameState, room: GameRoom) {
+  initialize(state: GameState) {
     const { players, stageLevel } = state
     this.timeElapsed = 0
     this.rotationDirection = 1
@@ -334,8 +332,8 @@ export class MiniGame {
     }
 
     if (PortalCarouselStages.includes(stageLevel)) {
-      this.initializePortalCarousel(stageLevel, room)
-      room.broadcast(
+      this.initializePortalCarousel(stageLevel)
+      this.context.emit(
         Transfer.PRELOAD_MAPS,
         values(this.portals!).map((p) => p.map)
       )
@@ -346,15 +344,12 @@ export class MiniGame {
     if (state.townEncounter === TownEncounters.SPINDA) {
       this.rotationDirection = chance(1 / 2) ? 1.5 : -1.5
       for (let i = 0; i < randomBetween(1, 3); i++) {
-        room.clock.setTimeout(
-          () => {
-            room.broadcast(Transfer.NPC_DIALOG, {
+        this.context.addDelayedAction(randomBetween(5000, 14000), () => {
+            this.context.emit(Transfer.NPC_DIALOG, {
               npc: TownEncounters.SPINDA
             })
             this.rotationDirection *= -1
-          },
-          randomBetween(5000, 14000)
-        )
+        })
       }
     } else if (state.townEncounter === TownEncounters.REGIROCK) {
       this.alivePlayers.forEach((player) => {
@@ -416,7 +411,7 @@ export class MiniGame {
     }
   }
 
-  initializePortalCarousel(stageLevel: number, room: GameRoom) {
+  initializePortalCarousel(stageLevel: number) {
     const nbPortals = clamp(this.alivePlayers.length + 1, 3, 9)
     for (let i = 0; i < nbPortals; i++) {
       const x = this.centerX + Math.cos((Math.PI * 2 * i) / nbPortals) * 115
@@ -430,7 +425,7 @@ export class MiniGame {
       Composite.add(this.engine.world, body)
     }
 
-    this.pickRandomSynergySymbols(stageLevel, room)
+    this.pickRandomSynergySymbols(stageLevel)
   }
 
   update(dt: number) {
@@ -582,7 +577,7 @@ export class MiniGame {
     return shuffleArray(items)
   }
 
-  pickRandomSynergySymbols(stageLevel: number, room: GameRoom) {
+  pickRandomSynergySymbols(stageLevel: number) {
     if (stageLevel === 0) {
       const symbols = pickNRandomIn(
         SynergyArray,
@@ -708,13 +703,10 @@ export class MiniGame {
         ...(this.symbolsByPortal.get(portalId) ?? []),
         symbol
       ])
-      room.clock.setTimeout(
-        () => {
+      this.context.addDelayedAction(1500 * (i / symbols.length), () => {
           symbol.index = Math.floor(i / portalIds.length)
           symbol.portalId = portalId
-        },
-        1500 * (i / symbols.length)
-      )
+      })
     })
 
     // assign a map to each portal

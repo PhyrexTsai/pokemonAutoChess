@@ -8,7 +8,7 @@ import { SynergyEffects } from "../models/effects"
 import PokemonFactory from "../models/pokemon-factory"
 import { getPokemonData } from "../models/precomputed/precomputed-pokemon-data"
 import { PRECOMPUTED_POKEMONS_PER_TYPE } from "../models/precomputed/precomputed-types"
-import GameRoom from "../rooms/game-room"
+import type { IGameEngineContext } from "../types"
 import {
   IPokemon,
   IPokemonEntity,
@@ -91,7 +91,7 @@ export default class Simulation extends Schema implements ISimulation {
   @type("string") redPlayerId: string
   @type("boolean") isGhostBattle: boolean
   @type("boolean") started: boolean
-  room?: GameRoom
+  context?: IGameEngineContext
   blueEffects = new Set<EffectEnum>()
   redEffects = new Set<EffectEnum>()
   board: Board = new Board(BOARD_HEIGHT, BOARD_WIDTH)
@@ -120,11 +120,11 @@ export default class Simulation extends Schema implements ISimulation {
     weather: Weather,
     specialGameRule: SpecialGameRule | null = null,
     isGhostBattle = false,
-    room?: GameRoom
+    context?: IGameEngineContext | any
   ) {
     super()
     this.id = id
-    this.room = room
+    if (context) this.context = context as IGameEngineContext
     this.specialGameRule = specialGameRule
     this.bluePlayer = bluePlayer
     this.redPlayer = redPlayer
@@ -1496,7 +1496,7 @@ export default class Simulation extends Schema implements ISimulation {
 
     this.weather = Weather.NEUTRAL
     this.winnerId = ""
-    this.room = undefined
+    this.context = undefined
   }
 
   onFinish() {

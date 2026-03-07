@@ -504,19 +504,19 @@ const MilceryFlavorEffect = new OnStageStartEffect(({ player, pokemon }) => {
 }, Passive.CREAM)
 
 const PachirisuBerryEffect = new OnStageStartEffect(
-  ({ pokemon, room, player }) => {
-    if (!pokemon || !player || !room) return
-    room.clock.setTimeout(() => {
+  ({ pokemon, context, player }) => {
+    if (!pokemon || !player || !context) return
+    context.addDelayedAction(1000, () => {
       if (chance(0.3, pokemon)) {
-        room.broadcast(Transfer.DIG, {
+        context.emit(Transfer.DIG, {
           pokemonId: pokemon.id,
           buriedItem: Item.SITRUS_BERRY
         })
-        room.clock.setTimeout(() => {
+        context.addDelayedAction(3000, () => {
           player.items.push(Item.SITRUS_BERRY)
-        }, 3000)
+        })
       }
-    }, 1000)
+    })
   },
   Passive.PACHIRISU
 )

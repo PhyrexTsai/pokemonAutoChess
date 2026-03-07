@@ -380,7 +380,7 @@ export interface IExperienceManager {
 }
 
 export interface ISimulation {
-  room?: GameRoom
+  context?: IGameEngineContext
   specialGameRule: import("./enum/SpecialGameRule").SpecialGameRule | null
   board: Board
   id: string
