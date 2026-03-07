@@ -1,4 +1,4 @@
-import { getStateCallbacks, Room } from "@colyseus/sdk"
+import { getDecoderStateCallbacks } from "@colyseus/schema"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -7,7 +7,6 @@ import { MinStageForGameToCount, RegionDetails } from "../../../config"
 import { IPokemonRecord } from "../../../models/colyseus-models/game-record"
 import { Wanderer } from "../../../models/colyseus-models/wanderer"
 import { PVEStages } from "../../../models/pve-stages"
-import AfterGameState from "../../../rooms/states/after-game-state"
 import GameState from "../../../models/colyseus-models/game-state"
 import {
   IAfterGamePlayer,
@@ -21,8 +20,6 @@ import {
   Role,
   Transfer
 } from "../../../types"
-import { CloseCodes, CloseCodesMessages } from "../../../types/enum/CloseCodes"
-import { ConnectionStatus } from "../../../types/enum/ConnectionStatus"
 import { GamePhaseState, Team } from "../../../types/enum/Game"
 import { Item } from "../../../types/enum/Item"
 import { Passive } from "../../../types/enum/Passive"
@@ -40,7 +37,7 @@ import {
   useAppDispatch,
   useAppSelector
 } from "../hooks"
-import { authenticateUser, client, engine, joinGame, rooms } from "../network"
+import { engine } from "../network"
 import store from "../stores"
 import {
   addDpsMeter,
@@ -75,8 +72,7 @@ import {
   updateExperienceManager
 } from "../stores/GameStore"
 import {
-  setConnectionStatus,
-  setErrorAlertMessage
+  setConnectionStatus
 } from "../stores/NetworkStore"
 import GameDpsMeter from "./component/game/game-dps-meter"
 import GameFinalRank from "./component/game/game-final-rank"
@@ -93,7 +89,7 @@ import { MainSidebar } from "./component/main-sidebar/main-sidebar"
 import { ConnectionStatusNotification } from "./component/system/connection-status-notification"
 import { saveHistoryEntry } from "../persistence/local-db"
 import { playMusic, preloadMusic } from "./utils/audio"
-import { LocalStoreKeys, localStore } from "./utils/store"
+import { ConnectionStatus } from "../../../types/enum/ConnectionStatus"
 
 let gameContainer: GameContainer
 
@@ -108,7 +104,7 @@ export function getGameContainer(): GameContainer {
 }
 
 export function cyclePlayers(amt: number) {
-  const players = values(gameContainer.engine?.clientState.players)
+  const players = values(engine.clientState.players)
   playerClick(
     players[
       (players.findIndex((p) => p === gameContainer.player) +
@@ -123,12 +119,12 @@ export function playerClick(id: string) {
   const scene = getGameScene()
   // In single-player, spectate is a local operation
   if (scene?.spectate) {
-    if (gameContainer?.engine?.clientState?.players) {
-      const spectatedPlayer = gameContainer?.engine?.clientState?.players.get(id)
+    if (engine.clientState?.players) {
+      const spectatedPlayer = engine.clientState.players.get(id)
       if (spectatedPlayer) {
         gameContainer.setPlayer(spectatedPlayer)
 
-        const simulation = gameContainer?.engine?.clientState.simulations.get(
+        const simulation = engine.clientState.simulations.get(
           spectatedPlayer.simulationId
         )
         if (simulation) {
@@ -155,10 +151,6 @@ export default function Game() {
   const dispatch = useAppDispatch()
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const connectionStatus = useAppSelector(
-    (state) => state.network.connectionStatus
-  )
-  const room: Room<GameState> | undefined = rooms.game
   const uid: string = useAppSelector((state) => state.network.uid)
   const spectatedPlayerId: string = useAppSelector(
     (state) => state.game.playerIdSpectated
@@ -168,8 +160,6 @@ export default function Game() {
   const spectate = spectatedPlayerId !== uid || !spectatedPlayer?.alive
 
   const initialized = useRef<boolean>(false)
-  const connecting = useRef<boolean>(false)
-  const connected = useRef<boolean>(false)
   const [loaded, setLoaded] = useState<boolean>(false)
   const [connectError, setConnectError] = useState<string>("")
   const [finalRank, setFinalRank] = useState<number>(0)
@@ -182,77 +172,20 @@ export default function Game() {
     useState<FinalRankVisibility>(FinalRankVisibility.HIDDEN)
   const container = useRef<HTMLDivElement>(null)
 
-  const MAX_ATTEMPS_RECONNECT = 3
-
-  const connectToGame = useCallback(
-    async (attempts = 1) => {
-      logger.debug(
-        `connectToGame attempt ${attempts} / ${MAX_ATTEMPS_RECONNECT}`
-      )
-      const cachedReconnectionToken = localStore.get(
-        LocalStoreKeys.RECONNECTION_GAME
-      )?.reconnectionToken
-      if (cachedReconnectionToken) {
-        connecting.current = true
-        const statusMessage = document.querySelector("#status-message")
-        if (statusMessage) {
-          statusMessage.textContent = `Connecting to game...`
-        }
-
-        client
-          .reconnect(cachedReconnectionToken)
-          .then((room: Room) => {
-            // store game token for 1 hour
-            localStore.set(
-              LocalStoreKeys.RECONNECTION_GAME,
-              {
-                reconnectionToken: room.reconnectionToken,
-                roomId: room.roomId
-              },
-              60 * 60
-            )
-            joinGame(room)
-            connected.current = true
-            connecting.current = false
-            dispatch(setConnectionStatus(ConnectionStatus.CONNECTED))
-          })
-          .catch((error) => {
-            if (attempts < MAX_ATTEMPS_RECONNECT) {
-              setTimeout(async () => await connectToGame(attempts + 1), 1000)
-            } else {
-              let connectError = error.message
-              if (error.code === 4212) {
-                // room disposed
-                connectError = "This game does no longer exists"
-              }
-              //TODO: handle more known error codes with informative messages
-              setConnectError(connectError)
-              dispatch(setConnectionStatus(ConnectionStatus.CONNECTION_FAILED))
-              logger.error("reconnect error", error)
-            }
-          })
-      } else {
-        navigate("/") // no reconnection token, login again
-      }
-    },
-    [client, dispatch]
-  )
-
   const leave = useCallback(async () => {
     const afterPlayers = new Array<IAfterGamePlayer>()
-
-    const token = uid
 
     if (gameContainer && gameContainer.game) {
       gameContainer.game.destroy(true)
     }
 
-    const nbPlayers = room?.state.players.size ?? 0
+    const state = engine.clientState
+    const nbPlayers = state.players.size ?? 0
     const hasLeftBeforeEnd =
-      connectedPlayer?.alive === true && room?.state?.gameFinished === false
+      connectedPlayer?.alive === true && state.gameFinished === false
 
     if (nbPlayers > 0) {
-      room?.state.players.forEach((p) => {
+      state.players.forEach((p) => {
         const afterPlayer: IAfterGamePlayer = {
           elo: p.elo,
           games: p.games,
@@ -301,14 +234,14 @@ export default function Game() {
     }
 
     const eligibleToXP =
-      nbPlayers >= 2 && (room?.state.stageLevel ?? 0) >= MinStageForGameToCount
+      nbPlayers >= 2 && (state.stageLevel ?? 0) >= MinStageForGameToCount
     const eligibleToELO =
       nbPlayers >= 2 &&
-      ((room?.state.stageLevel ?? 0) >= MinStageForGameToCount ||
+      ((state.stageLevel ?? 0) >= MinStageForGameToCount ||
         hasLeftBeforeEnd) &&
-      !room?.state.noElo &&
+      !state.noElo &&
       afterPlayers.filter((p) => p.role !== Role.BOT).length >= 2
-    const gameMode = room?.state.gameMode
+    const gameMode = state.gameMode
 
     // Save game history entry to IndexedDB
     const me = afterPlayers.find((p) => p.id === uid)
@@ -335,27 +268,18 @@ export default function Game() {
       }).catch(() => {})
     }
 
-    const r = await client.create("after-game", {
+    // Store after-game data in engine for after-game page to read
+    ;(engine as any).__afterGameData = {
       players: afterPlayers,
-      idToken: token,
       eligibleToXP,
       eligibleToELO,
       gameMode
-    })
-    localStore.set(
-      LocalStoreKeys.RECONNECTION_AFTER_GAME,
-      { reconnectionToken: r.reconnectionToken, roomId: r.roomId },
-      30
-    )
-    if (r.connection.isOpen) {
-      await r.leave(false)
     }
+
+    engine.dispose()
     dispatch(leaveGame(0))
     navigate("/after")
-    if (room?.connection.isOpen) {
-      room.leave()
-    }
-  }, [client, dispatch, room])
+  }, [dispatch, connectedPlayer, uid])
 
   const spectateTillTheEnd = () => {
     setFinalRankVisibility(FinalRankVisibility.CLOSED)
@@ -415,25 +339,13 @@ export default function Game() {
   }, [])
 
   useEffect(() => {
-    const connect = () => {
-      logger.debug("connecting to game")
-      authenticateUser().then(async (user) => {
-        if (user && !connecting.current) {
-          connecting.current = true
-          await connectToGame()
-        }
-      })
-    }
-
-    if (!connected.current) {
-      connect()
-    } else if (
+    if (
       !initialized.current &&
-      room != undefined &&
       container?.current
     ) {
       logger.debug("initializing game")
       initialized.current = true
+      dispatch(setConnectionStatus(ConnectionStatus.CONNECTED))
 
       gameContainer = new GameContainer(container.current, uid, engine)
 
@@ -454,21 +366,21 @@ export default function Game() {
         gameContainer.onDragDropCombine(event)
       }) as EventListener)
 
-      room.onMessage(Transfer.LOADING_COMPLETE, () => {
+      engine.on(Transfer.LOADING_COMPLETE, () => {
         setLoaded(true)
       })
-      room.onMessage(Transfer.FINAL_RANK, (finalRank) => {
+      engine.on(Transfer.FINAL_RANK, (finalRank) => {
         setFinalRank(finalRank)
         setFinalRankVisibility(FinalRankVisibility.VISIBLE)
       })
-      room.onMessage(Transfer.PRELOAD_MAPS, async (maps) => {
+      engine.on(Transfer.PRELOAD_MAPS, async (maps) => {
         logger.info("preloading maps", maps)
         const gameScene = getGameScene()
         if (gameScene) {
           await gameScene.preloadMaps(maps)
           gameScene.load
             .once("complete", () => {
-              if (room.state.phase !== GamePhaseState.TOWN) {
+              if (engine.clientState.phase !== GamePhaseState.TOWN) {
                 // map loaded after the end of the portal carousel stage, we swap it now. better later than never
                 gameContainer &&
                   gameContainer.player &&
@@ -478,7 +390,7 @@ export default function Game() {
             .start()
         }
       })
-      room.onMessage(Transfer.SHOW_EMOTE, (message) => {
+      engine.on(Transfer.SHOW_EMOTE, (message) => {
         const g = getGameScene()
         if (
           g?.minigameManager?.pokemons?.size &&
@@ -492,9 +404,9 @@ export default function Game() {
           g.board.showEmote(message.id, message?.emote)
         }
       })
-      room.onMessage(
+      engine.on(
         Transfer.COOK,
-        async (message: { pokemonId: string; dishes: Item[] }) => {
+        (message: { pokemonId: string; dishes: Item[] }) => {
           const g = getGameScene()
           if (g && g.board) {
             const pokemon = g.board.pokemons.get(message.pokemonId)
@@ -505,9 +417,9 @@ export default function Game() {
         }
       )
 
-      room.onMessage(
+      engine.on(
         Transfer.DIG,
-        async (message: { pokemonId: string; buriedItem: Item | null }) => {
+        (message: { pokemonId: string; buriedItem: Item | null }) => {
           setTimeout(() => {
             const g = getGameScene()
             if (g && g.board) {
@@ -520,19 +432,19 @@ export default function Game() {
         }
       )
 
-      room.onMessage(Transfer.POKEMON_DAMAGE, (message) => {
+      engine.on(Transfer.POKEMON_DAMAGE, (message) => {
         gameContainer.handleDisplayDamage(message)
       })
 
-      room.onMessage(Transfer.ABILITY, (message) => {
+      engine.on(Transfer.ABILITY, (message) => {
         gameContainer.handleDisplayAbility(message)
       })
 
-      room.onMessage(Transfer.POKEMON_HEAL, (message) => {
+      engine.on(Transfer.POKEMON_HEAL, (message) => {
         gameContainer.handleDisplayHeal(message)
       })
 
-      room.onMessage(Transfer.PLAYER_DAMAGE, (value) => {
+      engine.on(Transfer.PLAYER_DAMAGE, (value) => {
         toast(
           <div className="toast-player-damage">
             <span style={{ verticalAlign: "middle" }}>-{value}</span>
@@ -542,9 +454,9 @@ export default function Game() {
         )
       })
 
-      room.onMessage(Transfer.PLAYER_INCOME, showMoneyToast)
+      engine.on(Transfer.PLAYER_INCOME, showMoneyToast)
 
-      room.onMessage(Transfer.BOARD_EVENT, (event: IBoardEvent) => {
+      engine.on(Transfer.BOARD_EVENT, (event: IBoardEvent) => {
         if (gameContainer.game) {
           const g = getGameScene()
           if (g?.battle?.simulation?.id === event.simulationId) {
@@ -553,8 +465,7 @@ export default function Game() {
         }
       })
 
-      room.onMessage(Transfer.CLEAR_BOARD_EVENT, (event: IBoardEvent) => {
-        //logger.debug("Received CLEAR_BOARD_EVENT", event)
+      engine.on(Transfer.CLEAR_BOARD_EVENT, (event: IBoardEvent) => {
         if (gameContainer.game) {
           const g = getGameScene()
           if (g?.battle?.simulation?.id === event.simulationId) {
@@ -563,7 +474,7 @@ export default function Game() {
         }
       })
 
-      room.onMessage(
+      engine.on(
         Transfer.CLEAR_BOARD,
         (event: { simulationId: string }) => {
           if (gameContainer.game) {
@@ -575,7 +486,7 @@ export default function Game() {
         }
       )
 
-      room.onMessage(Transfer.SIMULATION_STOP, () => {
+      engine.on(Transfer.SIMULATION_STOP, () => {
         if (gameContainer.game) {
           const g = getGameScene()
           if (g && g.battle) {
@@ -584,42 +495,10 @@ export default function Game() {
         }
       })
 
-      room.onMessage(Transfer.GAME_END, leave)
+      engine.on(Transfer.GAME_END, leave)
 
-      room.onDrop((code) => {
-        if (code >= 1001 && code <= 1015) {
-          // Between 1001 and 1015 - Abnormal socket shutdown
-          if (connectionStatus === ConnectionStatus.CONNECTED) {
-            dispatch(setConnectionStatus(ConnectionStatus.CONNECTION_LOST))
-          }
-        }
-      })
-
-      room.onReconnect(() => {
-        dispatch(setConnectionStatus(ConnectionStatus.CONNECTED))
-      })
-
-      room.onLeave((code) => {
-        const shouldGoToLobby = [
-          CloseCodes.ROOM_DELETED,
-          CloseCodes.USER_BANNED
-        ].includes(code)
-        if (shouldGoToLobby) {
-          const errorMessage = CloseCodesMessages[code]
-          if (errorMessage) {
-            dispatch(setErrorAlertMessage(t(`errors.${errorMessage}`)))
-          }
-
-          const scene = getGameScene()
-          if (scene?.music) scene.music.destroy()
-          navigate("/lobby")
-        } else {
-          dispatch(setConnectionStatus(ConnectionStatus.CONNECTION_FAILED))
-        }
-      })
-
-      const $ = getStateCallbacks(room)
-      const $state = $(room.state)
+      const $ = getDecoderStateCallbacks(engine.decoder)
+      const $state = $<GameState>(engine.clientState)
 
       $state.listen("gameMode", (mode) => {
         dispatch(setGameMode(mode))
@@ -627,9 +506,9 @@ export default function Game() {
 
       $state.listen("roundTime", (value) => {
         dispatch(setRoundTime(value))
-        const stageLevel = room.state.stageLevel ?? 0
+        const stageLevel = engine.clientState.stageLevel ?? 0
         if (
-          room.state.phase === GamePhaseState.PICK &&
+          engine.clientState.phase === GamePhaseState.PICK &&
           stageLevel in PVEStages === false &&
           value < 5 &&
           gameContainer.gameScene?.board &&
@@ -662,7 +541,7 @@ export default function Game() {
       })
 
       $state.additionalPokemons.onChange(() => {
-        dispatch(setAdditionalPokemons(values(room.state.additionalPokemons)))
+        dispatch(setAdditionalPokemons(values(engine.clientState.additionalPokemons)))
       })
 
       $state.simulations.onRemove(() => {
@@ -832,12 +711,12 @@ export default function Game() {
         })
 
         $player.listen("spectatedPlayerId", (spectatedPlayerId) => {
-          if (room?.state?.players) {
-            const spectatedPlayer = room?.state?.players.get(spectatedPlayerId)
+          if (engine.clientState?.players) {
+            const spectatedPlayer = engine.clientState.players.get(spectatedPlayerId)
             if (spectatedPlayer && player.id === uid) {
               gameContainer.setPlayer(spectatedPlayer)
 
-              const simulation = room.state.simulations.get(
+              const simulation = engine.clientState.simulations.get(
                 spectatedPlayer.simulationId
               )
               if (simulation) {
@@ -900,7 +779,7 @@ export default function Game() {
         $player.groundHoles.onChange((value) => {
           if (player.id === store.getState().game.playerIdSpectated) {
             const gameScene = getGameScene()
-            if (gameScene?.board && room.state.phase === GamePhaseState.PICK) {
+            if (gameScene?.board && engine.clientState.phase === GamePhaseState.PICK) {
               gameScene.board.renderGroundHoles()
             }
           }
@@ -937,15 +816,10 @@ export default function Game() {
       })
     }
   }, [
-    connected,
-    connecting,
     initialized,
-    room,
     dispatch,
-    client,
     uid,
     spectatedPlayerId,
-    connectToGame,
     leave
   ])
 
