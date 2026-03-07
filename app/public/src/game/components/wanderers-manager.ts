@@ -7,7 +7,7 @@ import {
 } from "../../../../config"
 import { Wanderer } from "../../../../models/colyseus-models/wanderer"
 import PokemonFactory from "../../../../models/pokemon-factory"
-import { Item, Transfer } from "../../../../types"
+import { Item } from "../../../../types"
 import { Orientation, PokemonActionState } from "../../../../types/enum/Game"
 import { Pkm } from "../../../../types/enum/Pokemon"
 import { WandererBehavior, WandererType } from "../../../../types/enum/Wanderer"
@@ -55,7 +55,7 @@ export default class WanderersManager {
     this.addWandererPokemonSprite({
       wanderer,
       onClick: (wanderer, unownSprite, pointer) => {
-        this.scene.room?.send(Transfer.WANDERER_CLICKED, { id: wanderer.id })
+        this.scene.engine?.wandererClicked(wanderer.id)
         this.displayShardGain(
           [pointer.x, pointer.y],
           unownSprite.pokemon.index,
@@ -79,9 +79,7 @@ export default class WanderersManager {
         if (this.scene.board) {
           if (getFreeSpaceOnBench(this.scene.board.player.board) > 0) {
             caught = true
-            this.scene.room?.send(Transfer.WANDERER_CLICKED, {
-              id: wanderer.id
-            })
+            this.scene.engine?.wandererClicked(wanderer.id)
             sprite.destroy()
           } else {
             this.scene.board.displayText(pointer.x, pointer.y, t("full"), true)
@@ -100,9 +98,7 @@ export default class WanderersManager {
         let caught = false
         if (this.scene.board) {
           caught = true
-          this.scene.room?.send(Transfer.WANDERER_CLICKED, {
-            id: wanderer.id
-          })
+          this.scene.engine?.wandererClicked(wanderer.id)
           sprite.destroy()
           this.scene.board.displayText(
             pointer.x,
@@ -130,7 +126,7 @@ export default class WanderersManager {
       wanderer,
       existingSprite: sprite,
       onClick: (wanderer, sprite) => {
-        //this.scene.room?.send(Transfer.WANDERER_CLICKED, { id: wanderer.id }) // not needed for dialog wanderers for now
+        //this.scene.engine?.wandererClicked(wanderer.id) // not needed for dialog wanderers for now
         if (sprite.detail) {
           sprite.closeDetail()
         } else {

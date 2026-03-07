@@ -69,7 +69,7 @@ export default class MinigameManager {
       existingState.avatars
     )
 
-    this.scene.room?.onMessage(
+    this.scene.engine?.on(
       Transfer.NPC_DIALOG,
       (message: { npc: Pkm; dialog: string }) => this.onNpcDialog(message)
     )
@@ -603,7 +603,7 @@ export default class MinigameManager {
       ...podiumPokemons
     )
 
-    const specialGameRule = this.scene.room?.state?.specialGameRule
+    const specialGameRule = this.scene.engine?.clientState?.specialGameRule
     if (encounter) {
       const cost =
         specialGameRule === SpecialGameRule.TOWN_FESTIVAL
@@ -612,7 +612,7 @@ export default class MinigameManager {
       this.showEncounterDescription(
         t(`town_encounter_description.${encounter}`, { cost })
       )
-    } else if (specialGameRule && this.scene.room?.state.stageLevel === 0) {
+    } else if (specialGameRule && this.scene.engine?.clientState.stageLevel === 0) {
       const smeargle = new PokemonSpecial({
         scene: this.scene,
         x: cx,

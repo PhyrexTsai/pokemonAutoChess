@@ -343,7 +343,7 @@ export default class BoardManager {
         )
       const potPokemon = this.player.flowerPots[i]
 
-      const simulation = this.scene?.room?.state.simulations.get(
+      const simulation = this.scene?.engine?.clientState.simulations.get(
         this.player.simulationId
       )
       const isOnBattle =
@@ -717,7 +717,7 @@ export default class BoardManager {
         (p) => p.id === gameState.playerIdSpectated
       )
       const player = spectatedPlayer ?? this.player
-      const simulation = this.scene?.room?.state.simulations.get(
+      const simulation = this.scene?.engine?.clientState.simulations.get(
         player.simulationId
       )
       if (spectatedPlayer) {
@@ -794,7 +794,7 @@ export default class BoardManager {
     this.updateOpponentAvatar(null, null)
     this.updateScoutingAvatars(true)
     this.scene.minigameManager?.addVillagers(
-      this.scene.room?.state.townEncounter ?? null,
+      this.scene.engine?.clientState.townEncounter ?? null,
       store.getState().game.podium
     )
   }
@@ -804,7 +804,7 @@ export default class BoardManager {
       this.player = player
       this.renderBoard(false)
       this.updatePlayerAvatar()
-      const simulation = this.scene?.room?.state.simulations.get(
+      const simulation = this.scene?.engine?.clientState.simulations.get(
         player.simulationId
       )
       this.updateOpponentAvatar(
@@ -898,7 +898,7 @@ export default class BoardManager {
           )
           pokemonSprite.x = coordinates[0]
           pokemonSprite.y = coordinates[1]
-          const simulation = this.scene?.room?.state.simulations.get(
+          const simulation = this.scene?.engine?.clientState.simulations.get(
             this.player.simulationId
           )
           if (
@@ -1206,7 +1206,7 @@ export default class BoardManager {
 
           this.scene.setMap(opponent.map)
 
-          const simulation = this.scene?.room?.state.simulations.get(
+          const simulation = this.scene?.engine?.clientState.simulations.get(
             this.player.simulationId
           )
           if (simulation && simulation.weather === Weather.DROUGHT) {
@@ -1323,7 +1323,7 @@ export default class BoardManager {
       })
     } else {
       // opponent avatar move out of the portal
-      const simulation = this.scene?.room?.state.simulations.get(
+      const simulation = this.scene?.engine?.clientState.simulations.get(
         this.player.simulationId
       )
       const isGhostOpponent = simulation?.isGhostBattle && !isRedPlayer

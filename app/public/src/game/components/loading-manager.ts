@@ -94,7 +94,7 @@ export default class LoadingManager {
     loadEnvironmentMultiAtlas(this.scene)
 
     if (scene instanceof GameScene) {
-      const players = values(scene.room?.state.players!)
+      const players = values(scene.engine?.clientState.players!)
       const player = players.find((p) => p.id === scene.uid) ?? players[0]
       await scene.preloadMaps(
         players
