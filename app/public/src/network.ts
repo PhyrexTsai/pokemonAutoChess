@@ -40,11 +40,12 @@ export async function fetchProfile(forceRefresh: boolean = false) {
   }
   const uid = store.getState().network.uid
   if (!uid) return
-  return fetch(`/profile?t=${Date.now()}`)
-    .then((res) => res.json())
-    .then((profile: IUserMetadataJSON) => {
+  return fetch(`/profile?t=${Date.now()}`).then((res) => {
+    if (!res.ok) return
+    return res.json().then((profile: IUserMetadataJSON) => {
       store.dispatch(setProfile(profile))
     })
+  })
 }
 
 // Game action functions — delegate to LocalGameEngine
