@@ -76,7 +76,7 @@ app.use("/assets", express.static(path.join(__dirname, "public", "src", "assets"
 
 // SPA routes — serve index.html for all client routes
 const spaRoutes = [
-  "/", "/auth", "/lobby", "/preparation", "/game", "/after",
+  "/", "/auth", "/lobby", "/game", "/after",
   "/bot-builder", "/bot-admin", "/sprite-viewer", "/map-viewer", "/gameboy"
 ]
 spaRoutes.forEach((route) => {
