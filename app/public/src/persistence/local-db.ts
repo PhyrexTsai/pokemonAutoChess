@@ -90,6 +90,15 @@ export async function saveProfile(profile: PlayerProfile): Promise<void> {
   })
 }
 
+export async function deleteProfile(): Promise<void> {
+  try {
+    const db = await getDB()
+    await db.clear("player")
+  } catch {
+    // best-effort
+  }
+}
+
 export async function loadHistory(): Promise<GameHistoryEntry[]> {
   try {
     const db = await getDB()

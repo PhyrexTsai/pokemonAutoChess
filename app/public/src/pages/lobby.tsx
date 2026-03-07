@@ -36,7 +36,9 @@ export default function Lobby() {
     dispatch(setConnectionStatus(ConnectionStatus.CONNECTED))
   }, [])
 
-  const signOut = useCallback(() => {
+  const signOut = useCallback(async () => {
+    const { deleteProfile } = await import("../persistence/local-db")
+    await deleteProfile()
     dispatch(logOut())
     navigate("/")
   }, [dispatch])
