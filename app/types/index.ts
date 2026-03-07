@@ -238,6 +238,12 @@ export interface WanderingPokemonParams {
   player: IPlayer
 }
 
+export interface IMiniGame {
+  initialize(state: GameState): void
+  update(deltaTime: number): void
+  stop(state: GameState): void
+}
+
 export interface IGameEngineContext {
   state: GameState
   addDelayedAction(delayMs: number, callback: () => void): void
@@ -250,6 +256,10 @@ export interface IGameEngineContext {
     pokemon: IPokemon
   ): IPokemon | void
   getTeamSize(board: MapSchema<IPokemon>): number
+  miniGame?: IMiniGame
+  additionalUncommonPool?: Pkm[]
+  additionalRarePool?: Pkm[]
+  additionalEpicPool?: Pkm[]
 }
 
 export interface IPortal {
