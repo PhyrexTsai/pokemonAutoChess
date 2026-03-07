@@ -1,4 +1,4 @@
-import { ArraySchema, MapSchema, Schema, type, view } from "@colyseus/schema"
+import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   AdditionalPicksStages,
@@ -86,13 +86,13 @@ export default class Player extends Schema implements IPlayer {
   @type("string") name!: string
   @type("string") avatar!: string
   @type({ map: Pokemon }) board = new MapSchema<Pokemon>()
-  @view() @type(["string"]) shop = new ArraySchema<Pkm>()
+  @type(["string"]) shop = new ArraySchema<Pkm>()
   @type(ExperienceManager) experienceManager = new ExperienceManager()
   @type({ map: "uint8" }) synergies = new Synergies()
   @type("uint16") money = process.env.MODE == "dev" ? 999 : 5
   @type("int16") life = 100
-  @view() @type("boolean") shopLocked: boolean = false
-  @view() @type("uint8") shopFreeRolls: number = 0
+  @type("boolean") shopLocked: boolean = false
+  @type("uint8") shopFreeRolls: number = 0
   @type("uint8") streak: number = 0
   @type("uint8") maxInterest: number = 5
   @type("uint8") interest: number = 0
@@ -113,8 +113,8 @@ export default class Player extends Schema implements IPlayer {
   @type("string") emotesUnlocked = ""
   @type("string") title!: Title | ""
   @type("string") role!: Role
-  @view() @type(["string"]) itemsProposition = new ArraySchema<Item>()
-  @view() @type(["string"]) pokemonsProposition =
+  @type(["string"]) itemsProposition = new ArraySchema<Item>()
+  @type(["string"]) pokemonsProposition =
     new ArraySchema<PkmProposition>()
   @type(["string"]) pveRewards = new ArraySchema<Item>()
   @type(["string"]) pveRewardsPropositions = new ArraySchema<Item>()

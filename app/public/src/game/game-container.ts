@@ -77,6 +77,17 @@ class GameContainer {
   }
 
   initializeSimulation(simulation: Simulation) {
+    console.log("[GameContainer] initializeSimulation", {
+      simId: simulation.id,
+      bluePlayerId: simulation.bluePlayerId,
+      redPlayerId: simulation.redPlayerId,
+      playerId: this.player?.id,
+      started: simulation.started,
+      blueTeamSize: simulation.blueTeam.size,
+      redTeamSize: simulation.redTeam.size,
+      hasGameScene: !!this.gameScene,
+      hasBattle: !!this.gameScene?.battle
+    })
     if (
       simulation.bluePlayerId === this.player?.id ||
       (simulation.redPlayerId === this.player?.id && !simulation.isGhostBattle)
@@ -772,6 +783,12 @@ class GameContainer {
   setSimulation(simulation: Simulation) {
     this.simulation = simulation
     store.dispatch(setSimulation(simulation))
+    console.log("[GameContainer] setSimulation", {
+      hasBattle: !!this.gameScene?.battle,
+      blueTeamSize: simulation?.blueTeam.size,
+      redTeamSize: simulation?.redTeam.size,
+      started: simulation?.started
+    })
     if (this.gameScene?.battle) {
       this.gameScene?.battle.setSimulation(this.simulation)
     }

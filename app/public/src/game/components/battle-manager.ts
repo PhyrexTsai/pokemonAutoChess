@@ -72,6 +72,12 @@ export default class BattleManager {
   }
 
   buildPokemons() {
+    console.log("[BattleManager] buildPokemons", {
+      simId: this.simulation?.id,
+      blueTeamSize: this.simulation?.blueTeam.size,
+      redTeamSize: this.simulation?.redTeam.size,
+      started: this.simulation?.started
+    })
     this.simulation?.blueTeam.forEach((pkm, key) => {
       this.simulation?.id &&
         this.addPokemonEntitySprite(
