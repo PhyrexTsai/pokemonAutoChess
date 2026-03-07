@@ -148,9 +148,10 @@ These existing Schema classes continue to function as data containers:
 | State files | 3 (lobby-state, prep-state, after-game-state — **not** game-state) | ~200 |
 | Client pages | 1 (preparation.tsx) | ~265 |
 | Client components | 2 (game-rooms-menu.tsx, game-room-item.tsx) | ~150 |
+| Tournament UI | 6 (tournament-item.tsx + CSS, tournaments-list.tsx + CSS, tournaments-admin.tsx + CSS) | ~300 |
 | Client stores | 1 (PreparationStore.ts) | ~50 |
 | Core | 1 (tournament-logic.ts) | ~100 |
 | Network | 1 (network.ts rewritten) | ~263 |
-| **Total** | **~16 files deleted** | **~8100 lines** |
+| **Total** | **~22 files deleted** | **~8400 lines** |
 
 **Note**: `game-state.ts` is MOVED (not deleted) to `app/models/colyseus-models/game-state.ts`. All 9 import paths across the codebase must be updated.

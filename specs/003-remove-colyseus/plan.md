@@ -18,7 +18,7 @@ Replace the Colyseus networking layer with a `LocalGameEngine` that runs the gam
 **Project Type**: Browser game (SPA)
 **Performance Goals**: 60 FPS game loop, <16ms per tick
 **Constraints**: Offline-capable, zero server dependency for gameplay
-**Scale/Scope**: ~16 files deleted, ~30 files modified, ~8100 lines deleted, ~3000 lines added (3 new engine files)
+**Scale/Scope**: ~22 files deleted (incl. 6 tournament UI files + CSS), ~30 files modified, ~8400 lines deleted, ~3000 lines added (3 new engine files)
 
 ## Constitution Check
 
@@ -114,7 +114,7 @@ app/
         └── NetworkStore.ts         # MODIFY: remove room references, leaveAllRooms → engine.dispose
 ```
 
-**Structure Decision**: Existing project structure preserved. Three new files added (`local-engine.ts`, `game-engine-commands.ts`, `game-engine-phases.ts`). `engine-state-proxy.ts` eliminated by Schema encode/decode loopback. No new directories. ~16 files deleted, ~30 files modified. GameState MOVED from `rooms/states/` to `models/colyseus-models/` (9 import paths updated).
+**Structure Decision**: Existing project structure preserved. Three new files added (`local-engine.ts`, `game-engine-commands.ts`, `game-engine-phases.ts`). `engine-state-proxy.ts` eliminated by Schema encode/decode loopback. No new directories. ~22 files deleted (incl. 6 tournament UI files + CSS), ~30 files modified. GameState MOVED from `rooms/states/` to `models/colyseus-models/` (9 import paths updated).
 
 ### Files to Move
 

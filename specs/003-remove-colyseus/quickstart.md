@@ -93,6 +93,9 @@ The core strategy is **extract, don't rewrite**:
 | `app/public/src/pages/preparation.tsx` | Multiplayer preparation phase — engine auto-starts |
 | `app/public/src/pages/component/room-menu/game-rooms-menu.tsx` | Multiplayer room listing UI |
 | `app/public/src/pages/component/room-menu/game-room-item.tsx` | Multiplayer room card UI |
+| `app/public/src/pages/component/room-menu/tournament-item.tsx` + CSS | Multiplayer tournament UI |
+| `app/public/src/pages/component/events-menu/tournaments-list.tsx` + CSS | Multiplayer tournament listing |
+| `app/public/src/pages/component/tournaments-admin/tournaments-admin.tsx` + CSS | Multiplayer tournament admin |
 | `app/public/src/stores/PreparationStore.ts` | Multiplayer preparation state |
 
 ## npm Packages to Remove (9)
@@ -103,8 +106,8 @@ Retain `@colyseus/schema` for Phase 4 removal. Remove all others:
 
 ## Scope Summary
 
-- **~16 files deleted**, **~30 files modified**, **3 new files created**, **1 file moved**
-- **~8100 lines deleted**, **~3000 lines added** (3 engine files: 800 + 1000 + 1200)
+- **~22 files deleted** (incl. 6 tournament UI files + CSS), **~30 files modified**, **3 new files created**, **1 file moved**
+- **~8400 lines deleted**, **~3000 lines added** (3 engine files: 800 + 1000 + 1200)
 
 ## Build & Verify
 
