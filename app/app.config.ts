@@ -4,9 +4,9 @@ import helmet from "helmet"
 import path from "path"
 import pkg from "../package.json"
 import { SynergyTriggers } from "./config"
-import { getGameHistoryByPlayer, getPlayer, loadBotsFromJson } from "./models/local-store"
 import { initTilemap } from "./core/design"
 import { GameRecord } from "./models/colyseus-models/game-record"
+import { getGameHistoryByPlayer, loadBotsFromJson } from "./models/local-store"
 import { PRECOMPUTED_POKEMONS_PER_TYPE } from "./models/precomputed/precomputed-types"
 import { fetchBot, fetchBotsList } from "./services/bots"
 import { DungeonPMDO } from "./types/enum/Dungeon"
@@ -72,12 +72,23 @@ app.use(cors())
 app.use(express.json())
 app.use(express.static(clientSrc))
 app.use(express.static(path.join(clientSrc, "pokechess")))
-app.use("/assets", express.static(path.join(__dirname, "public", "src", "assets")))
+app.use(
+  "/assets",
+  express.static(path.join(__dirname, "public", "src", "assets"))
+)
 
 // SPA routes — serve index.html for all client routes
 const spaRoutes = [
-  "/", "/auth", "/lobby", "/game", "/after",
-  "/bot-builder", "/bot-admin", "/sprite-viewer", "/map-viewer", "/gameboy"
+  "/",
+  "/auth",
+  "/lobby",
+  "/game",
+  "/after",
+  "/bot-builder",
+  "/bot-admin",
+  "/sprite-viewer",
+  "/map-viewer",
+  "/gameboy"
 ]
 spaRoutes.forEach((route) => {
   app.get(route, (req, res) => {
@@ -166,15 +177,6 @@ app.get("/bots", (req, res) => {
 
 app.get("/bots/:id", (req, res) => {
   res.send(fetchBot(req.params.id))
-})
-
-app.get("/profile", (req, res) => {
-  const player = getPlayer()
-  if (!player) return res.status(404).send("No player")
-  if (!isDevelopment) {
-    res.set("Cache-Control", "no-cache")
-  }
-  res.send(player)
 })
 
 app.get("/status", (req, res) => {

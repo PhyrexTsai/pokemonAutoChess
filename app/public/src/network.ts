@@ -1,3 +1,4 @@
+import { setPlayer } from "../../models/local-store"
 import { Emotion, Item, Role, Title, Transfer } from "../../types"
 import { EloRank } from "../../types/enum/EloRank.js"
 import { BotDifficulty } from "../../types/enum/Game.js"
@@ -5,9 +6,10 @@ import { PkmProposition } from "../../types/enum/Pokemon.js"
 import { SpecialGameRule } from "../../types/enum/SpecialGameRule.js"
 import { IBot } from "../../types/interfaces/bot"
 import { IUserMetadataJSON } from "../../types/interfaces/UserMetadata"
+import { LocalGameEngine } from "./local-engine"
+import { loadProfile } from "./persistence/local-db"
 import store from "./stores"
 import { setProfile } from "./stores/NetworkStore"
-import { LocalGameEngine } from "./local-engine"
 
 export const engine = new LocalGameEngine()
 
@@ -34,17 +36,59 @@ export function authenticateUser() {
 }
 
 export async function fetchProfile(forceRefresh: boolean = false) {
-  const profile = store.getState().network.profile
-  if (!forceRefresh && profile) {
-    return Promise.resolve(profile)
+  const existing = store.getState().network.profile
+  if (!forceRefresh && existing) {
+    return existing
   }
   const uid = store.getState().network.uid
   if (!uid) return
-  return fetch(`/profile?t=${Date.now()}`).then((res) => {
-    if (!res.ok) return
-    return res.json().then((profile: IUserMetadataJSON) => {
-      store.dispatch(setProfile(profile))
-    })
+
+  const profile = await loadProfile()
+  if (!profile) return
+
+  // Sync to Redux
+  const metadataJSON: IUserMetadataJSON = {
+    uid: profile.uid,
+    displayName: profile.displayName,
+    language: profile.language as IUserMetadataJSON["language"],
+    avatar: profile.avatar,
+    games: profile.games,
+    wins: profile.wins,
+    exp: profile.exp,
+    level: profile.level,
+    elo: profile.elo,
+    maxElo: profile.elo,
+    eventPoints: 0,
+    maxEventPoints: 0,
+    eventFinishTime: null,
+    booster: profile.booster,
+    titles: [],
+    title: "",
+    role: Role.BASIC,
+    pokemonCollection: {}
+  }
+  store.dispatch(setProfile(metadataJSON))
+
+  // Sync to local-store for local-engine
+  setPlayer({
+    uid: profile.uid,
+    displayName: profile.displayName,
+    language: profile.language as IUserMetadataJSON["language"],
+    avatar: profile.avatar,
+    games: profile.games,
+    wins: profile.wins,
+    exp: profile.exp,
+    level: profile.level,
+    elo: profile.elo,
+    maxElo: profile.elo,
+    eventPoints: 0,
+    maxEventPoints: 0,
+    eventFinishTime: null,
+    booster: profile.booster,
+    titles: [],
+    title: "",
+    role: Role.BASIC,
+    pokemonCollection: new Map()
   })
 }
 
@@ -118,7 +162,10 @@ export function participateInTournament(_params: {
   tournamentId: string
   participate: boolean
 }) {}
-export function giveBooster(_params: { uid: string; numberOfBoosters: number }) {}
+export function giveBooster(_params: {
+  uid: string
+  numberOfBoosters: number
+}) {}
 export function heapSnapshot() {}
 export function deleteAccount() {}
 export function giveRole(_params: { uid: string; role: Role }) {}
@@ -126,4 +173,7 @@ export function giveTitle(_params: { uid: string; title: Title }) {}
 export function kick(_playerId: string) {}
 export function ban(_params: { uid: string; reason: string }) {}
 export function unban(_params: { uid: string; name: string }) {}
-export function createTournament(_params: { name: string; startDate: string }) {}
+export function createTournament(_params: {
+  name: string
+  startDate: string
+}) {}
