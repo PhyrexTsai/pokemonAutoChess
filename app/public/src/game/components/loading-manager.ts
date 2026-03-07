@@ -28,13 +28,19 @@ export default class LoadingManager {
     })
 
     this.scene.load.on("complete", () => {
+      console.log("[LoadingManager] loader 'complete' event fired")
       this.statusMessage = t("loading_complete")
     })
 
+    this.scene.load.on("loaderror", (file) => {
+      console.warn("[LoadingManager] failed to load:", file.key, file.url)
+    })
+
     this.preload()
+    console.log("[LoadingManager] preload() queued", this.scene.load.totalToLoad, "files")
   }
 
-  async preload() {
+  preload() {
     const scene = this.scene
     scene.load.xhr.timeout = 5000 // help avoiding failed loading of assets when server is overloaded
 
@@ -96,11 +102,17 @@ export default class LoadingManager {
     if (scene instanceof GameScene) {
       const players = values(scene.engine?.clientState.players!)
       const player = players.find((p) => p.id === scene.uid) ?? players[0]
-      await scene.preloadMaps(
-        players
-          .map((p) => p.map)
-          .filter<DungeonPMDO>((map): map is DungeonPMDO => map !== "town")
-      )
+      const maps = players
+        .map((p) => p.map)
+        .filter<DungeonPMDO>((map): map is DungeonPMDO => map !== "town")
+      if (maps.length > 0) {
+        // Fetch tilemap JSON async, then queue tileset images for loading
+        scene.preloadMaps(maps).then(() => {
+          if (!scene.load.isLoading()) {
+            scene.load.start()
+          }
+        })
+      }
       preloadMusic(scene, RegionDetails[player.map].music)
       preloadPortraits(this.scene, player)
     }
