@@ -200,7 +200,7 @@ export default function Game() {
         }
 
         client
-          .reconnect<GameState>(cachedReconnectionToken)
+          .reconnect(cachedReconnectionToken)
           .then((room: Room) => {
             // store game token for 1 hour
             localStore.set(
@@ -335,7 +335,7 @@ export default function Game() {
       }).catch(() => {})
     }
 
-    const r = await client.create<AfterGameState>("after-game", {
+    const r = await client.create("after-game", {
       players: afterPlayers,
       idToken: token,
       eligibleToXP,
