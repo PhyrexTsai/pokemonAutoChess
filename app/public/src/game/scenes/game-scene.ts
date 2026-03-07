@@ -107,7 +107,7 @@ export default class GameScene extends Scene {
 
     this.engine!.on(Transfer.LOADING_COMPLETE, () => {
       if (!this.started) {
-        logger.debug("Game starting")
+        console.log("[GameScene] LOADING_COMPLETE received, calling startGame()")
         this.started = true
         this.startGame()
       }
@@ -121,6 +121,13 @@ export default class GameScene extends Scene {
       this.input.dragDistanceThreshold = 1
 
       const state = this.engine.clientState
+      console.log("[GameScene] startGame — clientState:", {
+        phase: state.phase,
+        players: state.players.size,
+        avatars: state.avatars.size,
+        stageLevel: state.stageLevel,
+        roundTime: state.roundTime
+      })
       const playerUids = values(state.players).map((p) => p.id)
       const player = state.players.get(
         this.spectate ? playerUids[0] : this.uid

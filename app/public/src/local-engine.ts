@@ -246,6 +246,15 @@ export class LocalGameEngine implements IGameEngineContext {
     this.engineState.botManager.updateBots()
     this.miniGame.initialize(this.engineState)
 
+    console.log("[Engine] startGame complete", {
+      phase: this.engineState.phase,
+      time: this.engineState.time,
+      roundTime: this.engineState.roundTime,
+      players: this.engineState.players.size,
+      avatars: this.engineState.avatars.size,
+      stageLevel: this.engineState.stageLevel
+    })
+
     this.lastTickTime = performance.now()
     this.intervalId = setInterval(() => this.gameTick(), 50)
   }
@@ -558,6 +567,7 @@ export class LocalGameEngine implements IGameEngineContext {
   }
 
   reportLoadingComplete() {
+    console.log("[Engine] reportLoadingComplete — Phaser scene loaded")
     this.emit(Transfer.LOADING_COMPLETE, undefined)
   }
 

@@ -108,18 +108,23 @@ import type { PkmProposition } from "../../types/enum/Pokemon"
  * Main phase update — called when timer expires or all simulations finish.
  */
 export function updatePhase(state: GameState, context: IGameEngineContext) {
+  const prevPhase = state.phase
   state.updatePhaseNeeded = false
   if (state.phase == GamePhaseState.TOWN) {
+    console.log("[Phase] TOWN → stopping town, stageLevel:", state.stageLevel)
     stopTownPhase(state, context)
     if (state.stageLevel === 0) {
       state.stageLevel = 1
     }
+    console.log("[Phase] TOWN → initializing PICK, stageLevel:", state.stageLevel)
     initializePickingPhase(state, context)
   } else if (state.phase == GamePhaseState.PICK) {
+    console.log("[Phase] PICK → FIGHT, stageLevel:", state.stageLevel)
     stopPickingPhase(state, context)
     checkForLazyTeam(state, context)
     initializeFightingPhase(state, context)
   } else if (state.phase == GamePhaseState.FIGHT) {
+    console.log("[Phase] FIGHT → next, stageLevel:", state.stageLevel)
     stopFightingPhase(state, context)
     if (
       (ItemCarouselStages.includes(state.stageLevel) ||
@@ -131,6 +136,7 @@ export function updatePhase(state: GameState, context: IGameEngineContext) {
       initializePickingPhase(state, context)
     }
   }
+  console.log("[Phase] transition complete:", prevPhase, "→", state.phase, "time:", state.time)
 }
 
 /**
@@ -144,6 +150,7 @@ export function tick(
   state.time -= deltaTime
   if (Math.round(state.time / 1000) != state.roundTime) {
     state.roundTime = Math.round(state.time / 1000)
+    console.log("[Tick] phase:", state.phase, "roundTime:", state.roundTime, "s", "stageLevel:", state.stageLevel)
   }
   if (state.time < 0) {
     state.updatePhaseNeeded = true
