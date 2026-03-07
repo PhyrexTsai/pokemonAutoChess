@@ -619,6 +619,10 @@ export default function Game() {
           $player.listen("maxInterest", (value) => {
             dispatch(setMaxInterest(value))
           })
+          // Dispatch initial shop values (already populated before callback registration)
+          player.shop.forEach((pkm: Pkm, index: number) => {
+            dispatch(changeShop({ value: pkm, index }))
+          })
           $player.shop.onChange((pkm: Pkm, index: number) => {
             dispatch(changeShop({ value: pkm, index }))
           })
