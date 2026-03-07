@@ -232,6 +232,7 @@ export class LocalGameEngine implements IGameEngineContext {
     }
 
     // Schema encode/decode loopback initialization
+    Encoder.BUFFER_SIZE = 64 * 1024 // 64 KB — default 8KB overflows on full GameState
     this.encoder = new Encoder(this.engineState)
     this.decoder = new Decoder(this.clientState)
 
