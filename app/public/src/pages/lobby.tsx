@@ -49,6 +49,8 @@ export default function Lobby() {
   }, [lobbyJoined])
 
   const signOut = useCallback(async () => {
+    const { deleteProfile } = await import("../persistence/local-db")
+    await deleteProfile()
     leaveRoom("lobby")
     dispatch(resetLobby())
     dispatch(logOut())

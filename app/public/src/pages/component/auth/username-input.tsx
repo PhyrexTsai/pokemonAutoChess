@@ -8,6 +8,7 @@ import { logIn, logOut } from "../../../stores/NetworkStore"
 import {
   loadProfile,
   saveProfile,
+  deleteProfile,
   PlayerProfile
 } from "../../../persistence/local-db"
 
@@ -126,7 +127,10 @@ export default function UsernameInput() {
           <button
             className="bubbly red"
             disabled={prejoining}
-            onClick={() => dispatch(logOut())}
+            onClick={() => {
+              deleteProfile()
+              dispatch(logOut())
+            }}
           >
             {t("sign_out")}
           </button>

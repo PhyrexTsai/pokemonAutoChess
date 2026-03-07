@@ -639,6 +639,7 @@ export default class GameRoom extends Room<{ state: GameState }> {
       }
     } catch (error) {
       logger.error(error)
+      throw error
     }
   }
 

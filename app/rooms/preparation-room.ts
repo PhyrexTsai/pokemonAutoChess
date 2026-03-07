@@ -375,6 +375,12 @@ export default class PreparationRoom extends Room<{ state: PreparationState }> {
       } else if (this.state.gameStartedAt != null) {
         client.leave(CloseCodes.GAME_ALREADY_STARTED)
         return
+      } else if (
+        this.roomPassword &&
+        options.password !== this.roomPassword
+      ) {
+        client.leave(CloseCodes.ABNORMAL_CLOSURE)
+        return
       } else if (this.metadata.blacklist.includes(uid)) {
         client.leave(CloseCodes.USER_KICKED)
         return

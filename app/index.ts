@@ -14,6 +14,7 @@ import { logger, matchMaker } from "colyseus"
 import { CronJob } from "cron"
 import { server as app } from "./app.config"
 import { initializeMetrics } from "./metrics"
+import { loadBotsFromJson } from "./models/local-store"
 
 /*
 Changed buffer size to 512kb to avoid warnings from colyseus. We need to scale down the amount of data we're sending so it gets sent in multiple packets or increase the buffer size even more.
@@ -22,6 +23,8 @@ I think the buffer size is a bit of a sanity check, the only time I've really se
 Encoder.BUFFER_SIZE = 512 * 1024
 
 async function main() {
+  loadBotsFromJson()
+
   if (process.env.NODE_APP_INSTANCE) {
     const processNumber = Number(process.env.NODE_APP_INSTANCE ?? "0")
     const port = (Number(process.env.PORT) ?? 2569) + processNumber
