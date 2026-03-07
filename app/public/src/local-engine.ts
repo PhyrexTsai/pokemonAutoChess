@@ -246,6 +246,10 @@ export class LocalGameEngine implements IGameEngineContext {
     this.engineState.botManager.updateBots()
     this.miniGame.initialize(this.engineState)
 
+    // Sync portals/items created by MiniGame.initialize to clientState
+    // (they were added after encodeAll, so a second sync is needed)
+    this.syncState()
+
     console.log("[Engine] startGame complete", {
       phase: this.engineState.phase,
       time: this.engineState.time,

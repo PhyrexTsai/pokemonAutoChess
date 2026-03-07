@@ -28,7 +28,7 @@ export default function GameDpsTaken(props: {
             style={{ backgroundColor: "var(--color-physical)" }}
             max={props.maxDamageTaken}
             now={props.dps.physicalDamageReduced}
-            key="hp"
+            key="physical"
             title={`${t("physical_damage_reduced")}: ${props.dps.physicalDamageReduced}`}
           />
           <ProgressBar
@@ -38,7 +38,7 @@ export default function GameDpsTaken(props: {
             style={{ backgroundColor: "var(--color-special)" }}
             max={props.maxDamageTaken}
             now={props.dps.specialDamageReduced}
-            key="hp"
+            key="special"
             title={`${t("special_damage_reduced")}: ${props.dps.specialDamageReduced}`}
           />
           <ProgressBar
