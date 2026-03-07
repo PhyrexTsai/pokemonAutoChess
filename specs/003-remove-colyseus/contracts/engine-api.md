@@ -24,6 +24,15 @@ These replace `room.send(Transfer.*, payload)` calls in `network.ts`.
 | `sellPokemonFromScene(pokemonId)` | `Transfer.SELL_POKEMON` | `pokemonId: string` | Sell from game scene context (game-scene.ts) |
 | `reportLoadingProgress(progress)` | `Transfer.LOADING_PROGRESS` | `number` | Report asset loading progress (game-scene.ts) |
 | `reportLoadingComplete()` | `Transfer.LOADING_COMPLETE` | none | Report asset loading complete (game-scene.ts) |
+| `sendVector(vector)` | `Transfer.VECTOR` | `{x, y}` | Minigame joystick input (game-scene.ts) |
+
+### Deleted Player Actions (multiplayer-only — no engine equivalent)
+
+| Transfer Message | Reason |
+|-----------------|--------|
+| `Transfer.SPECTATE` | No other players to watch in single-player |
+| `Transfer.NEW_MESSAGE` | Multiplayer chat — no recipients |
+| `Transfer.OVERWRITE_BOARD` | Admin-only board override |
 
 ## Event Emissions
 
@@ -71,7 +80,14 @@ This means all existing listeners in `game.tsx` and `game-container.ts` work unc
 
 ## Lifecycle
 
-```
+```typescript
+// 3-file structure:
+//   local-engine.ts        — LocalGameEngine class (core, loop, syncState)
+//   game-engine-commands.ts — player action functions (buyPokemon, sellPokemon, etc.)
+//   game-engine-phases.ts  — phase transition logic (extracted from OnUpdatePhaseCommand)
+
+import { LocalGameEngine } from "./local-engine"
+
 engine = new LocalGameEngine()
 engine.startGame(config)    // initializes engineState+clientState, encodeAll()+discardChanges(), starts timer
 engine.on(event, callback)  // register Transfer message listeners

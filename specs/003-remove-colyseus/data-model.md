@@ -2,9 +2,13 @@
 
 ## Entities
 
-### LocalGameEngine (NEW)
+### LocalGameEngine (NEW — 3-file split)
 
-Central game controller replacing all 4 Colyseus rooms.
+Central game controller replacing all 4 Colyseus rooms. Split across 3 files for maintainability:
+
+- **`app/public/src/local-engine.ts`** (~800 lines) — core engine class, game loop, syncState, event emitter, `IGameEngineContext` implementation
+- **`app/public/src/game-engine-commands.ts`** (~1000 lines) — extracted player action functions (buy, sell, drag-drop, etc.)
+- **`app/public/src/game-engine-phases.ts`** (~1200 lines) — extracted `OnUpdatePhaseCommand` phase transition logic
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -22,21 +26,41 @@ Central game controller replacing all 4 Colyseus rooms.
 
 **Methods (reuse existing command logic)**:
 - `startGame(config: GameConfig): void` — initializes engineState+clientState, encoder/decoder (with `encodeAll()` for initial full snapshot + `discardChanges()`), players, shop, starts loop
-- `tick(deltaTime: number): void` — runs one game frame (reuses OnUpdateCommand logic), processes `delayedActions` queue, then calls `syncState()`
+- `tick(deltaTime: number): void` — runs one game frame (reuses OnUpdateCommand logic from `game-engine-phases.ts`), processes `delayedActions` queue, then calls `syncState()`
 - `syncState(): void` — `encoder.encode(engineState)` → `decoder.decode(patches, clientState)` → `encoder.discardChanges()` — fires all Schema callbacks. Must call `discardChanges()` after each encode to clear tracked changes. Called after each tick AND after each player action for immediate UI feedback (see R7 in research.md).
 - `addDelayedAction(delayMs, callback): void` — adds to engine-level delayed action queue (replaces `room.clock.setTimeout()`)
-- `buyPokemon(index: number): void` — reuses OnBuyPokemonCommand logic, calls `syncState()` after
-- `sellPokemon(pokemonId: string): void` — reuses OnSellPokemonCommand logic
-- `rerollShop(): void` — reuses OnShopRerollCommand logic
-- `levelUp(): void` — reuses OnLevelUpCommand logic
-- `lockShop(): void` — reuses OnLockCommand logic
-- `dragDropPokemon(detail): void` — reuses OnDragDropPokemonCommand logic
-- `dragDropItem(detail): void` — reuses OnDragDropItemCommand logic
-- `dragDropCombine(detail): void` — reuses OnDragDropCombineCommand logic
-- `pickPokemonProposition(proposition): void` — reuses OnPokemonPropositionCommand logic
-- `pickItem(item): void` — reuses OnPickItemCommand logic
+- `buyPokemon(index: number): void` — calls function from `game-engine-commands.ts`, then `syncState()`
+- `sellPokemon(pokemonId: string): void` — calls function from `game-engine-commands.ts`
+- `rerollShop(): void` — calls function from `game-engine-commands.ts`
+- `levelUp(): void` — calls function from `game-engine-commands.ts`
+- `lockShop(): void` — calls function from `game-engine-commands.ts`
+- `dragDropPokemon(detail): void` — calls function from `game-engine-commands.ts`
+- `dragDropItem(detail): void` — calls function from `game-engine-commands.ts`
+- `dragDropCombine(detail): void` — calls function from `game-engine-commands.ts`
+- `pickPokemonProposition(proposition): void` — calls function from `game-engine-commands.ts`
+- `pickItem(item): void` — calls function from `game-engine-commands.ts`
+- `sendVector(vector): void` — minigame joystick input (from game-scene.ts Transfer.VECTOR)
 - `dispose(): void` — stops timer, saves game history + ELO to IndexedDB
 - `processBattleEvent(event: BattleEvent): void` — emits event via eventEmitter
+
+### IGameEngineContext (NEW)
+
+Interface that replaces `GameRoom` in simulation.ts, mini-game.ts, and effect.ts. Provides the subset of room functionality that core game logic needs:
+
+```typescript
+interface IGameEngineContext {
+  state: GameState
+  addDelayedAction(delayMs: number, callback: () => void): void
+  emit(event: string, payload: any): void
+  spawnOnBench(player: Player, pokemon: Pokemon, reason: string): void
+  spawnWanderingPokemon(params: WanderingPokemonParams): void
+  checkEvolutionsAfterPokemonAcquired(playerId: string): void
+  checkEvolutionsAfterItemAcquired(playerId: string): void
+  getTeamSize(board: MapSchema<Pokemon>): number
+}
+```
+
+`LocalGameEngine` implements `IGameEngineContext`. Core logic files (`simulation.ts`, `mini-game.ts`, `effect.ts`, `abilities.ts`, etc.) accept `IGameEngineContext` instead of `GameRoom`.
 
 ### GameConfig (NEW)
 
@@ -95,10 +119,27 @@ These existing Schema classes continue to function as data containers:
 
 ## Deletion Summary
 
+### State files — MOVE vs DELETE
+
+| State file | Action | Reason |
+|------------|--------|--------|
+| `game-state.ts` | **MOVE** to `app/models/colyseus-models/` | Still used by engine + Schema loopback; 9 files import it |
+| `lobby-state.ts` | DELETE | Multiplayer-only |
+| `preparation-state.ts` | DELETE | Multiplayer-only |
+| `after-game-state.ts` | DELETE | Multiplayer-only |
+
+### File counts
+
 | Category | Files Deleted | Lines Deleted |
 |----------|--------------|---------------|
 | Room files | 4 (game-room, lobby-room, prep-room, after-game-room) | ~2640 |
 | Command files | 3 (game-commands, lobby-commands, prep-commands) | ~4420 |
-| State files | 4 (game-state, lobby-state, prep-state, after-game-state) | ~270 |
-| Network | 1 (network.ts replaced) | ~263 |
-| **Total** | **12 files** | **~7600 lines** |
+| State files | 3 (lobby-state, prep-state, after-game-state — **not** game-state) | ~200 |
+| Client pages | 1 (preparation.tsx) | ~265 |
+| Client components | 2 (game-rooms-menu.tsx, game-room-item.tsx) | ~150 |
+| Client stores | 1 (PreparationStore.ts) | ~50 |
+| Core | 1 (tournament-logic.ts) | ~100 |
+| Network | 1 (network.ts rewritten) | ~263 |
+| **Total** | **~16 files deleted** | **~8100 lines** |
+
+**Note**: `game-state.ts` is MOVED (not deleted) to `app/models/colyseus-models/game-state.ts`. All 9 import paths across the codebase must be updated.

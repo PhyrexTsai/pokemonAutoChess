@@ -74,7 +74,35 @@ encoder.discardChanges()  // MUST call after each encode()
 
 **Decision**: Extract game command logic from `game-commands.ts` Command classes into plain functions. Each function accepts `(state: GameState, player: Player, params)` and returns void (mutates state in-place). The `LocalGameEngine` calls these functions directly.
 
-**Rationale**: The command logic is 90% pure game logic. Only `this.room` and `this.state` references need replacement with explicit parameters. The Colyseus Command/Dispatcher pattern adds zero value for local execution.
+**Rationale**: The command logic is mostly game logic, but has significant Colyseus coupling that must be carefully extracted:
+
+**Actual complexity** (verified counts from `game-commands.ts`):
+- 42 `this.room` references calling 18 unique room methods/properties
+- 167 `this.state` references (become explicit `state: GameState` parameter — mechanical replacement)
+- 25 `client.send()` calls (become `engine.emit()` calls)
+- `OnUpdatePhaseCommand` = 1195 lines (the largest single class to extract)
+
+**All 18 `this.room.*` methods that must become engine methods/context**:
+1. `this.room.state` (5×) — becomes `state` parameter
+2. `this.room.clients` (6×) — single-player: just `[humanPlayer]`
+3. `this.room.getTeamSize` (8×) — move to engine method
+4. `this.room.checkEvolutionsAfterPokemonAcquired` (4×) — move to engine method
+5. `this.room.broadcast` (2×) — becomes `engine.emit()`
+6. `this.room.miniGame` (3×) — becomes `engine.miniGame`
+7. `this.room.checkEvolutionsAfterItemAcquired` (2×) — move to engine method
+8. `this.room.clock` (2×) — becomes `engine.addDelayedAction()`
+9. `this.room.processBattleEvent` (2×) — becomes `engine.emit()`
+10. `this.room.additionalEpicPool` (1×) — becomes engine field
+11. `this.room.additionalRarePool` (1×) — becomes engine field
+12. `this.room.additionalUncommonPool` (1×) — becomes engine field
+13. `this.room.disconnect` (1×) — DELETE (multiplayer-only)
+14. `this.room.pickItemProposition` (1×) — move to engine method
+15. `this.room.pickPokemonProposition` (1×) — move to engine method
+16. `this.room.roomId` (1×) — becomes engine field (generate locally)
+17. `this.room.setMetadata` (1×) — DELETE (multiplayer-only)
+18. `this.room.spawnOnBench` (1×) — move to engine method
+
+The Colyseus Command/Dispatcher pattern adds zero value for local execution.
 
 **Reusable commands (direct extraction)**:
 - `buyPokemon(state, player, index)` — from OnBuyPokemonCommand
@@ -95,9 +123,23 @@ encoder.discardChanges()  // MUST call after each encode()
 - Tournament commands — multiplayer-only
 - Admin commands — no admin in single-player
 
-## R4: Room References Resolution (13 total)
+## R4: Room References Resolution
 
-**Decision**: 3 DELETE, 10 REIMPLEMENT with engine-local alternatives.
+**Decision**: 3 DELETE, 13 REIMPLEMENT with engine-local alternatives via `IGameEngineContext` interface.
+
+### Verified room reference counts (per file)
+
+| File | `room.*` refs | Key methods used |
+|------|--------------|-----------------|
+| items.ts | 7 | `room.clock.setTimeout` (2×), `room.broadcast` (1×), `room.state` (3×), `room.spawnOnBench` (1×) |
+| passives.ts | 3 | `room.clock.setTimeout` (2×), `room.broadcast` (1×) |
+| abilities.ts | 3 | `room.clock.setTimeout` (1×), `room.state.shop` (1×), `room.spawnWanderingPokemon` (1×) |
+| hidden-power.ts | 3 | `room.state.shop` (1×), `room.state` (1×), `room.spawnOnBench` (1×) |
+| mini-game.ts | 8 | `room.state` (4×), `room.clients` (1×), `room.broadcast` (2×), `room.clock.setTimeout` (1×) |
+| simulation.ts | 5 | `room` field declaration + property accesses |
+| effect.ts | 3 | `room?: GameRoom` in interface/param types |
+| synergies.ts | 2 | `room.clock.setTimeout` pattern |
+| **Total** | **34** | |
 
 ### Core game logic references (10)
 
@@ -114,13 +156,17 @@ encoder.discardChanges()  // MUST call after each encode()
 | EvolutionStone (evolution) | items.ts:1200 | REIMPLEMENT | Call `checkEvolutions()` as engine method |
 | PachirisuBerry (dig) | passives.ts:507 | REIMPLEMENT | Engine emits DIG event + uses delayed action |
 
-### Infrastructure references (3 — previously missed)
+### Infrastructure references (3)
 
 | Reference | File | Action | Replacement |
 |-----------|------|--------|-------------|
-| MiniGame constructor | mini-game.ts | REIMPLEMENT | Constructor takes `room: GameRoom` for `room.state`, `room.clients`, `room.broadcast()`, `room.clock.setTimeout()` — replace with engine context object |
-| Simulation.room field | simulation.ts:94,127,1499 | REIMPLEMENT | Optional `room?: GameRoom` field passed to abilities/effects — replace with engine context interface |
-| Effect args | effects/effect.ts | REIMPLEMENT | `OnStageStartEffectArgs` has `room?: GameRoom` — replace with engine context interface |
+| MiniGame constructor | mini-game.ts | REIMPLEMENT | Constructor takes `room: GameRoom` for `room.state`, `room.clients`, `room.broadcast()`, `room.clock.setTimeout()` — replace with `IGameEngineContext` |
+| Simulation.room field | simulation.ts:94,127,1499 | REIMPLEMENT | Optional `room?: GameRoom` field passed to abilities/effects — replace with `IGameEngineContext` interface |
+| Effect args | effects/effect.ts | REIMPLEMENT | `OnStageStartEffectArgs` has `room?: GameRoom` — replace with `IGameEngineContext` interface |
+
+### Additional note: `mini-game.ts` logger
+
+`mini-game.ts` line 2 imports `logger` from `"colyseus"` — must be replaced with `console` or a custom logger.
 
 ### Delayed action mechanism
 
@@ -186,6 +232,13 @@ room.onMessage(Transfer.ABILITY, cb)  // client receives
 engine.buyPokemon(id)                 // client calls directly
 engine.on(Transfer.ABILITY, cb)       // client listens locally
 ```
+
+**Additional client→engine message**: `Transfer.VECTOR` (minigame joystick input from game-scene.ts:474) — becomes `engine.sendVector(vector)` method.
+
+**Deleted Transfer messages** (multiplayer-only, no single-player equivalent):
+- `Transfer.SPECTATE` — no other players to watch
+- `Transfer.NEW_MESSAGE` — multiplayer chat
+- `Transfer.OVERWRITE_BOARD` — admin-only board override
 
 ## R6: Game Flow Simplification
 
