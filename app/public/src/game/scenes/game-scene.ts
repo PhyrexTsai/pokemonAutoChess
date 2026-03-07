@@ -83,6 +83,7 @@ export default class GameScene extends Scene {
   }
 
   init(data: { engine: LocalGameEngine; spectate: boolean }) {
+    console.log("[GameScene] init() called, engine:", !!data.engine)
     this.tilemaps = new Map()
     this.engine = data.engine
     this.spectate = data.spectate
@@ -91,6 +92,7 @@ export default class GameScene extends Scene {
   }
 
   preload() {
+    console.log("[GameScene] preload() called")
     resetSpriteCounts()
     this.loadingManager = new LoadingManager(this)
 

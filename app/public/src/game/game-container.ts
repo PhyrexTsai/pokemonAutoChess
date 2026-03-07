@@ -302,11 +302,14 @@ class GameContainer {
       }
     }
     this.game = new Phaser.Game(config)
+    console.log("[GameContainer] Phaser game created, domContainer:", !!this.game.domContainer)
     this.game.domContainer.style.zIndex = DEPTH.PHASER_DOM_CONTAINER.toString()
+    console.log("[GameContainer] calling scene.start('gameScene')")
     this.game.scene.start("gameScene", {
       engine: this.engine,
       spectate: this.spectate
     })
+    console.log("[GameContainer] scene.start called, scenes:", this.game.scene.getScenes(false).map(s => s.sys.settings.key))
     this.game.scale.on("resize", this.resize, this)
     if (this.game.renderer.type === Phaser.WEBGL) {
       this.game.plugins.install("rexOutline", OutlinePlugin, true)
