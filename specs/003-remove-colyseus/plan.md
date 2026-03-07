@@ -88,7 +88,7 @@ app/
     ├── game-engine-phases.ts       # NEW: extracted OnUpdatePhaseCommand logic (~1200 lines)
     ├── network.ts                  # REWRITE: engine calls replace room.send()
     ├── pages/
-    │   ├── game.tsx                # MODIFY: ~37 changes (16 onMessage→engine.on, 11 room.state reads→clientState, 6 lifecycle refs removed, $ source change)
+    │   ├── game.tsx                # MODIFY: ~46 changes (16 onMessage→engine.on, ~20 room.state reads→clientState, 6 lifecycle refs removed, $ source change)
     │   ├── after-game.tsx          # MODIFY: full useEffect rewrite (~60 lines, remove reconnection logic)
     │   ├── preparation.tsx         # DELETE
     │   ├── lobby.tsx               # MODIFY: add "Start Game", remove MP elements
@@ -98,7 +98,7 @@ app/
     ├── game/
     │   ├── game-container.ts       # MODIFY: ~12 changes (4 send→engine, 1 onMessage→engine.on, 3 state reads→clientState, SchemaCallbackProxy removal, constructor)
     │   ├── lobby-logic.ts          # MODIFY: simplify for local flow, remove reconnection logic
-    │   ├── scenes/game-scene.ts    # MODIFY: ~25 changes (9 room.send→engine, 14 room.state→clientState, 1 onMessage→engine.on, Room type)
+    │   ├── scenes/game-scene.ts    # MODIFY: ~27 changes (9 room.send→engine, 16 room.state→clientState, 1 onMessage→engine.on, Room type)
     │   └── components/
     │       ├── berry-tree.ts       # MODIFY: 1 room.send → engine method
     │       ├── wanderers-manager.ts # MODIFY: 3 room.send(Transfer.WANDERER_CLICKED) → engine method

@@ -19,7 +19,7 @@
 **Scope clarification**: The loopback eliminates changes to Schema listener code, but `game.tsx` and `game-container.ts` still have other `room.*` references that need modification:
 - `room.onMessage(Transfer.*, cb)` → `engine.on(Transfer.*, cb)` (15 in game.tsx, 1 in game-container.ts)
 - `room.send(Transfer.*, data)` → `engine.method(data)` (3 in game-container.ts)
-- `room.state.*` direct reads → `engine.clientState.*` (5 in game.tsx, 4 in game-container.ts, 5 in game-scene.ts)
+- `room.state.*` direct reads → `engine.clientState.*` (~20 in game.tsx incl. gameContainer.room?.state refs, 3 in game-container.ts, 16 in game-scene.ts)
 - Constructor signatures (`Room<GameState>` → `LocalGameEngine`)
 - `room.onDrop()`, `room.onError()` → delete (multiplayer-only)
 - `berry-tree.ts:151` → `room.send(Transfer.PICK_BERRY)` → engine method

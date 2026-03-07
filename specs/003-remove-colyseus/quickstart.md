@@ -37,9 +37,9 @@ The core strategy is **extract, don't rewrite**:
 | File | Change | Scope |
 |------|--------|-------|
 | `app/public/src/network.ts` | Replace Colyseus client with engine calls | Full rewrite (~260 lines) |
-| `app/public/src/pages/game.tsx` | Schema listeners untouched; replace `$` source, 16 `room.onMessage` → `engine.on`, 11 `room.state` reads → `clientState`, remove 6 lifecycle refs (leave, onDrop, onReconnect, onLeave, reconnectionToken, roomId), constructor | ~37 changes |
+| `app/public/src/pages/game.tsx` | Schema listeners untouched; replace `$` source, 16 `room.onMessage` → `engine.on`, ~20 `room.state` reads → `clientState` (incl. gameContainer.room?.state refs), remove 6 lifecycle refs (leave, onDrop, onReconnect, onLeave, reconnectionToken, roomId), constructor | ~46 changes |
 | `app/public/src/game/game-container.ts` | Schema listeners untouched; replace `$` source, 4 `room.send` → engine methods, 1 `room.onMessage` → `engine.on`, 3 `room.state` → `clientState`, remove `SchemaCallbackProxy` type, remove `room.onError`, constructor | ~12 changes |
-| `app/public/src/game/scenes/game-scene.ts` | 9 `room?.send` → engine methods (incl. Transfer.VECTOR), 14 `room.state` reads → `clientState`, 1 `room.onMessage` → `engine.on`, Room type | ~25 changes |
+| `app/public/src/game/scenes/game-scene.ts` | 9 `room?.send` → engine methods (incl. Transfer.VECTOR), 16 `room.state` reads → `clientState`, 1 `room.onMessage` → `engine.on`, Room type | ~27 changes |
 | `app/public/src/game/components/berry-tree.ts` | 1 `room.send(Transfer.PICK_BERRY)` → engine method | ~1 change |
 | `app/public/src/game/components/wanderers-manager.ts` | 3 `room.send(Transfer.WANDERER_CLICKED)` → engine method | ~3 changes |
 | `app/public/src/game/components/minigame-manager.ts` | 1 `room.onMessage(Transfer.NPC_DIALOG)` → `engine.on` + 3 `room.state` reads → `clientState` + update GameState import path | ~5 changes |
