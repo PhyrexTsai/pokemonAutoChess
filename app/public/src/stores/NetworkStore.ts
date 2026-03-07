@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import { CollectionUtils } from "../../../core/collection"
-import { Emotion, Title, Transfer } from "../../../types"
+import { Emotion, Title } from "../../../types"
 import { ConnectionStatus } from "../../../types/enum/ConnectionStatus"
 import { Language } from "../../../types/enum/Language"
 import {
@@ -10,7 +10,7 @@ import {
 } from "../../../types/interfaces/UserMetadata"
 import { INotification } from "../../../types/notifications"
 import { getAvatarString } from "../../../utils/avatar"
-import { leaveAllRooms, rooms } from "../network.js"
+import { engine } from "../network"
 
 export interface INetwork {
   uid: string
@@ -52,7 +52,7 @@ export const networkSlice = createSlice({
       state.uid = ""
       state.displayName = ""
       state.email = ""
-      leaveAllRooms()
+      engine.dispose()
     },
     setProfile: (state, action: PayloadAction<IUserMetadataJSON>) => {
       const unpackedCollection: Map<string, IPokemonCollectionItemUnpacked> =
@@ -72,7 +72,6 @@ export const networkSlice = createSlice({
     },
     changeName: (state, action: PayloadAction<string>) => {
       if (state.profile) state.profile.displayName = action.payload
-      rooms.lobby?.send(Transfer.CHANGE_NAME, { name: action.payload })
     },
     changeAvatar: (
       state,
@@ -84,7 +83,7 @@ export const networkSlice = createSlice({
           action.payload.shiny,
           action.payload.emotion
         )
-      rooms.lobby?.send(Transfer.CHANGE_AVATAR, action.payload)
+      // Profile changes saved locally only (no server sync)
     },
     changeSelectedEmotion: (
       state,
@@ -103,15 +102,13 @@ export const networkSlice = createSlice({
           pokemonCollectionItem.selectedShiny = action.payload.shiny
         }
       }
-      rooms.lobby?.send(Transfer.CHANGE_SELECTED_EMOTION, action.payload)
+      // Profile changes saved locally only (no server sync)
     },
     setTitle: (state, action: PayloadAction<Title | "">) => {
       if (state.profile) state.profile.title = action.payload
-      rooms.lobby?.send(Transfer.SET_TITLE, action.payload)
     },
     selectLanguage: (state, action: PayloadAction<Language>) => {
       if (state.profile) state.profile.language = action.payload
-      rooms.lobby?.send(Transfer.SELECT_LANGUAGE, action.payload)
     },
     setErrorAlertMessage: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload
