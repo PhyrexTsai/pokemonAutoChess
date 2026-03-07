@@ -5,6 +5,14 @@
 **Status**: Draft
 **Input**: Phase 2 of multiplayer to single-player refactoring. Replace the Colyseus networking layer with a local game engine that runs entirely in the browser. Client Redux stores and Phaser renderer connect directly to the local engine instead of receiving state over WebSocket.
 
+## Clarifications
+
+### Session 2026-03-07
+
+- Q: @colyseus/schema package scope — remove in Phase 2 or retain for Phase 4? → A: Retain `@colyseus/schema` in Phase 2. Only remove networking packages (`@colyseus/sdk`, `colyseus`, `@colyseus/tools`, `@colyseus/drivers`). Schema/MapSchema/ArraySchema/SetSchema/@type() cleanup is deferred to Phase 4.
+- Q: Express server scope — remove in Phase 2 or defer to Phase 3? → A: Retain Express server in Phase 2, only strip Colyseus room definitions and networking routes. Full server removal is Phase 3.
+- Q: Game setup UX — new screen, simplified existing, or keep two-page flow? → A: Simplify existing lobby page. Remove multiplayer elements (room list, chat, player search). Retain profile and collection. Add "Start Game" button with bot difficulty + special rules panel. Delete preparation page.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Complete Game Playable In-Browser Without Server (Priority: P1)
@@ -45,23 +53,24 @@ During battles, the Phaser renderer displays all combat visuals identically to t
 
 ### User Story 3 - Game Setup Flow Works Without Lobby/Preparation Rooms (Priority: P3)
 
-The player can configure and start a game without going through Colyseus lobby and preparation room flows. The lobby screen shows a "Start Game" option. The player can select bot difficulty, optionally set special game rules, and launch directly into a game. The multi-step room-based flow (lobby to preparation to game to after-game) is replaced with a streamlined local flow.
+The existing lobby page is simplified for single-player: multiplayer elements (room list, chat, player search, tournament) are removed, while profile and Pokemon collection are retained. A "Start Game" button opens a configuration panel for bot difficulty and optional special rules, then launches directly into a game. The preparation page is deleted entirely — no waiting-for-players step needed.
 
 **Why this priority**: The game setup UX can be simplified significantly since there are no other human players to coordinate with. This is lower priority because a hardcoded default setup would still allow testing US1 and US2.
 
-**Independent Test**: Open the game. From the main screen, configure a game (select bot count/difficulty, set a special rule). Start the game. Verify the game launches with the selected configuration.
+**Independent Test**: Open the game. On the simplified lobby page, verify profile and collection are accessible. Click "Start Game", select bot difficulty, start the game. Verify the game launches with the selected configuration.
 
 **Acceptance Scenarios**:
 
-1. **Given** the player is on the main screen, **When** they choose to start a new game, **Then** a game configuration interface allows selecting bot difficulty and optional special rules.
-2. **Given** game configuration is set, **When** the player confirms, **Then** the local engine initializes a game with the selected settings and transitions directly to the first PICK phase.
-3. **Given** the player finishes a game, **When** the after-game screen is shown, **Then** the player can return to the main screen and start a new game without page reload.
+1. **Given** the player is on the lobby page, **When** they view the interface, **Then** profile and Pokemon collection features are accessible, and multiplayer elements (room list, chat, player search, tournaments) are absent.
+2. **Given** the player clicks "Start Game", **When** the configuration panel opens, **Then** they can select bot difficulty and optionally set special game rules.
+3. **Given** game configuration is set, **When** the player confirms, **Then** the local engine initializes a game with the selected settings and transitions directly to the first PICK phase (no preparation room step).
+4. **Given** the player finishes a game, **When** the after-game screen is shown, **Then** the player can return to the lobby page and start a new game without page reload.
 
 ---
 
 ### User Story 4 - All Colyseus Dependencies Removed From Codebase (Priority: P4)
 
-The application builds and runs with zero Colyseus package dependencies. All server-side room files (`app/rooms/`), the Colyseus client SDK (`@colyseus/sdk`), and the Colyseus schema package (`@colyseus/schema`) are removed from `package.json`. The `app/public/src/network.ts` file is replaced. No `colyseus` string appears in the production bundle.
+The application builds and runs with zero Colyseus networking dependencies. All server-side room files (`app/rooms/`), the Colyseus client SDK (`@colyseus/sdk`), server package (`colyseus`), and tooling (`@colyseus/tools`, `@colyseus/drivers`) are removed from `package.json`. The `@colyseus/schema` package is retained as a data structure library (removed in Phase 4). The `app/public/src/network.ts` file is replaced.
 
 **Why this priority**: This is the cleanup/validation story. It ensures the migration is truly complete and no dead code remains. It depends on US1-US3 being functional first.
 
@@ -71,7 +80,7 @@ The application builds and runs with zero Colyseus package dependencies. All ser
 
 1. **Given** the refactored codebase, **When** `npm run build` is executed, **Then** the build succeeds with zero Colyseus-related imports.
 2. **Given** the refactored codebase, **When** searching for `colyseus` in all source files, **Then** zero matches are found.
-3. **Given** `package.json`, **When** inspecting dependencies and devDependencies, **Then** no `colyseus`, `@colyseus/sdk`, `@colyseus/schema`, `@colyseus/tools`, or `@colyseus/drivers` packages are listed.
+3. **Given** `package.json`, **When** inspecting dependencies and devDependencies, **Then** no `colyseus`, `@colyseus/sdk`, `@colyseus/tools`, or `@colyseus/drivers` packages are listed. `@colyseus/schema` is retained (removed in Phase 4).
 4. **Given** the `app/rooms/` directory, **When** checking its existence, **Then** it does not exist (fully deleted).
 
 ---
@@ -97,8 +106,8 @@ The application builds and runs with zero Colyseus package dependencies. All ser
 - **FR-007**: The local engine MUST compute ELO changes and save game history to IndexedDB (using the persistence layer from Phase 1) when a game completes.
 - **FR-008**: The 4 Colyseus room files (`custom-lobby-room.ts`, `preparation-room.ts`, `game-room.ts`, `after-game-room.ts`), 3 command files (`game-commands.ts`, `lobby-commands.ts`, `preparation-commands.ts`), and 4 state files (`game-state.ts`, `preparation-state.ts`, `lobby-state.ts`, `after-game-state.ts`) MUST be deleted.
 - **FR-009**: The `app/public/src/network.ts` file MUST be replaced with a local engine module that exports the same convenience functions (same function names where applicable) to minimize call-site changes in React components.
-- **FR-010**: The `@colyseus/sdk`, `@colyseus/schema`, `@colyseus/tools`, `@colyseus/drivers`, and `colyseus` packages MUST be removed from `package.json`.
-- **FR-011**: The `app/index.ts` server entry point and `app/app.config.ts` server configuration MUST be deleted or reduced to a minimal static file server (if still needed for development). Express API endpoints that serve static game data (`/pokemons`, `/items`, `/types`, `/titles`) MUST be replaced with direct imports or bundled data.
+- **FR-010**: The `@colyseus/sdk`, `@colyseus/tools`, `@colyseus/drivers`, and `colyseus` (server) packages MUST be removed from `package.json`. The `@colyseus/schema` package is retained as a data structure library for MapSchema/ArraySchema/SetSchema/Schema — its removal is deferred to Phase 4.
+- **FR-011**: The `app/app.config.ts` server configuration MUST be stripped of all Colyseus room definitions and networking routes. The Express server and `app/index.ts` are retained as a static file server for development — their full removal is deferred to Phase 3. Express API endpoints that serve static game data (`/pokemons`, `/items`, `/types`, `/titles`) are retained in Phase 2 (removed in Phase 3).
 - **FR-012**: The local engine MUST handle the minigame phase (Pokemon catching between rounds) that currently runs in the TOWN phase of `game-room.ts`.
 - **FR-013**: The 8 null-guarded `room` references in ability/synergy files (`abilities.ts`, `hidden-power.ts`, `synergies.ts`) identified in Phase 0 MUST be fully resolved — either reimplemented without room dependency or removed if the functionality is multiplayer-only.
 - **FR-014**: The build process MUST pass (`npm run build`) with zero Colyseus-related imports after migration.
@@ -128,7 +137,7 @@ The application builds and runs with zero Colyseus package dependencies. All ser
 
 - **SC-001**: A player can start and complete a full game (15+ rounds) against 7 bot opponents entirely in the browser with no server process running, achieving the same gameplay experience as the multiplayer version.
 - **SC-002**: All battle visuals (ability animations, damage/heal numbers, status icons, weather effects, board events) render identically to the pre-refactoring version, verified by visual comparison of the same battle scenarios.
-- **SC-003**: The production build succeeds with zero references to `colyseus`, `@colyseus/sdk`, `@colyseus/schema`, `@colyseus/tools`, or `@colyseus/drivers` in source files or `package.json`.
+- **SC-003**: The production build succeeds with zero references to `@colyseus/sdk`, `@colyseus/tools`, `@colyseus/drivers`, or `colyseus` (server) in source files or `package.json`. `@colyseus/schema` imports are permitted (deferred to Phase 4).
 - **SC-004**: The `app/rooms/` directory does not exist after refactoring (11 files, ~7040 lines deleted).
 - **SC-005**: The `app/public/src/network.ts` Colyseus client module is replaced with a local engine module. All 20+ message-sending functions are converted to direct engine method calls.
 - **SC-006**: Game actions (buy, sell, drag-drop, reroll, level-up, lock shop, pick proposition, pick item) produce identical state changes as the server-validated versions, verified by playing through diverse game scenarios.
