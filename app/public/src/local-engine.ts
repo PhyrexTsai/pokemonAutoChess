@@ -562,17 +562,10 @@ export class LocalGameEngine implements IGameEngineContext {
   }
 
   sendVector(vector: { x: number; y: number }) {
-    // Minigame joystick input — update the player's avatar body
-    // The MiniGame reads this via the avatar model
+    // Minigame joystick input — delegate to MiniGame physics
     const player = this.getHumanPlayer()
     if (player) {
-      // Store vector for MiniGame to consume
-      const avatarId = player.id
-      const avatar = this.engineState.avatars.get(avatarId)
-      if (avatar) {
-        avatar.x += vector.x
-        avatar.y += vector.y
-      }
+      this.miniGame?.applyVector(player.id, vector.x, vector.y)
     }
   }
 
