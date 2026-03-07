@@ -18,7 +18,7 @@ Replace the Colyseus networking layer with a `LocalGameEngine` that runs the gam
 **Project Type**: Browser game (SPA)
 **Performance Goals**: 60 FPS game loop, <16ms per tick
 **Constraints**: Offline-capable, zero server dependency for gameplay
-**Scale/Scope**: ~16 files deleted, ~28 files modified, ~8100 lines deleted, ~3000 lines added (3 new engine files)
+**Scale/Scope**: ~16 files deleted, ~30 files modified, ~8100 lines deleted, ~3000 lines added (3 new engine files)
 
 ## Constitution Check
 
@@ -102,8 +102,8 @@ app/
     │   └── components/
     │       ├── berry-tree.ts       # MODIFY: 1 room.send → engine method
     │       ├── wanderers-manager.ts # MODIFY: 3 room.send(Transfer.WANDERER_CLICKED) → engine method
-    │       ├── minigame-manager.ts  # MODIFY: 1 room.onMessage(Transfer.NPC_DIALOG) → engine.on
-    │       ├── board-manager.ts     # MODIFY: inherits from GameContainer, constructor type change
+    │       ├── minigame-manager.ts  # MODIFY: 1 room.onMessage → engine.on + GameState import path
+    │       ├── board-manager.ts     # MODIFY: constructor type change + GameState import path
     │       ├── pokemon-avatar.ts    # MODIFY: room.state accesses → engine.clientState
     │       ├── loading-manager.ts   # MODIFY: room.state accesses → engine.clientState
     │       └── sell-zone.ts         # MODIFY: room.state accesses → engine.clientState
@@ -114,7 +114,7 @@ app/
         └── NetworkStore.ts         # MODIFY: remove room references, leaveAllRooms → engine.dispose
 ```
 
-**Structure Decision**: Existing project structure preserved. Three new files added (`local-engine.ts`, `game-engine-commands.ts`, `game-engine-phases.ts`). `engine-state-proxy.ts` eliminated by Schema encode/decode loopback. No new directories. ~16 files deleted, ~28 files modified. GameState MOVED from `rooms/states/` to `models/colyseus-models/` (9 import paths updated).
+**Structure Decision**: Existing project structure preserved. Three new files added (`local-engine.ts`, `game-engine-commands.ts`, `game-engine-phases.ts`). `engine-state-proxy.ts` eliminated by Schema encode/decode loopback. No new directories. ~16 files deleted, ~30 files modified. GameState MOVED from `rooms/states/` to `models/colyseus-models/` (9 import paths updated).
 
 ### Files to Move
 

@@ -42,8 +42,8 @@ The core strategy is **extract, don't rewrite**:
 | `app/public/src/game/scenes/game-scene.ts` | 9 `room?.send` → engine methods (incl. Transfer.VECTOR), 5 `room.state` reads → `clientState`, 1 `room.onMessage` → `engine.on`, Room type | ~16 changes |
 | `app/public/src/game/components/berry-tree.ts` | 1 `room.send(Transfer.PICK_BERRY)` → engine method | ~1 change |
 | `app/public/src/game/components/wanderers-manager.ts` | 3 `room.send(Transfer.WANDERER_CLICKED)` → engine method | ~3 changes |
-| `app/public/src/game/components/minigame-manager.ts` | 1 `room.onMessage(Transfer.NPC_DIALOG)` → `engine.on` | ~1 change |
-| `app/public/src/game/components/board-manager.ts` | Constructor type change (inherits from GameContainer) | ~2 changes |
+| `app/public/src/game/components/minigame-manager.ts` | 1 `room.onMessage(Transfer.NPC_DIALOG)` → `engine.on` + update GameState import path | ~2 changes |
+| `app/public/src/game/components/board-manager.ts` | Constructor type change (inherits from GameContainer) + update GameState import path | ~3 changes |
 | `app/public/src/game/components/pokemon-avatar.ts` | `room.state` accesses → `engine.clientState` | ~3 changes |
 | `app/public/src/game/components/loading-manager.ts` | `room.state` accesses → `engine.clientState` | ~2 changes |
 | `app/public/src/game/components/sell-zone.ts` | `room.state` accesses → `engine.clientState` | ~2 changes |
@@ -52,6 +52,13 @@ The core strategy is **extract, don't rewrite**:
 | `app/public/src/stores/GameStore.ts` | Remove Colyseus type imports | ~3 changes |
 | `app/public/src/stores/LobbyStore.ts` | Remove `RoomAvailable` type from `@colyseus/sdk` | ~5 changes |
 | `app/public/src/stores/NetworkStore.ts` | Remove `leaveAllRooms`, room references → engine.dispose | ~5 changes |
+
+### Server entry points
+
+| File | Change | Scope |
+|------|--------|-------|
+| `app/index.ts` | Strip Colyseus server setup, keep Express (Phase 3 deletes Express) | ~30 lines |
+| `app/app.config.ts` | Strip room definitions, keep static routes | ~20 lines |
 
 ### Core/server-side files
 
@@ -87,6 +94,17 @@ The core strategy is **extract, don't rewrite**:
 | `app/public/src/pages/component/room-menu/game-rooms-menu.tsx` | Multiplayer room listing UI |
 | `app/public/src/pages/component/room-menu/game-room-item.tsx` | Multiplayer room card UI |
 | `app/public/src/stores/PreparationStore.ts` | Multiplayer preparation state |
+
+## npm Packages to Remove (9)
+
+Retain `@colyseus/schema` for Phase 4 removal. Remove all others:
+
+`colyseus`, `@colyseus/command`, `@colyseus/monitor`, `@colyseus/redis-driver`, `@colyseus/redis-presence`, `@colyseus/sdk`, `@colyseus/testing`, `@colyseus/tools`, `@colyseus/ws-transport`
+
+## Scope Summary
+
+- **~16 files deleted**, **~30 files modified**, **3 new files created**, **1 file moved**
+- **~8100 lines deleted**, **~3000 lines added** (3 engine files: 800 + 1000 + 1200)
 
 ## Build & Verify
 

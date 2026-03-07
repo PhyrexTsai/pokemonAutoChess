@@ -39,7 +39,16 @@ Central game controller replacing all 4 Colyseus rooms. Split across 3 files for
 - `dragDropCombine(detail): void` — calls function from `game-engine-commands.ts`
 - `pickPokemonProposition(proposition): void` — calls function from `game-engine-commands.ts`
 - `pickItem(item): void` — calls function from `game-engine-commands.ts`
-- `sendVector(vector): void` — minigame joystick input (from game-scene.ts Transfer.VECTOR)
+- `showEmote(emote?): void` — display player emote
+- `pickBerry(index): void` — pick berry from tree (berry-tree.ts)
+- `wandererClicked(id): void` — click wandering Pokemon (wanderers-manager.ts)
+- `switchBenchAndBoard(pokemonId): void` — switch Pokemon between bench/board (game-scene.ts)
+- `removeFromShop(index): void` — remove Pokemon from shop (game-scene.ts)
+- `sellPokemonFromScene(pokemonId): void` — sell from game scene context (game-scene.ts)
+- `reportLoadingProgress(progress): void` — report asset loading progress (game-scene.ts)
+- `reportLoadingComplete(): void` — report asset loading complete (game-scene.ts)
+- `sendVector(vector): void` — minigame joystick input (game-scene.ts)
+- `on(event, callback): void` — register Transfer message listener (delegates to eventEmitter)
 - `dispose(): void` — stops timer, saves game history + ELO to IndexedDB
 - `processBattleEvent(event: BattleEvent): void` — emits event via eventEmitter
 
