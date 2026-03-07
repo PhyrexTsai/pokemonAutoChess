@@ -61,10 +61,10 @@ app/
 │   ├── scribbles.ts                # MODIFY: update GameState import path
 │   ├── pokemon-entity.ts           # Reused as-is
 │   ├── pokemon-state.ts            # Reused as-is
-│   ├── abilities/abilities.ts      # MODIFY: fix 3 room refs (via pokemon.simulation.room → IGameEngineContext)
-│   ├── abilities/hidden-power.ts   # MODIFY: fix 3 room refs (via unown.simulation.room → IGameEngineContext)
+│   ├── abilities/abilities.ts      # MODIFY: fix 6 room refs (via pokemon.simulation.room → IGameEngineContext)
+│   ├── abilities/hidden-power.ts   # MODIFY: fix 5 room refs (via unown.simulation.room → IGameEngineContext)
 │   ├── effects/effect.ts           # MODIFY: replace room?: GameRoom with IGameEngineContext in OnStageStartEffectArgs (~3 refs)
-│   ├── effects/synergies.ts        # MODIFY: fix 2 room refs
+│   ├── effects/synergies.ts        # MODIFY: fix 1 room ref
 │   ├── effects/items.ts            # MODIFY: fix 7 room refs (clock, broadcast, state, spawnOnBench)
 │   ├── effects/passives.ts         # MODIFY: fix 3 room refs (clock, broadcast)
 │   └── tournament-logic.ts         # DELETE (multiplayer-only)
@@ -88,7 +88,7 @@ app/
     ├── game-engine-phases.ts       # NEW: extracted OnUpdatePhaseCommand logic (~1200 lines)
     ├── network.ts                  # REWRITE: engine calls replace room.send()
     ├── pages/
-    │   ├── game.tsx                # MODIFY: ~30 changes (16 onMessage→engine.on, 7 room.state reads→clientState, 6 lifecycle refs removed, $ source change)
+    │   ├── game.tsx                # MODIFY: ~37 changes (16 onMessage→engine.on, 11 room.state reads→clientState, 6 lifecycle refs removed, $ source change)
     │   ├── after-game.tsx          # MODIFY: full useEffect rewrite (~60 lines, remove reconnection logic)
     │   ├── preparation.tsx         # DELETE
     │   ├── lobby.tsx               # MODIFY: add "Start Game", remove MP elements
@@ -98,17 +98,17 @@ app/
     ├── game/
     │   ├── game-container.ts       # MODIFY: ~12 changes (4 send→engine, 1 onMessage→engine.on, 3 state reads→clientState, SchemaCallbackProxy removal, constructor)
     │   ├── lobby-logic.ts          # MODIFY: simplify for local flow, remove reconnection logic
-    │   ├── scenes/game-scene.ts    # MODIFY: ~16 changes (9 room.send→engine, 5 room.state→clientState, 1 onMessage→engine.on, Room type)
+    │   ├── scenes/game-scene.ts    # MODIFY: ~25 changes (9 room.send→engine, 14 room.state→clientState, 1 onMessage→engine.on, Room type)
     │   └── components/
     │       ├── berry-tree.ts       # MODIFY: 1 room.send → engine method
     │       ├── wanderers-manager.ts # MODIFY: 3 room.send(Transfer.WANDERER_CLICKED) → engine method
-    │       ├── minigame-manager.ts  # MODIFY: 1 room.onMessage → engine.on + GameState import path
+    │       ├── minigame-manager.ts  # MODIFY: 1 room.onMessage → engine.on + 3 room.state → clientState + GameState import path
     │       ├── board-manager.ts     # MODIFY: constructor type change + GameState import path
     │       ├── pokemon-avatar.ts    # MODIFY: room.state accesses → engine.clientState
     │       ├── loading-manager.ts   # MODIFY: room.state accesses → engine.clientState
     │       └── sell-zone.ts         # MODIFY: room.state accesses → engine.clientState
     └── stores/
-        ├── GameStore.ts            # MODIFY: remove Colyseus type imports
+        ├── GameStore.ts            # Already clean (zero Colyseus imports)
         ├── LobbyStore.ts           # MODIFY: remove RoomAvailable type from @colyseus/sdk
         ├── PreparationStore.ts     # DELETE
         └── NetworkStore.ts         # MODIFY: remove room references, leaveAllRooms → engine.dispose

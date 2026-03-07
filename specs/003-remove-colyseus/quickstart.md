@@ -37,19 +37,19 @@ The core strategy is **extract, don't rewrite**:
 | File | Change | Scope |
 |------|--------|-------|
 | `app/public/src/network.ts` | Replace Colyseus client with engine calls | Full rewrite (~260 lines) |
-| `app/public/src/pages/game.tsx` | Schema listeners untouched; replace `$` source, 16 `room.onMessage` → `engine.on`, 7 `room.state` reads → `clientState`, remove 6 lifecycle refs (leave, onDrop, onReconnect, onLeave, reconnectionToken, roomId), constructor | ~30 changes |
+| `app/public/src/pages/game.tsx` | Schema listeners untouched; replace `$` source, 16 `room.onMessage` → `engine.on`, 11 `room.state` reads → `clientState`, remove 6 lifecycle refs (leave, onDrop, onReconnect, onLeave, reconnectionToken, roomId), constructor | ~37 changes |
 | `app/public/src/game/game-container.ts` | Schema listeners untouched; replace `$` source, 4 `room.send` → engine methods, 1 `room.onMessage` → `engine.on`, 3 `room.state` → `clientState`, remove `SchemaCallbackProxy` type, remove `room.onError`, constructor | ~12 changes |
-| `app/public/src/game/scenes/game-scene.ts` | 9 `room?.send` → engine methods (incl. Transfer.VECTOR), 5 `room.state` reads → `clientState`, 1 `room.onMessage` → `engine.on`, Room type | ~16 changes |
+| `app/public/src/game/scenes/game-scene.ts` | 9 `room?.send` → engine methods (incl. Transfer.VECTOR), 14 `room.state` reads → `clientState`, 1 `room.onMessage` → `engine.on`, Room type | ~25 changes |
 | `app/public/src/game/components/berry-tree.ts` | 1 `room.send(Transfer.PICK_BERRY)` → engine method | ~1 change |
 | `app/public/src/game/components/wanderers-manager.ts` | 3 `room.send(Transfer.WANDERER_CLICKED)` → engine method | ~3 changes |
-| `app/public/src/game/components/minigame-manager.ts` | 1 `room.onMessage(Transfer.NPC_DIALOG)` → `engine.on` + update GameState import path | ~2 changes |
+| `app/public/src/game/components/minigame-manager.ts` | 1 `room.onMessage(Transfer.NPC_DIALOG)` → `engine.on` + 3 `room.state` reads → `clientState` + update GameState import path | ~5 changes |
 | `app/public/src/game/components/board-manager.ts` | Constructor type change (inherits from GameContainer) + update GameState import path | ~3 changes |
 | `app/public/src/game/components/pokemon-avatar.ts` | `room.state` accesses → `engine.clientState` | ~3 changes |
-| `app/public/src/game/components/loading-manager.ts` | `room.state` accesses → `engine.clientState` | ~2 changes |
-| `app/public/src/game/components/sell-zone.ts` | `room.state` accesses → `engine.clientState` | ~2 changes |
+| `app/public/src/game/components/loading-manager.ts` | `room.state` access → `engine.clientState` | ~1 change |
+| `app/public/src/game/components/sell-zone.ts` | `room.state` access → `engine.clientState` | ~1 change |
 | `app/public/src/game/lobby-logic.ts` | Simplify: remove room connection, remove reconnection logic, add "Start Game" | ~200 lines changed |
 | `app/public/src/pages/after-game.tsx` | Full useEffect rewrite: remove Colyseus reconnection, read engine final state directly | ~60 lines rewritten |
-| `app/public/src/stores/GameStore.ts` | Remove Colyseus type imports | ~3 changes |
+| `app/public/src/stores/GameStore.ts` | Already clean (zero Colyseus imports) | 0 changes |
 | `app/public/src/stores/LobbyStore.ts` | Remove `RoomAvailable` type from `@colyseus/sdk` | ~5 changes |
 | `app/public/src/stores/NetworkStore.ts` | Remove `leaveAllRooms`, room references → engine.dispose | ~5 changes |
 
@@ -67,9 +67,9 @@ The core strategy is **extract, don't rewrite**:
 | `app/core/simulation.ts` | Replace `room?: GameRoom` field with `IGameEngineContext` | ~5 refs |
 | `app/core/mini-game.ts` | Replace `room: GameRoom` constructor param with `IGameEngineContext`; replace `logger` import from `"colyseus"` with console | ~8 refs + 1 import |
 | `app/core/effects/effect.ts` | Replace `room?: GameRoom` in `OnStageStartEffectArgs` with `IGameEngineContext` | ~3 refs |
-| `app/core/abilities/abilities.ts` | Fix 3 room refs (via `pokemon.simulation.room` → `IGameEngineContext`) | ~3 refs |
-| `app/core/abilities/hidden-power.ts` | Fix 3 room refs (via `unown.simulation.room` → `IGameEngineContext`) | ~3 refs |
-| `app/core/effects/synergies.ts` | Fix 2 room refs | ~2 refs |
+| `app/core/abilities/abilities.ts` | Fix 6 room refs (via `pokemon.simulation.room` → `IGameEngineContext`) | ~6 refs |
+| `app/core/abilities/hidden-power.ts` | Fix 5 room refs (via `unown.simulation.room` → `IGameEngineContext`) | ~5 refs |
+| `app/core/effects/synergies.ts` | Fix 1 room ref | ~1 ref |
 | `app/core/effects/items.ts` | Fix 7 room refs (clock, broadcast, state, spawnOnBench) | ~7 refs |
 | `app/core/effects/passives.ts` | Fix 3 room refs (clock, broadcast) | ~3 refs |
 | `app/core/matchmaking.ts` | Update GameState import path | ~1 change |

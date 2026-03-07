@@ -77,7 +77,7 @@ encoder.discardChanges()  // MUST call after each encode()
 **Rationale**: The command logic is mostly game logic, but has significant Colyseus coupling that must be carefully extracted:
 
 **Actual complexity** (verified counts from `game-commands.ts`):
-- 42 `this.room` references calling 18 unique room methods/properties
+- ~49 `this.room` references calling 18 unique room methods/properties
 - 167 `this.state` references (become explicit `state: GameState` parameter — mechanical replacement)
 - 25 `client.send()` calls (become `engine.emit()` calls)
 - `OnUpdatePhaseCommand` = 1195 lines (the largest single class to extract)
@@ -133,13 +133,13 @@ The Colyseus Command/Dispatcher pattern adds zero value for local execution.
 |------|--------------|-----------------|
 | items.ts | 7 | `room.clock.setTimeout` (2×), `room.broadcast` (1×), `room.state` (3×), `room.spawnOnBench` (1×) |
 | passives.ts | 3 | `room.clock.setTimeout` (2×), `room.broadcast` (1×) |
-| abilities.ts | 3 | `room.clock.setTimeout` (1×), `room.state.shop` (1×), `room.spawnWanderingPokemon` (1×) |
-| hidden-power.ts | 3 | `room.state.shop` (1×), `room.state` (1×), `room.spawnOnBench` (1×) |
+| abilities.ts | 6 | guard check (1×), `room.clock.setTimeout` (1×), `room.state.shop.magnetPull` (1×), `room.spawnWanderingPokemon` (1×), conditional checks (2×) |
+| hidden-power.ts | 5 | guard check (1×), `room.state.shop.pickFish` (1×), `room.state` (1×), `room.spawnOnBench` (1×), `room.checkEvolutionsAfterPokemonAcquired` (1×) |
 | mini-game.ts | 8 | `room.state` (4×), `room.clients` (1×), `room.broadcast` (2×), `room.clock.setTimeout` (1×) |
 | simulation.ts | 5 | `room` field declaration + property accesses |
 | effect.ts | 3 | `room?: GameRoom` in interface/param types |
-| synergies.ts | 2 | `room.clock.setTimeout` pattern |
-| **Total** | **34** | |
+| synergies.ts | 1 | `pokemon.simulation.room.clock.setTimeout` (1×) |
+| **Total** | **38** | |
 
 ### Core game logic references (10)
 

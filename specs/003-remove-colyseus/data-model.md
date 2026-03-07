@@ -71,6 +71,8 @@ interface IGameEngineContext {
 
 `LocalGameEngine` implements `IGameEngineContext`. Core logic files (`simulation.ts`, `mini-game.ts`, `effect.ts`, `abilities.ts`, etc.) accept `IGameEngineContext` instead of `GameRoom`.
 
+**Note**: `WanderingPokemonParams` type must be defined in `app/types/index.ts` (fields inferred from `game-room.ts` `spawnWanderingPokemon` usage: pkm, type, behavior, player). This type does not currently exist in the codebase — it is created as part of T002.
+
 ### GameConfig (NEW)
 
 Configuration for starting a new game. Replaces preparation room state.
