@@ -6,7 +6,7 @@
 
 ## Summary
 
-Replace the Colyseus networking layer with a `LocalGameEngine` that runs the game loop entirely in-browser. The engine reuses existing game logic (commands, simulation, shop, bot AI) extracted from `game-commands.ts` and `game-room.ts` as plain functions. Client-side state listeners are preserved via a **Schema encode/decode loopback**: the engine maintains two `GameState` instances (engine-side + client-side) connected by `Encoder`/`Decoder` from `@colyseus/schema`. After each tick, patches are encoded and decoded locally, firing all existing Schema callbacks automatically — `game.tsx` and `game-container.ts` need only a 1-line change each (replace `getStateCallbacks(room)` with `getDecoderStateCallbacks(decoder)`). Transfer messages (ABILITY, DAMAGE, etc.) use a simple EventEmitter. Networking packages (`@colyseus/sdk`, `colyseus`, `@colyseus/tools`, `@colyseus/drivers`) are removed; `@colyseus/schema` is retained for data structures and loopback sync (Phase 4 removal). Express server is retained for development (Phase 3 removal).
+Replace the Colyseus networking layer with a `LocalGameEngine` that runs the game loop entirely in-browser. The engine reuses existing game logic (commands, simulation, shop, bot AI) extracted from `game-commands.ts` and `game-room.ts` as plain functions. Client-side state listeners are preserved via a **Schema encode/decode loopback**: the engine maintains two `GameState` instances (engine-side + client-side) connected by `Encoder`/`Decoder` from `@colyseus/schema`. After each tick and player action, patches are encoded and decoded locally, firing all existing Schema callbacks automatically. The ~500 lines of `.listen()` / `.onAdd()` / `.onChange()` callbacks in `game.tsx` and `game-container.ts` remain **100% untouched** — only the `$` function source changes (`getDecoderStateCallbacks(decoder)` replaces `getStateCallbacks(room)`). Other `room.*` references (`.send()`, `.onMessage()`, `.state` direct reads) are modified separately (~34 changes across these two files). Transfer messages (ABILITY, DAMAGE, etc.) use a simple EventEmitter. Networking packages (`@colyseus/sdk`, `colyseus`, `@colyseus/tools`, `@colyseus/drivers`) are removed; `@colyseus/schema` is retained for data structures and loopback sync (Phase 4 removal). Express server is retained for development (Phase 3 removal).
 
 ## Technical Context
 
@@ -42,7 +42,7 @@ Replace the Colyseus networking layer with a `LocalGameEngine` that runs the gam
 ```text
 specs/003-remove-colyseus/
 ├── plan.md              # This file
-├── research.md          # Phase 0 output: 7 research decisions
+├── research.md          # Phase 0 output: 8 research decisions
 ├── data-model.md        # Phase 1 output: entity definitions
 ├── quickstart.md        # Phase 1 output: implementation guide
 ├── contracts/
@@ -74,14 +74,15 @@ app/
     ├── local-engine.ts             # NEW: LocalGameEngine + loopback sync (~1500 lines)
     ├── network.ts                  # REWRITE: engine calls replace room.send()
     ├── pages/
-    │   ├── game.tsx                # MODIFY: getDecoderStateCallbacks replaces getStateCallbacks (~1 line)
-    │   ├── after-game.tsx          # MODIFY: read engine state
+    │   ├── game.tsx                # MODIFY: ~23 changes (Schema listeners untouched; room.onMessage→engine.on, room.state→clientState, constructor)
+    │   ├── after-game.tsx          # MODIFY: full useEffect rewrite (~60 lines, remove reconnection logic)
     │   ├── preparation.tsx         # DELETE
     │   └── lobby.tsx               # MODIFY: add "Start Game", remove MP elements
     ├── game/
-    │   ├── game-container.ts       # MODIFY: getDecoderStateCallbacks replaces getStateCallbacks (~1 line)
+    │   ├── game-container.ts       # MODIFY: ~11 changes (Schema listeners untouched; room.send→engine, room.state→clientState, constructor)
     │   ├── lobby-logic.ts          # MODIFY: simplify for local flow
-    │   └── scenes/game-scene.ts    # MINOR: remove room.send for loading
+    │   ├── scenes/game-scene.ts    # MODIFY: 5 room.state reads → engine.clientState
+    │   └── components/berry-tree.ts # MODIFY: 1 room.send → engine method
     └── stores/
         ├── GameStore.ts            # MODIFY: remove Colyseus type imports
         ├── LobbyStore.ts           # MODIFY: remove Colyseus type imports

@@ -12,7 +12,7 @@ The core strategy is **extract, don't rewrite**:
 
 1. Game logic from `game-commands.ts` → extracted as plain functions into `local-engine.ts`
 2. Game loop from `game-room.ts` → `setInterval` in `local-engine.ts`
-3. State sync via **Schema encode/decode loopback** — `Encoder`/`Decoder` pair syncs `engineState` → `clientState` locally, all existing Schema listeners fire automatically. `game.tsx` / `game-container.ts` change only 1 line each (`getDecoderStateCallbacks(decoder)` replaces `getStateCallbacks(room)`)
+3. State sync via **Schema encode/decode loopback** — `Encoder`/`Decoder` pair syncs `engineState` → `clientState` locally, all existing Schema `.listen()` / `.onAdd()` / `.onChange()` callbacks fire automatically with zero changes. Only the `$` function source changes (1 line each). Other `room.*` refs (`.send()`, `.onMessage()`, `.state` reads) still need per-site modification.
 4. Transfer messages (ABILITY, DAMAGE, etc.) → simple EventEmitter on engine
 5. `network.ts` convenience functions → same names, body calls engine instead of room.send()
 
@@ -27,11 +27,13 @@ The core strategy is **extract, don't rewrite**:
 | File | Change | Scope |
 |------|--------|-------|
 | `app/public/src/network.ts` | Replace Colyseus client with engine calls | Full rewrite (~260 lines) |
-| `app/public/src/pages/game.tsx` | Replace `getStateCallbacks(room)` with `getDecoderStateCallbacks(decoder)` | ~1 line changed |
-| `app/public/src/game/game-container.ts` | Replace `getStateCallbacks(room)` with `getDecoderStateCallbacks(decoder)` | ~1 line changed |
+| `app/public/src/pages/game.tsx` | Schema listeners untouched; replace `$` source (1 line), 15 `room.onMessage` → `engine.on`, 5 `room.state` → `clientState`, constructor | ~23 changes |
+| `app/public/src/game/game-container.ts` | Schema listeners untouched; replace `$` source (1 line), 3 `room.send` → engine methods, 1 `room.onMessage` → `engine.on`, 4 `room.state` → `clientState`, constructor | ~11 changes |
+| `app/public/src/game/scenes/game-scene.ts` | 5 `room.state` reads → `engine.clientState` | ~5 changes |
+| `app/public/src/game/components/berry-tree.ts` | 1 `room.send(Transfer.PICK_BERRY)` → engine method | ~1 change |
 | `app/public/src/game/lobby-logic.ts` | Simplify: remove room connection, add "Start Game" | ~200 lines changed |
 | `app/public/src/pages/preparation.tsx` | DELETE entirely | -265 lines |
-| `app/public/src/pages/after-game.tsx` | Read from engine state instead of room | ~30 lines changed |
+| `app/public/src/pages/after-game.tsx` | Full useEffect rewrite: remove Colyseus reconnection, read engine final state directly | ~60 lines rewritten |
 | `app/core/abilities/hidden-power.ts` | Resolve 2 room references | ~20 lines |
 | `app/core/abilities/abilities.ts` | Resolve 2 room references | ~15 lines |
 | `app/core/effects/synergies.ts` | Resolve 1 room reference | ~5 lines |

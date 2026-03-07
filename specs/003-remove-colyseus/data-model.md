@@ -21,8 +21,8 @@ Central game controller replacing all 4 Colyseus rooms.
 **Methods (reuse existing command logic)**:
 - `startGame(config: GameConfig): void` — initializes engineState+clientState, encoder/decoder, players, shop, starts loop
 - `tick(deltaTime: number): void` — runs one game frame (reuses OnUpdateCommand logic), then calls `syncState()`
-- `syncState(): void` — `encoder.encode(engineState)` → `decoder.decode(patches, clientState)` — fires all Schema callbacks
-- `buyPokemon(index: number): void` — reuses OnBuyPokemonCommand logic
+- `syncState(): void` — `encoder.encode(engineState)` → `decoder.decode(patches, clientState)` — fires all Schema callbacks. Called after each tick AND after each player action for immediate UI feedback (see R7 in research.md).
+- `buyPokemon(index: number): void` — reuses OnBuyPokemonCommand logic, calls `syncState()` after
 - `sellPokemon(pokemonId: string): void` — reuses OnSellPokemonCommand logic
 - `rerollShop(): void` — reuses OnShopRerollCommand logic
 - `levelUp(): void` — reuses OnLevelUpCommand logic

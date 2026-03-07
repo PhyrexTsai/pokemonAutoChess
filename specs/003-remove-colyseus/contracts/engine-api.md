@@ -17,6 +17,7 @@ These replace `room.send(Transfer.*, payload)` calls in `network.ts`.
 | `pickPokemonProposition(pkm)` | `Transfer.POKEMON_PROPOSITION` | `PkmProposition` | Pick Pokemon from carousel |
 | `pickItem(item)` | `Transfer.ITEM` | `Item` | Pick item reward |
 | `showEmote(emote?)` | `Transfer.SHOW_EMOTE` | `string?` | Display player emote |
+| `pickBerry(index)` | `Transfer.PICK_BERRY` | `index: number` | Pick berry from tree (berry-tree.ts) |
 
 ## Event Emissions
 
@@ -38,6 +39,9 @@ These replace `room.onMessage(Transfer.*, callback)` and `room.broadcast()`.
 | `Transfer.LOADING_COMPLETE` | `{}` | server broadcast |
 | `Transfer.COOK` | `{pokemonId, dishes}` | server broadcast |
 | `Transfer.DIG` | `{pokemonId, buriedItem}` | server broadcast |
+| `Transfer.DRAG_DROP_CANCEL` | `{message}` | server broadcast |
+| `Transfer.CLEAR_BOARD` | `{simulationId}` | server broadcast |
+| `Transfer.PRELOAD_MAPS` | `maps: string[]` | server broadcast |
 
 ## State Change Events — Schema Encode/Decode Loopback
 
