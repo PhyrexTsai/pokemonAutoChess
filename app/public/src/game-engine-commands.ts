@@ -486,7 +486,7 @@ export function dragDropCombine(
       result = pickRandomIn(
         ItemComponentsNoFossilOrScarf.filter((i) => i !== exchangedItem)
       )
-    } else if (SynergyStones.includes(exchangedItem)) {
+    } else if ((SynergyStones as Item[]).includes(exchangedItem)) {
       result = pickRandomIn(SynergyStones.filter((i) => i !== exchangedItem))
     } else if (CraftableItemsNoScarves.includes(exchangedItem)) {
       result = pickRandomIn(
