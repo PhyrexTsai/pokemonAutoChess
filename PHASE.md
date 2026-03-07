@@ -24,7 +24,7 @@ Phase 2 ──────────┘
 
 **Spec**: `specs/001-extract-game-engine/`
 **目標**: 將戰鬥模擬引擎從 Colyseus Schema 繼承中解放，使其能獨立運行
-**狀態**: 未開始
+**狀態**: ✅ 完成
 
 ### Why First
 
@@ -101,7 +101,7 @@ const events = engine.update(16)  // 不報錯
 
 **Spec**: `specs/002-remove-mongodb/`
 **目標**: 用 IndexedDB 取代所有 MongoDB 持久化
-**狀態**: 未開始
+**狀態**: ✅ 完成
 
 ### Why
 

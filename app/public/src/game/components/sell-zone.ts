@@ -52,7 +52,7 @@ export class SellZone extends GameObjects.Container {
   }
 
   showForPokemon(pkm: PokemonSprite) {
-    const specialGameRule = this.scene.room?.state.specialGameRule
+    const specialGameRule = this.scene.engine?.clientState.specialGameRule
     const pokemon = this.scene.board?.player.board.get(pkm.id)
     if (!pokemon) return
     const price = getSellPrice(pokemon, specialGameRule)

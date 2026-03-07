@@ -17,7 +17,7 @@ import {
   StackBasedEvolutionRule
 } from "../../core/evolution-rules"
 import Simulation from "../../core/simulation"
-import GameState from "../../rooms/states/game-state"
+import GameState from "./game-state"
 import { Emotion, IPlayer, IPokemon, IPokemonEntity, Title } from "../../types"
 import { Ability } from "../../types/enum/Ability"
 import { DungeonPMDO } from "../../types/enum/Dungeon"

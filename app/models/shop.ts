@@ -33,7 +33,7 @@ import {
   UniquePool
 } from "../config"
 import { pickFirstPartners } from "../core/scribbles"
-import GameState from "../rooms/states/game-state"
+import GameState from "./colyseus-models/game-state"
 import { IPokemon, IPokemonEntity } from "../types"
 import { Ability } from "../types/enum/Ability"
 import { EffectEnum } from "../types/enum/Effect"
@@ -64,7 +64,7 @@ import {
   randomWeighted,
   shuffleArray
 } from "../utils/random"
-import { values } from "../utils/schemas"
+import { resetArraySchema, values } from "../utils/schemas"
 import Player from "./colyseus-models/player"
 import { Pokemon, PokemonClasses } from "./colyseus-models/pokemon"
 import { getWildChance } from "./colyseus-models/synergies"
@@ -324,11 +324,15 @@ export default class Shop {
 
   refillShop(player: Player, state: GameState) {
     // No need to release pokemons since they won't be changed
+    const newShop: Pkm[] = []
     player.shop.forEach((pokemon, i) => {
       if (pokemon === Pkm.MAGIKARP || pokemon === Pkm.DEFAULT) {
-        player.shop[i] = this.pickPokemon(player, state, i)
+        newShop.push(this.pickPokemon(player, state, i))
+      } else {
+        newShop.push(pokemon)
       }
     })
+    resetArraySchema(player.shop, newShop)
   }
 
   assignShop(player: Player, manualRefresh: boolean, state: GameState) {
@@ -355,13 +359,15 @@ export default class Shop {
         const availableUnowns = unowns.filter((u) => !chosenUnowns.includes(u))
         const randomUnown = pickRandomIn(availableUnowns)
         chosenUnowns.push(randomUnown)
-        player.shop[i] = randomUnown
       }
+      resetArraySchema(player.shop, chosenUnowns)
     } else {
       // Regular shop
+      const newShop: Pkm[] = []
       for (let i = 0; i < SHOP_SIZE; i++) {
-        player.shop[i] = this.pickPokemon(player, state, i)
+        newShop.push(this.pickPokemon(player, state, i))
       }
+      resetArraySchema(player.shop, newShop)
     }
   }
 

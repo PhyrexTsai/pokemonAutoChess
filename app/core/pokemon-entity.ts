@@ -77,93 +77,94 @@ import Simulation from "./simulation"
 import { DelayedCommand, SimulationCommand } from "./simulation-command"
 
 export class PokemonEntity extends Schema implements IPokemonEntity {
-  @type("boolean") shiny: boolean
-  @type("uint8") positionX: number
-  @type("uint8") positionY: number
+  @type("boolean") shiny!: boolean
+  @type("uint8") positionX!: number
+  @type("uint8") positionY!: number
   @type("string") action = PokemonActionState.WALK
-  @type("string") index: string
-  @type("string") id: string
+  @type("string") index!: string
+  @type("string") id!: string
   @type("string") orientation = Orientation.DOWNLEFT
-  @type("uint16") maxHP: number
-  @type("uint16") hp: number
+  @type("uint16") maxHP!: number
+  @type("uint16") hp!: number
   @type("uint16") shield = 0
-  @type("uint8") maxPP: number
+  @type("uint8") maxPP!: number
   @type("uint8") pp = 0
-  @type("uint16") atk: number
-  @type("uint16") def: number
-  @type("uint16") speDef: number
+  @type("uint16") atk!: number
+  @type("uint16") def!: number
+  @type("uint16") speDef!: number
   @type("int16") ap = 0
   @type("int16") luck = 0
   @type("uint8") critChance = DEFAULT_CRIT_CHANCE
   @type("float32") critPower = DEFAULT_CRIT_POWER
-  @type("uint8") team: Team
-  @type("uint8") range: number
-  @type("uint16") speed: number
+  @type("uint8") team!: Team
+  @type("uint8") range!: number
+  @type("uint16") speed!: number
   @type("string") targetEntityId: string = ""
   @type("int8") targetX = -1
   @type("int8") targetY = -1
-  @type("string") rarity: Rarity
-  @type("string") name: Pkm
+  @type("string") rarity!: Rarity
+  @type("string") name!: Pkm
   @type({ set: "string" }) effects = new SetSchema<EffectEnum>()
   @type({ set: "string" }) items = new SetSchema<Item>()
   @type({ set: "string" }) types = new SetSchema<Synergy>()
-  @type("uint8") stars: number
-  @type("string") skill: Ability
-  @type("string") tm: Ability
-  @type("string") passive: Passive
-  @type(Status) status: Status
-  @type(Count) count: Count
-  @type("uint16") healDone: number
-  @type("string") emotion: Emotion
+  @type("uint8") stars!: number
+  @type("string") skill!: Ability
+  @type("string") tm!: Ability
+  @type("string") passive!: Passive
+  @type(Status) status!: Status
+  @type(Count) count!: Count
+  @type("uint16") healDone!: number
+  @type("string") emotion!: Emotion
   @type("uint8") stacks: number = 0
   @type("uint8") stacksRequired: number = 0
   cooldown = 500
   oneSecondCooldown = 1000
-  state: PokemonState
-  simulation: Simulation
-  baseTeam: Team
-  baseAtk: number
-  baseDef: number
-  baseSpeDef: number
-  baseRange: number
-  baseHP: number
-  dodge: number
-  physicalDamage: number
-  specialDamage: number
-  trueDamage: number
-  physicalDamageReduced: number
-  specialDamageReduced: number
-  shieldDamageTaken: number
-  shieldDone: number
+  state!: PokemonState
+  simulation!: Simulation
+  baseTeam!: Team
+  baseAtk!: number
+  baseDef!: number
+  baseSpeDef!: number
+  baseRange!: number
+  baseHP!: number
+  dodge!: number
+  physicalDamage!: number
+  specialDamage!: number
+  trueDamage!: number
+  physicalDamageReduced!: number
+  specialDamageReduced!: number
+  shieldDamageTaken!: number
+  shieldDone!: number
   grassHealCooldown = 2000
   sandstormDamageTimer = 0
   fairySplashCooldown = 0
   isSpawn = false
-  refToBoardPokemon: IPokemon
+  refToBoardPokemon!: IPokemon
   commands = new Array<SimulationCommand>()
   effectsSet = new Set<EffectClass>()
 
   constructor(
-    pokemon: IPokemon,
-    positionX: number,
-    positionY: number,
-    team: number,
-    simulation: Simulation
+    pokemon?: IPokemon,
+    positionX?: number,
+    positionY?: number,
+    team?: number,
+    simulation?: Simulation
   ) {
     super()
+    if (!pokemon) return // Schema Decoder creates instances without args
     this.state = new MovingState()
     this.refToBoardPokemon = pokemon
     pokemon.items.forEach((it) => {
       this.items.add(it)
     })
-    this.status = new Status(simulation)
+    this.status = new Status(simulation!)
     this.count = new Count()
-    this.simulation = simulation
+    this.simulation = simulation!
 
     this.id = nanoid()
     this.rarity = pokemon.rarity
-    this.positionX = positionX
-    this.positionY = positionY
+    this.positionX = positionX!
+    this.positionY = positionY!
     this.index = pokemon.index
     this.name = pokemon.name
     this.action = PokemonActionState.WALK
@@ -181,8 +182,8 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     this.hp = pokemon.hp
     this.speed = pokemon.speed
     this.range = pokemon.range
-    this.team = team
-    this.baseTeam = team
+    this.team = team!
+    this.baseTeam = team!
     this.stars = pokemon.stars
     this.skill = pokemon.skill
     this.tm = pokemon.tm

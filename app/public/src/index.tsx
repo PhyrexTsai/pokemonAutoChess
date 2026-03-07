@@ -11,7 +11,6 @@ import MapViewer from "./pages/component/debug/map-viewer"
 import Game from "./pages/game"
 import { Gameboy } from "./pages/gameboy"
 import Lobby from "./pages/lobby"
-import Preparation from "./pages/preparation"
 import { SpriteDebug } from "./pages/sprite-viewer"
 import store from "./stores/index"
 import "./style/index.css"
@@ -43,7 +42,6 @@ i18n.on("initialized", () => {
             <Routes>
               <Route path="/" element={<Auth />} />
               <Route path="/lobby" element={<Lobby />} />
-              <Route path="/preparation" element={<Preparation />} />
               <Route path="/game" element={<Game />} />
               <Route path="/after" element={<AfterGame />} />
               <Route path="/bot-builder" element={<BotBuilder />} />

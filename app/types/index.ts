@@ -8,13 +8,13 @@ import Count from "../models/colyseus-models/count"
 import ExperienceManager from "../models/colyseus-models/experience-manager"
 import { IPokemonRecord } from "../models/colyseus-models/game-record"
 import HistoryItem from "../models/colyseus-models/history-item"
+import type GameState from "../models/colyseus-models/game-state"
 import type { ISimulationPlayer } from "./interfaces/ISimulationPlayer"
 import { Pokemon } from "../models/colyseus-models/pokemon"
 import { PokemonCustoms } from "../models/colyseus-models/pokemon-customs"
 import Status from "../models/colyseus-models/status"
 import Synergies from "../models/colyseus-models/synergies"
 import { Effects } from "../models/effects"
-import GameRoom from "../rooms/game-room"
 import { AttackSprite } from "./Animation"
 import { Ability } from "./enum/Ability"
 import { DungeonPMDO } from "./enum/Dungeon"
@@ -32,6 +32,7 @@ import { Item } from "./enum/Item"
 import { Passive } from "./enum/Passive"
 import { Pkm, PkmProposition } from "./enum/Pokemon"
 import { Synergy } from "./enum/Synergy"
+import { WandererBehavior, WandererType } from "./enum/Wanderer"
 import { Weather } from "./enum/Weather"
 
 export * from "./enum/Emotion"
@@ -229,6 +230,37 @@ export interface IFloatingItem {
   y: number
 }
 
+export interface WanderingPokemonParams {
+  pkm: Pkm
+  type: WandererType
+  behavior: WandererBehavior
+  player: IPlayer
+}
+
+export interface IMiniGame {
+  initialize(state: GameState): void
+  update(deltaTime: number): void
+  stop(state: GameState): void
+}
+
+export interface IGameEngineContext {
+  state: GameState
+  addDelayedAction(delayMs: number, callback: () => void): void
+  emit(event: string, payload: any): void
+  spawnOnBench(player: IPlayer, pkm: Pkm, anim?: "fishing" | "spawn"): void
+  spawnWanderingPokemon(params: WanderingPokemonParams): void
+  checkEvolutionsAfterPokemonAcquired(playerId: string): boolean
+  checkEvolutionsAfterItemAcquired(
+    playerId: string,
+    pokemon: IPokemon
+  ): IPokemon | void
+  getTeamSize(board: MapSchema<IPokemon>): number
+  miniGame?: IMiniGame
+  additionalUncommonPool?: Pkm[]
+  additionalRarePool?: Pkm[]
+  additionalEpicPool?: Pkm[]
+}
+
 export interface IPortal {
   id: string
   x: number
@@ -357,7 +389,7 @@ export interface IExperienceManager {
 }
 
 export interface ISimulation {
-  room?: GameRoom
+  context?: IGameEngineContext
   specialGameRule: import("./enum/SpecialGameRule").SpecialGameRule | null
   board: Board
   id: string

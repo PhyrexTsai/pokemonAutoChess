@@ -1,88 +1,51 @@
-import { RoomAvailable } from "@colyseus/sdk"
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import GameState from "../../../rooms/states/game-state"
-import { Transfer } from "../../../types"
-import { throttle } from "../../../utils/function"
-import { joinLobbyRoom } from "../game/lobby-logic"
+import { IGameUser } from "../../../models/colyseus-models/game-user"
+import { setBotList } from "../../../models/local-store"
+import { Role } from "../../../types"
+import { BotDifficulty, GameMode } from "../../../types/enum/Game"
+import { SpecialGameRule } from "../../../types/enum/SpecialGameRule"
+import { IBot } from "../../../types/interfaces/bot"
+import { shuffleArray } from "../../../utils/random"
 import { useAppDispatch, useAppSelector } from "../hooks"
-import { client, leaveRoom, rooms } from "../network"
+import { GameConfig } from "../local-engine"
+import { engine, fetchProfile } from "../network"
 import store from "../stores"
-import { resetLobby } from "../stores/LobbyStore"
 import {
   clearNotification,
   logOut,
-  setErrorAlertMessage,
-  setPendingGameId
+  setConnectionStatus,
+  setErrorAlertMessage
 } from "../stores/NetworkStore"
-import { EventsMenu } from "./component/events-menu/events-menu"
-import LeaderboardMenu from "./component/leaderboard/leaderboard-menu"
+import { ConnectionStatus } from "../../../types/enum/ConnectionStatus"
 import { MainSidebar } from "./component/main-sidebar/main-sidebar"
 import { Modal } from "./component/modal/modal"
 import { NotificationModal } from "./component/notifications/notification-modal"
-import RoomMenu from "./component/room-menu/room-menu"
-import { cc } from "./utils/jsx"
-import { LocalStoreKeys, localStore } from "./utils/store"
 import "./lobby.css"
 
 export default function Lobby() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
   const networkError = useAppSelector((state) => state.network.error)
-  const pendingGameId = useAppSelector((state) => state.network.pendingGameId)
   const notifications = useAppSelector((state) => state.network.notifications)
-  const gameRooms: RoomAvailable[] = useAppSelector(
-    (state) => state.lobby.gameRooms
-  )
-  const showGameReconnect =
-    pendingGameId != null && gameRooms.some((r) => r.roomId === pendingGameId)
-
   const { t } = useTranslation()
 
-  const lobbyJoined = useRef<boolean>(false)
   useEffect(() => {
-    if (!lobbyJoined.current) {
-      joinLobbyRoom(dispatch, navigate)
-      lobbyJoined.current = true
-    }
-  }, [lobbyJoined])
+    fetchProfile()
+    dispatch(setConnectionStatus(ConnectionStatus.CONNECTED))
+  }, [])
 
   const signOut = useCallback(async () => {
     const { deleteProfile } = await import("../persistence/local-db")
     await deleteProfile()
-    leaveRoom("lobby")
-    dispatch(resetLobby())
     dispatch(logOut())
     navigate("/")
   }, [dispatch])
 
   const handleNotificationClose = (notificationId: string) => {
-    // Send acknowledgment to server
-    rooms.lobby?.send(Transfer.NOTIFICATION_SEEN, notificationId)
-    // Remove from local state
     dispatch(clearNotification(notificationId))
   }
-
-  const reconnectToGame = throttle(async function reconnectToGame() {
-    const idToken = store.getState().network.uid
-    if (idToken && pendingGameId) {
-      const game = await client.joinById<GameState>(pendingGameId, {
-        idToken
-      })
-      localStore.set(
-        LocalStoreKeys.RECONNECTION_GAME,
-        { reconnectionToken: game.reconnectionToken, roomId: game.roomId },
-        30
-      )
-      await Promise.allSettled([
-        leaveRoom("lobby", true),
-        leaveRoom("game", true)
-      ])
-      dispatch(resetLobby())
-      navigate("/game")
-    }
-  }, 1000)
 
   return (
     <main className="lobby">
@@ -92,28 +55,8 @@ export default function Lobby() {
         leaveLabel={t("sign_out")}
       />
       <div className="lobby-container">
-        <MainLobby />
+        <StartGamePanel />
       </div>
-      <Modal
-        show={showGameReconnect}
-        header={t("game-reconnect-modal-title")}
-        body={t("game-reconnect-modal-body")}
-        footer={
-          <>
-            <button className="bubbly green" onClick={reconnectToGame}>
-              {t("yes")}
-            </button>
-            <button
-              className="bubbly red"
-              onClick={() => {
-                dispatch(setPendingGameId(null))
-              }}
-            >
-              {t("no")}
-            </button>
-          </>
-        }
-      ></Modal>
       <NotificationModal
         notifications={notifications}
         onClose={handleNotificationClose}
@@ -130,75 +73,202 @@ export default function Lobby() {
   )
 }
 
-function MainLobby() {
-  const [activeSection, setActive] = useState<string>("leaderboard")
+function StartGamePanel() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+  const [difficulty, setDifficulty] = useState<BotDifficulty>(
+    BotDifficulty.MEDIUM
+  )
+  const [specialRule, setSpecialRule] = useState<SpecialGameRule | null>(null)
+  const [numBots, setNumBots] = useState(7)
+  const [starting, setStarting] = useState(false)
+
+  const startGame = async () => {
+    if (starting) return
+    setStarting(true)
+
+    try {
+      // Determine ELO range based on difficulty
+      let minElo = 0
+      let maxElo = Infinity
+      switch (difficulty) {
+        case BotDifficulty.EASY:
+          maxElo = 800
+          break
+        case BotDifficulty.MEDIUM:
+          minElo = 800
+          maxElo = 1100
+          break
+        case BotDifficulty.HARD:
+          minElo = 1100
+          maxElo = 1400
+          break
+        case BotDifficulty.EXTREME:
+          minElo = 1400
+          break
+      }
+
+      // Fetch bot list from server
+      const res = await fetch("/bots?approved=true")
+      const botList: Array<{ id: string; elo: number }> = await res.json()
+
+      // Filter by ELO range
+      let eligible = botList.filter(
+        (b) => b.elo >= minElo && b.elo <= maxElo
+      )
+      if (eligible.length < numBots) {
+        // Fallback: use all approved bots if not enough in range
+        eligible = botList
+      }
+
+      // Shuffle and pick N bots
+      shuffleArray(eligible)
+      const selected = eligible.slice(0, numBots)
+
+      // Fetch full bot data (with steps) for selected bots
+      const fullBots: IBot[] = await Promise.all(
+        selected.map((b) => fetch(`/bots/${b.id}`).then((r) => r.json()))
+      )
+
+      // Load into local-store so Bot class can find them via getBotById
+      setBotList(fullBots)
+
+      // Build users map
+      const users: Record<string, IGameUser> = {}
+
+      // Human player
+      const profile = store.getState().network.profile
+      if (profile) {
+        users[profile.uid] = {
+          uid: profile.uid,
+          name: profile.displayName,
+          avatar: profile.avatar,
+          ready: true,
+          isBot: false,
+          elo: profile.elo,
+          games: profile.games ?? 0,
+          title: profile.title ?? "",
+          role: profile.role ?? Role.BASIC,
+          anonymous: false
+        }
+      }
+
+      // Bot players
+      for (const bot of fullBots) {
+        users[bot.id] = {
+          uid: bot.id,
+          name: bot.name,
+          avatar: bot.avatar,
+          ready: true,
+          isBot: true,
+          elo: bot.elo,
+          games: 99,
+          title: "",
+          role: Role.BOT,
+          anonymous: false
+        }
+      }
+
+      // Build game config and start
+      const config: GameConfig = {
+        users,
+        name: "Single Player",
+        noElo: true,
+        gameMode: specialRule ? GameMode.SCRIBBLE : GameMode.CLASSIC,
+        specialGameRule: specialRule,
+        minRank: null,
+        maxRank: null
+      }
+
+      engine.startGame(config)
+      navigate("/game")
+    } catch (error) {
+      console.error("Failed to start game:", error)
+      dispatch(setErrorAlertMessage("Failed to start game"))
+      setStarting(false)
+    }
+  }
+
   return (
     <div className="main-lobby">
-      <nav className="main-lobby-nav">
-        <ul>
-          <li
-            onClick={() => setActive("leaderboard")}
-            className={cc({ active: activeSection === "leaderboard" })}
+      <div className="my-container custom-bg" style={{ padding: "2em" }}>
+        <h2>{t("new_game")}</h2>
+
+        <div style={{ margin: "1em 0" }}>
+          <label style={{ display: "block", marginBottom: "0.5em" }}>
+            {t("pokeguesser.difficulty")}
+          </label>
+          <select
+            className="my-select"
+            value={difficulty}
+            onChange={(e) =>
+              setDifficulty(Number(e.target.value) as BotDifficulty)
+            }
           >
-            <img width={32} height={32} src={`assets/ui/leaderboard.svg`} />
-            {t("leaderboard")}
-          </li>
-          <li
-            onClick={() => setActive("rooms")}
-            className={cc({ active: activeSection === "rooms" })}
+            <option value={BotDifficulty.EASY}>
+              {t("pokeguesser.easy")}
+            </option>
+            <option value={BotDifficulty.MEDIUM}>
+              {t("pokeguesser.normal")}
+            </option>
+            <option value={BotDifficulty.HARD}>
+              {t("pokeguesser.hard")}
+            </option>
+            <option value={BotDifficulty.EXTREME}>
+              {t("extreme")}
+            </option>
+          </select>
+        </div>
+
+        <div style={{ margin: "1em 0" }}>
+          <label style={{ display: "block", marginBottom: "0.5em" }}>
+            {t("opponents")}
+          </label>
+          <select
+            className="my-select"
+            value={numBots}
+            onChange={(e) => setNumBots(Number(e.target.value))}
           >
-            <img width={32} height={32} src={`assets/ui/room.svg`} />
-            {t("rooms")}
-          </li>
-          {/*<li
-            onClick={() => setActive("game_rooms")}
-            className={cc({ active: activeSection === "game_rooms" })}
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ margin: "1em 0" }}>
+          <label style={{ display: "block", marginBottom: "0.5em" }}>
+            {t("special_rule")}
+          </label>
+          <select
+            className="my-select"
+            value={specialRule ?? ""}
+            onChange={(e) =>
+              setSpecialRule(
+                e.target.value ? (e.target.value as SpecialGameRule) : null
+              )
+            }
           >
-            <img width={32} height={32} src={`assets/ui/spectate.svg`} />
-            {t("in_game")}
-          </li>
-          <li
-            onClick={() => setActive("online")}
-            className={cc({ active: activeSection === "online" })}
-          >
-            <img width={32} height={32} src={`assets/ui/players.svg`} />
-            {t("online")}
-          </li>*/}
-          <li
-            onClick={() => setActive("events")}
-            className={cc({ active: activeSection === "events" })}
-          >
-            <img width={32} height={32} src={`assets/ui/chat.svg`} />
-            {t("events")}
-          </li>
-        </ul>
-      </nav>
-      <section
-        className={cc("leaderboard", {
-          active: activeSection === "leaderboard"
-        })}
-      >
-        <LeaderboardMenu />
-      </section>
-      <section className={cc("rooms", { active: activeSection === "rooms" })}>
-        <RoomMenu />
-      </section>
-      {/*<section
-        className={cc("game_rooms", { active: activeSection === "game_rooms" })}
-      >
-        <GameRoomsMenu />
-      </section>
-      <section className={cc("online", { active: activeSection === "online" })}>
-        <CurrentUsers />
-      </section>*/}
-      <section
-        className={cc("events", {
-          active: activeSection === "events"
-        })}
-      >
-        <EventsMenu />
-      </section>
+            <option value="">{t("none")}</option>
+            {Object.values(SpecialGameRule).map((rule) => (
+              <option key={rule} value={rule}>
+                {t(`scribble.${rule}`)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          className="bubbly green play-button"
+          onClick={startGame}
+          disabled={starting}
+          style={{ marginTop: "1em" }}
+        >
+          {starting ? t("loading") : t("start_game")}
+        </button>
+      </div>
     </div>
   )
 }

@@ -13,12 +13,12 @@ let hashIndexPlugin = {
     build.onStart(() => {
       const files = fs.readdirSync("app/public/dist/client")
       files.forEach((file) => {
-        // remove old files
-        if (file.startsWith("index-") && file.endsWith(".js")) {
-          fs.unlinkSync(`app/public/dist/client/${file}`)
-        }
-        if (file.startsWith("index-") && file.endsWith(".css")) {
-          fs.unlinkSync(`app/public/dist/client/${file}`)
+        if (file.startsWith("index-") && (file.endsWith(".js") || file.endsWith(".css"))) {
+          try {
+            fs.unlinkSync(`app/public/dist/client/${file}`)
+          } catch (e) {
+            if (e.code !== "ENOENT") throw e
+          }
         }
       })
     })
@@ -52,6 +52,8 @@ context({
     "process.env.FIREBASE_APP_ID": `"${process.env.FIREBASE_APP_ID}"`,
     "process.env.DISCORD_SERVER": `"${process.env.DISCORD_SERVER}"`,
     "process.env.MIN_HUMAN_PLAYERS": `"${process.env.MIN_HUMAN_PLAYERS}"`,
+    "process.env.MODE": `"${process.env.MODE || ""}"`,
+    "process.env.NODE_ENV": `"${process.env.NODE_ENV || "development"}"`,
   }
 })
   .then((context) => {

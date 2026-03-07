@@ -28,13 +28,19 @@ export default class LoadingManager {
     })
 
     this.scene.load.on("complete", () => {
+      console.log("[LoadingManager] loader 'complete' event fired")
       this.statusMessage = t("loading_complete")
     })
 
+    this.scene.load.on("loaderror", (file) => {
+      console.warn("[LoadingManager] failed to load:", file.key, file.url)
+    })
+
     this.preload()
+    console.log("[LoadingManager] preload() queued", this.scene.load.totalToLoad, "files")
   }
 
-  async preload() {
+  preload() {
     const scene = this.scene
     scene.load.xhr.timeout = 5000 // help avoiding failed loading of assets when server is overloaded
 
@@ -94,13 +100,26 @@ export default class LoadingManager {
     loadEnvironmentMultiAtlas(this.scene)
 
     if (scene instanceof GameScene) {
-      const players = values(scene.room?.state.players!)
+      const clientState = scene.engine?.clientState!
+      const players = values(clientState.players)
       const player = players.find((p) => p.id === scene.uid) ?? players[0]
-      await scene.preloadMaps(
-        players
-          .map((p) => p.map)
-          .filter<DungeonPMDO>((map): map is DungeonPMDO => map !== "town")
-      )
+
+      // Collect all unique non-town maps: player maps + portal maps
+      const mapSet = new Set<DungeonPMDO>()
+      players.forEach((p) => {
+        if (p.map !== "town") mapSet.add(p.map as DungeonPMDO)
+      })
+      clientState.portals.forEach((portal) => {
+        mapSet.add(portal.map)
+      })
+
+      const maps = Array.from(mapSet)
+      console.log("[LoadingManager] maps to preload:", maps)
+      if (maps.length > 0) {
+        // Fetch tilemap JSON async, then queue tileset images for loading
+        // The "complete" handler in game-scene awaits this before proceeding
+        scene.mapPreloadPromise = scene.preloadMaps(maps)
+      }
       preloadMusic(scene, RegionDetails[player.map].music)
       preloadPortraits(this.scene, player)
     }

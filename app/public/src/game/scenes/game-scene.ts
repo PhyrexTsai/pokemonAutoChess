@@ -1,4 +1,3 @@
-import { Room } from "@colyseus/sdk"
 import { GameObjects, Scene } from "phaser"
 import OutlinePlugin from "phaser3-rex-plugins/plugins/outlinepipeline-plugin"
 import {
@@ -12,7 +11,6 @@ import { FLOWER_POTS_POSITIONS_BLUE } from "../../../../core/flower-pots"
 import { canSell } from "../../../../core/pokemon-entity"
 import Player from "../../../../models/colyseus-models/player"
 import { PokemonClasses } from "../../../../models/colyseus-models/pokemon"
-import GameState from "../../../../rooms/states/game-state"
 import {
   IDragDropCombineMessage,
   IDragDropItemMessage,
@@ -30,6 +28,7 @@ import { logger } from "../../../../utils/logger"
 import { clamp } from "../../../../utils/number"
 import { values } from "../../../../utils/schemas"
 import { clearTitleNotificationIcon } from "../../../../utils/window"
+import { LocalGameEngine } from "../../local-engine"
 import { cyclePlayers, playerClick } from "../../pages/game"
 import { playMusic, playSound, SOUNDS } from "../../pages/utils/audio"
 import { transformBoardCoordinates } from "../../pages/utils/utils"
@@ -50,7 +49,7 @@ import { DEPTH } from "../depths"
 
 export default class GameScene extends Scene {
   tilemaps: Map<DungeonPMDO, DesignTiled> = new Map<DungeonPMDO, DesignTiled>()
-  room: Room<GameState> | undefined
+  engine: LocalGameEngine | undefined
   uid: string | undefined
   mapName: DungeonPMDO | "town" = "town"
   map: Phaser.Tilemaps.Tilemap | undefined
@@ -73,6 +72,7 @@ export default class GameScene extends Scene {
   lastPokemonDetail: PokemonSprite | null = null
   minigameManager: MinigameManager | null = null
   loadingManager: LoadingManager | null = null
+  mapPreloadPromise: Promise<unknown> | null = null
   started: boolean = false
   spectate: boolean = false
 
@@ -83,32 +83,41 @@ export default class GameScene extends Scene {
     })
   }
 
-  init(data: { room: Room<GameState>; spectate: boolean }) {
+  init(data: { engine: LocalGameEngine; spectate: boolean }) {
+    console.log("[GameScene] init() called, engine:", !!data.engine)
     this.tilemaps = new Map()
-    this.room = data.room
+    this.engine = data.engine
     this.spectate = data.spectate
     this.uid = store.getState().network.uid
     this.started = false
   }
 
   preload() {
+    console.log("[GameScene] preload() called")
     resetSpriteCounts()
     this.loadingManager = new LoadingManager(this)
 
     this.load.on("progress", (value: number) => {
-      this.room?.send(Transfer.LOADING_PROGRESS, value * 100)
+      this.engine?.reportLoadingProgress(value * 100)
     })
 
     this.load.once("complete", () => {
       logger.debug("Loading complete")
-      if (!this.started) {
-        this.room?.send(Transfer.LOADING_COMPLETE)
-      }
+      const waitForMaps = this.mapPreloadPromise ?? Promise.resolve()
+      waitForMaps.then(() => {
+        // Start second pass for any tileset images queued by preloadMaps
+        this.load.once("complete", () => {
+          if (!this.started) {
+            this.engine?.reportLoadingComplete()
+          }
+        })
+        this.load.start()
+      })
     })
 
-    this.room!.onMessage(Transfer.LOADING_COMPLETE, () => {
+    this.engine!.on(Transfer.LOADING_COMPLETE, () => {
       if (!this.started) {
-        logger.debug("Game starting")
+        console.log("[GameScene] LOADING_COMPLETE received, calling startGame()")
         this.started = true
         this.startGame()
       }
@@ -116,13 +125,21 @@ export default class GameScene extends Scene {
   }
 
   startGame() {
-    if (this.uid && this.room) {
+    if (this.uid && this.engine) {
       this.registerKeys()
       this.setupCamera()
       this.input.dragDistanceThreshold = 1
 
-      const playerUids = values(this.room.state.players).map((p) => p.id)
-      const player = this.room.state.players.get(
+      const state = this.engine.clientState
+      console.log("[GameScene] startGame — clientState:", {
+        phase: state.phase,
+        players: state.players.size,
+        avatars: state.avatars.size,
+        stageLevel: state.stageLevel,
+        roundTime: state.roundTime
+      })
+      const playerUids = values(state.players).map((p) => p.id)
+      const player = state.players.get(
         this.spectate ? playerUids[0] : this.uid
       ) as Player
 
@@ -135,7 +152,7 @@ export default class GameScene extends Scene {
         this,
         this.animationManager,
         this.uid,
-        this.room.state
+        state
       )
 
       this.itemsContainer = new ItemsContainer(
@@ -151,12 +168,12 @@ export default class GameScene extends Scene {
         player,
         this.animationManager,
         this.uid,
-        this.room.state
+        state
       )
       this.battle = new BattleManager(
         this,
         this.battleGroup,
-        this.room.state.simulations.get(player.simulationId),
+        state.simulations.get(player.simulationId),
         this.animationManager,
         player
       )
@@ -182,7 +199,7 @@ export default class GameScene extends Scene {
       this.lastPokemonDetail.updateTooltipPosition()
     }
     if (
-      this.room?.state?.phase === GamePhaseState.TOWN &&
+      this.engine?.clientState?.phase === GamePhaseState.TOWN &&
       this.minigameManager
     ) {
       this.minigameManager.update()
@@ -234,7 +251,7 @@ export default class GameScene extends Scene {
     )
 
     this.input.keyboard!.on("keydown-" + keybindings.lock, () => {
-      this.room?.send(Transfer.LOCK)
+      this.engine?.lockShop()
     })
 
     this.input.keyboard!.on("keydown-" + keybindings.buy_xp, () => {
@@ -284,31 +301,31 @@ export default class GameScene extends Scene {
   }
 
   refreshShop() {
-    const player = this.room?.state.players.get(this.uid!)
+    const player = this.engine?.clientState.players.get(this.uid!)
     const rollCost = (player?.shopFreeRolls ?? 0) > 0 ? 0 : 1
     const canRoll = (player?.money ?? 0) >= rollCost
     if (player && player.alive && canRoll && player === this.board?.player) {
-      this.room?.send(Transfer.REFRESH)
+      this.engine?.rerollShop()
       playSound(SOUNDS.REFRESH, 0.5)
     }
   }
 
   buyExperience() {
-    this.room?.send(Transfer.LEVEL_UP)
+    this.engine?.levelUp()
   }
 
   sellPokemon(pokemon: PokemonSprite) {
     if (!pokemon) return
-    this.room?.send(Transfer.SELL_POKEMON, pokemon.id)
+    this.engine?.sellPokemon(pokemon.id)
   }
 
   removeFromShop(index: number) {
-    this.room?.send(Transfer.REMOVE_FROM_SHOP, index)
+    this.engine?.removeFromShop(index)
   }
 
   switchBetweenBenchAndBoard(pokemon: PokemonSprite) {
     if (!pokemon) return
-    this.room?.send(Transfer.SWITCH_BENCH_AND_BOARD, pokemon.id)
+    this.engine?.switchBenchAndBoard(pokemon.id)
   }
 
   updatePhase(newPhase: GamePhaseState, previousPhase: GamePhaseState) {
@@ -324,7 +341,7 @@ export default class GameScene extends Scene {
       this.board?.battleMode(true)
     } else if (newPhase === GamePhaseState.TOWN) {
       this.board?.minigameMode()
-      this.weatherManager?.setTownDaytime(this.room?.state.stageLevel ?? 0)
+      this.weatherManager?.setTownDaytime(this.engine?.clientState.stageLevel ?? 0)
     } else {
       this.board?.pickMode(true)
     }
@@ -460,7 +477,7 @@ export default class GameScene extends Scene {
       if (
         pointer.leftButtonDown() &&
         this.minigameManager &&
-        this.room?.state.phase === GamePhaseState.TOWN &&
+        this.engine?.clientState.phase === GamePhaseState.TOWN &&
         !this.spectate
       ) {
         // compute actual x/y coordinates after taking into account camera scroll and zoom
@@ -471,7 +488,7 @@ export default class GameScene extends Scene {
         const [maxX, minY] = transformBoardCoordinates(8, 7)
         if (x < minX || x > maxX || y > maxY || y < minY) return
         const vector = this.minigameManager.getVector(x, y)
-        this.room?.send(Transfer.VECTOR, vector)
+        this.engine?.sendVector(vector)
 
         const clickAnimation = this.add.sprite(
           x,
@@ -525,7 +542,7 @@ export default class GameScene extends Scene {
           this.pokemonDragged.setDepth(DEPTH.DRAGGED_POKEMON)
           this.dropSpots.forEach((spot) => {
             if (
-              this.room?.state.phase === GamePhaseState.PICK ||
+              this.engine?.clientState.phase === GamePhaseState.PICK ||
               spot.getData("y") === 0
             ) {
               spot.setFrame(0).setVisible(true)
@@ -536,7 +553,7 @@ export default class GameScene extends Scene {
             this.sellZone &&
             canSell(
               this.pokemonDragged.name as Pkm,
-              this.room?.state.specialGameRule
+              this.engine?.clientState.specialGameRule
             )
           ) {
             this.sellZone.showForPokemon(this.pokemonDragged)
@@ -567,7 +584,7 @@ export default class GameScene extends Scene {
             let visible = false
             if (inBench) {
               visible = pokemon.canBeBenched
-            } else if (this.room?.state.phase === GamePhaseState.PICK) {
+            } else if (this.engine?.clientState.phase === GamePhaseState.PICK) {
               visible = true
             }
             spot.setVisible(visible)
@@ -576,7 +593,7 @@ export default class GameScene extends Scene {
             this.sellZone?.visible === false &&
             canSell(
               this.pokemonDragged.name as Pkm,
-              this.room?.state.specialGameRule
+              this.engine?.clientState.specialGameRule
             )
           ) {
             this.sellZone.setVisible(true)
@@ -645,7 +662,7 @@ export default class GameScene extends Scene {
           else if (
             dropZone.name === "board-zone" &&
             !(
-              this.room?.state.phase == GamePhaseState.FIGHT &&
+              this.engine?.clientState.phase == GamePhaseState.FIGHT &&
               dropZone.getData("y") != 0
             )
           ) {
@@ -674,7 +691,7 @@ export default class GameScene extends Scene {
           }
           // RETURN TO ORIGINAL SPOT
           else {
-            const player = this.room?.state.players.get(this.uid!)
+            const player = this.engine?.clientState.players.get(this.uid!)
             if (player) this.itemsContainer?.render(player.items)
           }
           this.itemDragged = null
@@ -726,7 +743,7 @@ export default class GameScene extends Scene {
           gameObject instanceof ItemContainer &&
           dropZone.name === "board-zone" &&
           !(
-            this.room?.state.phase == GamePhaseState.FIGHT &&
+            this.engine?.clientState.phase == GamePhaseState.FIGHT &&
             dropZone.getData("y") != 0
           ) &&
           this.board?.pokemons

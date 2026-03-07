@@ -1,10 +1,7 @@
-import { Client, getStateCallbacks, Room } from "@colyseus/sdk"
 import React, { useEffect, useRef, useState } from "react"
 import { Navigate } from "react-router-dom"
-import AfterGameState from "../../../rooms/states/after-game-state"
-import { CloseCodes } from "../../../types/enum/CloseCodes"
 import { useAppDispatch, useAppSelector } from "../hooks"
-import { authenticateUser, client, joinAfter, rooms } from "../network"
+import { engine } from "../network"
 import { preference } from "../preferences"
 import {
   addPlayer,
@@ -15,90 +12,45 @@ import {
 } from "../stores/AfterGameStore"
 import AfterMenu from "./component/after/after-menu"
 import { playSound, SOUNDS } from "./utils/audio"
-import { LocalStoreKeys, localStore } from "./utils/store"
+import { IAfterGamePlayer } from "../../../types"
+import { GameMode } from "../../../types/enum/Game"
 
 export default function AfterGame() {
   const dispatch = useAppDispatch()
   const currentPlayerId: string = useAppSelector((state) => state.network.uid)
-  const room: Room<AfterGameState> | undefined = rooms.after
   const initialized = useRef<boolean>(false)
   const [toLobby, setToLobby] = useState<boolean>(false)
   const [toAuth, setToAuth] = useState<boolean>(false)
 
   useEffect(() => {
-    const reconnect = async () => {
-      initialized.current = true
-      authenticateUser()
-        .then(async () => {
-          try {
-            const cachedReconnectionToken = localStore.get(
-              LocalStoreKeys.RECONNECTION_AFTER_GAME
-            )?.reconnectionToken
-            if (cachedReconnectionToken) {
-              const r = await client.reconnect<AfterGameState>(
-                cachedReconnectionToken
-              )
-              await initialize(r)
-              joinAfter(r)
-            } else {
-              setToLobby(true)
-            }
-          } catch (error) {
-            setTimeout(async () => {
-              const cachedReconnectionToken = localStore.get(
-                LocalStoreKeys.RECONNECTION_AFTER_GAME
-              )?.reconnectionToken
-              if (cachedReconnectionToken) {
-                const r = await client.reconnect<AfterGameState>(
-                  cachedReconnectionToken
-                )
-                await initialize(r)
-                joinAfter(r)
-              } else {
-                setToLobby(true)
-              }
-            }, 1000)
-          }
-        })
-        .catch((err) => {
-          if (err === CloseCodes.USER_NOT_AUTHENTICATED) {
-            setToAuth(true)
-          }
-        })
+    if (initialized.current) return
+    initialized.current = true
+
+    const afterData = (engine as any).__afterGameData as {
+      players: IAfterGamePlayer[]
+      eligibleToXP: boolean
+      eligibleToELO: boolean
+      gameMode: GameMode
+    } | undefined
+
+    if (!afterData) {
+      setToLobby(true)
+      return
     }
 
-    const initialize = async (room: Room<AfterGameState>) => {
-      localStore.delete(LocalStoreKeys.RECONNECTION_GAME)
-      localStore.set(
-        LocalStoreKeys.RECONNECTION_AFTER_GAME,
-        { reconnectionToken: room.reconnectionToken, roomId: room.roomId },
-        30
-      )
-      const $ = getStateCallbacks(room)
-      const $state = $(room.state)
-      $state.players.onAdd((player) => {
-        dispatch(addPlayer(player))
-        if (player.id === currentPlayerId) {
-          playSound(
-            SOUNDS[("FINISH" + player.rank) as keyof typeof SOUNDS],
-            preference("musicVolume") / 100
-          )
-        }
-      })
-      $state.listen("eligibleToELO", (value, previousValue) => {
-        dispatch(setElligibilityToELO(value))
-      })
-      $state.listen("eligibleToXP", (value, previousValue) => {
-        dispatch(setElligibilityToXP(value))
-      })
-      $state.listen("gameMode", (value, previousValue) => {
-        dispatch(setGameMode(value))
-      })
-    }
-
-    if (!initialized.current) {
-      reconnect()
-    }
+    // Dispatch after-game state
+    afterData.players.forEach((player) => {
+      dispatch(addPlayer(player))
+      if (player.id === currentPlayerId) {
+        playSound(
+          SOUNDS[("FINISH" + player.rank) as keyof typeof SOUNDS],
+          preference("musicVolume") / 100
+        )
+      }
+    })
+    dispatch(setElligibilityToELO(afterData.eligibleToELO))
+    dispatch(setElligibilityToXP(afterData.eligibleToXP))
+    dispatch(setGameMode(afterData.gameMode))
   })
 
   if (toLobby) {
@@ -113,11 +65,8 @@ export default function AfterGame() {
           className="bubbly blue"
           style={{ margin: "10px 0 0 10px" }}
           onClick={() => {
-            if (room?.connection.isOpen) {
-              room.leave()
-            }
             dispatch(leaveAfter())
-            localStore.delete(LocalStoreKeys.RECONNECTION_AFTER_GAME)
+            delete (engine as any).__afterGameData
             setToLobby(true)
           }}
         >

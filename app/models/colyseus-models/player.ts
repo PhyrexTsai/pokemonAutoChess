@@ -1,4 +1,4 @@
-import { ArraySchema, MapSchema, Schema, type, view } from "@colyseus/schema"
+import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   AdditionalPicksStages,
@@ -14,7 +14,7 @@ import {
 } from "../../core/evolution-rules"
 import { FlowerPot, FlowerPots, MulchStockCaps } from "../../core/flower-pots"
 import { PokemonEntity } from "../../core/pokemon-entity"
-import type GameState from "../../rooms/states/game-state"
+import type GameState from "./game-state"
 import { IPlayer, Role, Title } from "../../types"
 import { Ability } from "../../types/enum/Ability"
 import { DungeonPMDO } from "../../types/enum/Dungeon"
@@ -80,19 +80,19 @@ import Synergies, { computeSynergies, getSynergyStep } from "./synergies"
 import { Wanderer } from "./wanderer"
 
 export default class Player extends Schema implements IPlayer {
-  @type("string") id: string
+  @type("string") id!: string
   @type("string") simulationId = ""
   @type("number") team: Team = Team.BLUE_TEAM
-  @type("string") name: string
-  @type("string") avatar: string
+  @type("string") name!: string
+  @type("string") avatar!: string
   @type({ map: Pokemon }) board = new MapSchema<Pokemon>()
-  @view() @type(["string"]) shop = new ArraySchema<Pkm>()
+  @type(["string"]) shop = new ArraySchema<Pkm>()
   @type(ExperienceManager) experienceManager = new ExperienceManager()
   @type({ map: "uint8" }) synergies = new Synergies()
   @type("uint16") money = process.env.MODE == "dev" ? 999 : 5
   @type("int16") life = 100
-  @view() @type("boolean") shopLocked: boolean = false
-  @view() @type("uint8") shopFreeRolls: number = 0
+  @type("boolean") shopLocked: boolean = false
+  @type("uint8") shopFreeRolls: number = 0
   @type("uint8") streak: number = 0
   @type("uint8") maxInterest: number = 5
   @type("uint8") interest: number = 0
@@ -100,21 +100,21 @@ export default class Player extends Schema implements IPlayer {
   @type("string") opponentName: string = ""
   @type("string") opponentAvatar: string = ""
   @type("string") opponentTitle: string = ""
-  @type("string") spectatedPlayerId: string
+  @type("string") spectatedPlayerId!: string
   @type("uint8") boardSize: number = 0
   @type(["string"]) items = new ArraySchema<Item>()
-  @type("uint8") rank: number
-  @type("uint16") elo: number
-  @type("uint16") games: number // number of games played on this account
+  @type("uint8") rank!: number
+  @type("uint16") elo!: number
+  @type("uint16") games!: number // number of games played on this account
   @type("boolean") alive = true
   @type([HistoryItem]) history = new ArraySchema<HistoryItem>()
   @type({ map: "uint8" }) pokemonCustoms: PokemonCustoms =
     new MapSchema<number>()
   @type("string") emotesUnlocked = ""
-  @type("string") title: Title | ""
-  @type("string") role: Role
-  @view() @type(["string"]) itemsProposition = new ArraySchema<Item>()
-  @view() @type(["string"]) pokemonsProposition =
+  @type("string") title!: Title | ""
+  @type("string") role!: Role
+  @type(["string"]) itemsProposition = new ArraySchema<Item>()
+  @type(["string"]) pokemonsProposition =
     new ArraySchema<PkmProposition>()
   @type(["string"]) pveRewards = new ArraySchema<Item>()
   @type(["string"]) pveRewardsPropositions = new ArraySchema<Item>()
@@ -127,7 +127,7 @@ export default class Player extends Schema implements IPlayer {
   @type(["uint8"]) groundHoles: number[] = new Array(
     BOARD_WIDTH * BOARD_HEIGHT
   ).fill(0)
-  @type("string") map: DungeonPMDO | "town"
+  @type("string") map!: DungeonPMDO | "town"
   @type({ set: "string" }) effects: Effects = new Effects()
   @type(["string"]) regionalPokemons = new ArraySchema<Pkm>()
   @type("uint16") rerollCount: number = 0
@@ -145,7 +145,7 @@ export default class Player extends Schema implements IPlayer {
   rareRegionalPool: Pkm[] = new Array<Pkm>()
   epicRegionalPool: Pkm[] = new Array<Pkm>()
   ultraRegionalPool: Pkm[] = new Array<Pkm>()
-  isBot: boolean
+  isBot!: boolean
   opponents: Map<string, number> = new Map<string, number>()
   titles: Set<Title> = new Set<Title>()
   artificialItems: Item[] = pickNRandomIn(ArtificialItems, 3)
@@ -156,8 +156,8 @@ export default class Player extends Schema implements IPlayer {
   randomComponentsGiven: Item[] = []
   randomEggsGiven: Pkm[] = []
   flowerPotsSpawnOrder: FlowerPot[] = shuffleArray([...FlowerPots])
-  lightX: number
-  lightY: number
+  lightX!: number
+  lightY!: number
   ghost: boolean = false
   firstPartner: Pkm | undefined
   hasLeftGame: boolean = false
@@ -173,34 +173,35 @@ export default class Player extends Schema implements IPlayer {
   regions: DungeonPMDO[] = []
 
   constructor(
-    id: string,
-    name: string,
-    elo: number,
-    games: number,
-    avatar: string,
-    isBot: boolean,
-    rank: number,
-    pokemonCollection: Map<string, IPokemonCollectionItemMongo>,
-    title: Title | "",
-    role: Role,
-    state: GameState
+    id?: string,
+    name?: string,
+    elo?: number,
+    games?: number,
+    avatar?: string,
+    isBot?: boolean,
+    rank?: number,
+    pokemonCollection?: Map<string, IPokemonCollectionItemMongo>,
+    title?: Title | "",
+    role?: Role,
+    state?: GameState
   ) {
     super()
+    if (id === undefined) return // Schema Decoder creates instances without args
     this.id = id
     this.spectatedPlayerId = id
-    this.name = name
-    this.elo = elo
-    this.games = games
-    this.avatar = avatar
-    this.isBot = isBot
-    this.rank = rank
-    this.title = title
-    this.role = role
-    this.pokemonCustoms = new PokemonCustoms(pokemonCollection)
-    this.specialGameRule = state.specialGameRule
+    this.name = name!
+    this.elo = elo!
+    this.games = games!
+    this.avatar = avatar!
+    this.isBot = isBot!
+    this.rank = rank!
+    this.title = title!
+    this.role = role!
+    this.pokemonCustoms = new PokemonCustoms(pokemonCollection!)
+    this.specialGameRule = state!.specialGameRule
     this.flowerPots = initFlowerPots(this)
-    const avatarCustom = getPokemonCustomFromAvatar(avatar)
-    const avatarInCollection = pokemonCollection.get(
+    const avatarCustom = getPokemonCustomFromAvatar(avatar!)
+    const avatarInCollection = pokemonCollection!.get(
       PkmIndex[avatarCustom.name]
     )
     const emotesUnlocked =
@@ -211,10 +212,10 @@ export default class Player extends Schema implements IPlayer {
         : emotesUnlocked.emotions) ?? []
     ).join(",")
 
-    this.lightX = state.lightX
-    this.lightY = state.lightY
+    this.lightX = state!.lightX
+    this.lightY = state!.lightY
     this.map = "town"
-    this.updateRegionalPool(state, true)
+    this.updateRegionalPool(state!, true)
 
     if (isBot) {
       this.loadingProgress = 100
@@ -222,7 +223,7 @@ export default class Player extends Schema implements IPlayer {
       this.lightY = 2
     }
 
-    if (state.specialGameRule === SpecialGameRule.DITTO_PARTY) {
+    if (state!.specialGameRule === SpecialGameRule.DITTO_PARTY) {
       for (let i = 0; i < 5; i++) {
         const ditto = PokemonFactory.createPokemonFromName(Pkm.DITTO, this)
         ditto.positionX = getFirstAvailablePositionInBench(this.board) ?? 0
@@ -232,7 +233,7 @@ export default class Player extends Schema implements IPlayer {
       }
     }
 
-    if (state.specialGameRule === SpecialGameRule.SLAMINGO) {
+    if (state!.specialGameRule === SpecialGameRule.SLAMINGO) {
       for (let i = 0; i < 4; i++)
         this.items.push(pickRandomIn(ItemComponentsNoFossilOrScarf))
     }

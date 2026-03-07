@@ -4,15 +4,12 @@ import afterReducer from "./AfterGameStore"
 import gameReducer from "./GameStore"
 import lobbyReducer from "./LobbyStore"
 import networkReducer from "./NetworkStore"
-import preparationReducer from "./PreparationStore"
-
 enableMapSet()
 
 const store = configureStore({
   reducer: {
     lobby: lobbyReducer,
     network: networkReducer,
-    preparation: preparationReducer,
     game: gameReducer,
     after: afterReducer
   },

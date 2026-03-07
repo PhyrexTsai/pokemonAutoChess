@@ -6,7 +6,6 @@ import {
   SynergyTriggers
 } from "../../../../config"
 import Player from "../../../../models/colyseus-models/player"
-import { Transfer } from "../../../../types"
 import { Synergy } from "../../../../types/enum/Synergy"
 import { preference } from "../../preferences"
 import { DEPTH } from "../depths"
@@ -147,8 +146,8 @@ export class BerryTree extends GameObjects.Container {
     } else {
       if (this.player.id !== this.scene.uid) return
       const stage = this.player.berryTreesStages[this.index]
-      if (this.scene.room && stage >= 3) {
-        this.scene.room.send(Transfer.PICK_BERRY, this.index)
+      if (this.scene.engine && stage >= 3) {
+        this.scene.engine.pickBerry(this.index)
         this.manager.displayText(pointer.x, pointer.y, t("berry_gained"), true)
         this.sprite.play("CROP")
       } else {
