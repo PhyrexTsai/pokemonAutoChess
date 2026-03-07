@@ -269,15 +269,14 @@ export class LocalGameEngine implements IGameEngineContext {
     this.lastTickTime = now
     deltaTime = Math.min(MAX_SIMULATION_DELTA_TIME, deltaTime)
 
+    // Process delayed actions (must update elapsed time even when paused)
+    this.elapsedTime += deltaTime
+    this.processDelayedActions()
+
     if (this.engineState.gameFinished || this.engineState.simulationPaused) {
-      this.processDelayedActions()
       this.syncState()
       return
     }
-
-    // Process delayed actions
-    this.elapsedTime += deltaTime
-    this.processDelayedActions()
 
     // Run the game tick (phase transitions, simulation updates)
     try {
