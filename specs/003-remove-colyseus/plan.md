@@ -54,12 +54,14 @@ specs/003-remove-colyseus/
 
 ```text
 app/
-├── core/                           # Battle engine (PRESERVED, minor fixes)
-│   ├── simulation.ts               # Reused as-is
+├── core/                           # Battle engine (PRESERVED, fixes for room refs)
+│   ├── simulation.ts               # MODIFY: replace room?: GameRoom with engine context interface
+│   ├── mini-game.ts                # MODIFY: replace room: GameRoom constructor with engine context
 │   ├── pokemon-entity.ts           # Reused as-is
 │   ├── pokemon-state.ts            # Reused as-is
 │   ├── abilities/abilities.ts      # Fix 2 room refs
 │   ├── abilities/hidden-power.ts   # Fix 2 room refs
+│   ├── effects/effect.ts           # MODIFY: replace room?: GameRoom in OnStageStartEffectArgs
 │   ├── effects/synergies.ts        # Fix 1 room ref
 │   ├── effects/items.ts            # Fix 4 room refs
 │   ├── effects/passives.ts         # Fix 1 room ref
@@ -81,8 +83,14 @@ app/
     ├── game/
     │   ├── game-container.ts       # MODIFY: ~11 changes (Schema listeners untouched; room.send→engine, room.state→clientState, constructor)
     │   ├── lobby-logic.ts          # MODIFY: simplify for local flow
-    │   ├── scenes/game-scene.ts    # MODIFY: 5 room.state reads → engine.clientState
-    │   └── components/berry-tree.ts # MODIFY: 1 room.send → engine method
+    │   ├── scenes/game-scene.ts    # MODIFY: 8 room.send + 5 room.state + 1 room.onMessage (~14 changes)
+    │   └── components/
+    │       ├── berry-tree.ts       # MODIFY: 1 room.send → engine method
+    │       ├── wanderers-manager.ts # MODIFY: 3 room.send(Transfer.WANDERER_CLICKED) → engine method
+    │       ├── minigame-manager.ts  # MODIFY: 1 room.onMessage(Transfer.NPC_DIALOG) → engine.on
+    │       ├── pokemon-avatar.ts    # MODIFY: room.state accesses → engine.clientState
+    │       ├── loading-manager.ts   # MODIFY: room.state accesses → engine.clientState
+    │       └── sell-zone.ts         # MODIFY: room.state accesses → engine.clientState
     └── stores/
         ├── GameStore.ts            # MODIFY: remove Colyseus type imports
         ├── LobbyStore.ts           # MODIFY: remove Colyseus type imports
@@ -90,7 +98,7 @@ app/
         └── NetworkStore.ts         # MODIFY: remove room references
 ```
 
-**Structure Decision**: Existing project structure preserved. One new file added (`local-engine.ts`). `engine-state-proxy.ts` eliminated by Schema encode/decode loopback. No new directories. ~12 files deleted, ~15 files modified.
+**Structure Decision**: Existing project structure preserved. One new file added (`local-engine.ts`). `engine-state-proxy.ts` eliminated by Schema encode/decode loopback. No new directories. ~12 files deleted, ~22 files modified.
 
 ## Complexity Tracking
 

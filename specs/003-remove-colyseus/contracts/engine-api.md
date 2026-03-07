@@ -18,6 +18,12 @@ These replace `room.send(Transfer.*, payload)` calls in `network.ts`.
 | `pickItem(item)` | `Transfer.ITEM` | `Item` | Pick item reward |
 | `showEmote(emote?)` | `Transfer.SHOW_EMOTE` | `string?` | Display player emote |
 | `pickBerry(index)` | `Transfer.PICK_BERRY` | `index: number` | Pick berry from tree (berry-tree.ts) |
+| `wandererClicked(id)` | `Transfer.WANDERER_CLICKED` | `id: string` | Click wandering Pokemon (wanderers-manager.ts) |
+| `switchBenchAndBoard(pokemonId)` | `Transfer.SWITCH_BENCH_AND_BOARD` | `pokemonId: string` | Switch Pokemon between bench/board (game-scene.ts) |
+| `removeFromShop(index)` | `Transfer.REMOVE_FROM_SHOP` | `index: number` | Remove Pokemon from shop (game-scene.ts) |
+| `sellPokemonFromScene(pokemonId)` | `Transfer.SELL_POKEMON` | `pokemonId: string` | Sell from game scene context (game-scene.ts) |
+| `reportLoadingProgress(progress)` | `Transfer.LOADING_PROGRESS` | `number` | Report asset loading progress (game-scene.ts) |
+| `reportLoadingComplete()` | `Transfer.LOADING_COMPLETE` | none | Report asset loading complete (game-scene.ts) |
 
 ## Event Emissions
 
@@ -42,15 +48,17 @@ These replace `room.onMessage(Transfer.*, callback)` and `room.broadcast()`.
 | `Transfer.DRAG_DROP_CANCEL` | `{message}` | server broadcast |
 | `Transfer.CLEAR_BOARD` | `{simulationId}` | server broadcast |
 | `Transfer.PRELOAD_MAPS` | `maps: string[]` | server broadcast |
+| `Transfer.NPC_DIALOG` | `{npcId, dialog}` | server broadcast |
 
 ## State Change Events — Schema Encode/Decode Loopback
 
 **No custom event system needed.** State changes are handled automatically by the Schema encode/decode loopback:
 
 1. Engine mutates `engineState` (GameState Schema object)
-2. `encoder.encode(engineState)` produces binary patches
+2. `encoder.encode(engineState)` produces binary patches (first call uses `encodeAll()` for full snapshot)
 3. `decoder.decode(patches, clientState)` applies patches to `clientState`
-4. All existing Schema callbacks fire automatically via `getDecoderStateCallbacks(decoder)`
+4. `encoder.discardChanges()` clears tracked changes (prevents re-encoding stale deltas)
+5. All existing Schema callbacks fire automatically via `getDecoderStateCallbacks(decoder)`
 
 This means all existing listeners in `game.tsx` and `game-container.ts` work unchanged:
 - `$state.listen("phase", cb)` — fires when phase changes
@@ -65,7 +73,7 @@ This means all existing listeners in `game.tsx` and `game-container.ts` work unc
 
 ```
 engine = new LocalGameEngine()
-engine.startGame(config)    // initializes engineState+clientState, encoder/decoder, starts timer
+engine.startGame(config)    // initializes engineState+clientState, encodeAll()+discardChanges(), starts timer
 engine.on(event, callback)  // register Transfer message listeners
 const $ = getDecoderStateCallbacks(engine.decoder)  // Schema listener proxy
 const $state = $(engine.clientState)

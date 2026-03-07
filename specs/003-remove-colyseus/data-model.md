@@ -17,11 +17,14 @@ Central game controller replacing all 4 Colyseus rooms.
 | humanPlayerId | string | The local player's ID |
 | botManager | BotManager | Reuses existing bot management logic |
 | miniGame | MiniGame | Reuses existing minigame class |
+| delayedActions | DelayedAction[] | Engine-level delayed action queue (replaces `room.clock.setTimeout()`) |
+| elapsedTime | number | Accumulated game time for delayed action scheduling |
 
 **Methods (reuse existing command logic)**:
-- `startGame(config: GameConfig): void` — initializes engineState+clientState, encoder/decoder, players, shop, starts loop
-- `tick(deltaTime: number): void` — runs one game frame (reuses OnUpdateCommand logic), then calls `syncState()`
-- `syncState(): void` — `encoder.encode(engineState)` → `decoder.decode(patches, clientState)` — fires all Schema callbacks. Called after each tick AND after each player action for immediate UI feedback (see R7 in research.md).
+- `startGame(config: GameConfig): void` — initializes engineState+clientState, encoder/decoder (with `encodeAll()` for initial full snapshot + `discardChanges()`), players, shop, starts loop
+- `tick(deltaTime: number): void` — runs one game frame (reuses OnUpdateCommand logic), processes `delayedActions` queue, then calls `syncState()`
+- `syncState(): void` — `encoder.encode(engineState)` → `decoder.decode(patches, clientState)` → `encoder.discardChanges()` — fires all Schema callbacks. Must call `discardChanges()` after each encode to clear tracked changes. Called after each tick AND after each player action for immediate UI feedback (see R7 in research.md).
+- `addDelayedAction(delayMs, callback): void` — adds to engine-level delayed action queue (replaces `room.clock.setTimeout()`)
 - `buyPokemon(index: number): void` — reuses OnBuyPokemonCommand logic, calls `syncState()` after
 - `sellPokemon(pokemonId: string): void` — reuses OnSellPokemonCommand logic
 - `rerollShop(): void` — reuses OnShopRerollCommand logic
@@ -56,7 +59,7 @@ These existing Schema classes continue to function as data containers:
 
 - **GameState** (game-state.ts) — phase, time, stageLevel, players MapSchema, simulations MapSchema, shop
 - **Player** (player.ts) — money, life, board, items, synergies, experienceManager
-- **Simulation** (simulation.ts) — blueTeam, redTeam, weather, update() returns BattleEvent[]
+- **Simulation** (simulation.ts) — blueTeam, redTeam, weather, update() returns BattleEvent[]. Note: `room?: GameRoom` field → replaced with `IGameEngineContext` interface
 - **PokemonEntity** (pokemon-entity.ts) — position, HP, stats, status, abilities
 - **Shop** — Pokemon pool, reroll logic, shop assignment
 - **BotManager** — Bot AI board configurations from static JSON

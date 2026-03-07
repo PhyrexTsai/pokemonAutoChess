@@ -48,11 +48,19 @@ const clientState = new GameState()   // client reads this
 const encoder = new Encoder(engineState)
 const decoder = new Decoder(clientState)
 
-// After mutations:
+// FIRST sync — must use encodeAll() for full snapshot:
+const fullSnapshot = encoder.encodeAll()
+decoder.decode(fullSnapshot, clientState)
+encoder.discardChanges()  // clear tracked changes after encode
+
+// SUBSEQUENT syncs — encode() only sends dirty fields:
 const patches = encoder.encode(engineState)
 decoder.decode(patches, clientState)
+encoder.discardChanges()  // MUST call after each encode()
 // → all .listen(), .onAdd(), .onRemove() fire automatically
 ```
+
+**Critical initialization detail**: `encode()` only encodes dirty/changed fields. The first sync MUST use `encodeAll()` to produce a full state snapshot — otherwise `clientState` starts empty with no data. After each `encode()` or `encodeAll()`, `discardChanges()` must be called to clear tracked changes, preventing re-encoding stale deltas.
 
 **Why this beats EngineStateProxy**: The original EngineStateProxy approach required manually emitting events after every state mutation — hundreds of `emit()` calls, per-Pokemon field tracking (positionX, hp, shield, etc. changing every tick), and constant maintenance as new fields are added. The loopback approach delegates all change detection to Schema's existing `@type()` decorators, which is exactly what they were designed for.
 
@@ -87,24 +95,82 @@ decoder.decode(patches, clientState)
 - Tournament commands — multiplayer-only
 - Admin commands — no admin in single-player
 
-## R4: Room References Resolution (9 total)
+## R4: Room References Resolution (13 total)
 
-**Decision**: 3 DELETE, 6 REIMPLEMENT with engine-local alternatives.
+**Decision**: 3 DELETE, 10 REIMPLEMENT with engine-local alternatives.
+
+### Core game logic references (10)
 
 | Reference | File | Action | Replacement |
 |-----------|------|--------|-------------|
 | HiddenPowerF (fishing) | hidden-power.ts:111 | REIMPLEMENT | Engine provides `pickFish()` + `spawnOnBench()` directly |
 | HiddenPowerO (evolution) | hidden-power.ts:406 | REIMPLEMENT | Call `checkEvolutions()` as engine method |
-| Celesteel (fireworks delay) | abilities.ts:292 | REIMPLEMENT | Use `simulation.addDelayedAction()` |
+| Celesteel (fireworks delay) | abilities.ts:292 | REIMPLEMENT | Use engine-level delayed action queue |
 | MagnetPull (steel spawn) | abilities.ts:13520 | REIMPLEMENT | Engine provides `spawnWanderingPokemon()` |
-| Field synergy (death heal) | synergies.ts:217 | REIMPLEMENT | Use `simulation.addDelayedAction()` or immediate execution |
+| Field synergy (death heal) | synergies.ts:217 | REIMPLEMENT | Use engine-level delayed action queue or immediate execution |
 | DodoTicket (stage level) | items.ts:321 | REIMPLEMENT | Engine passes `stageLevel` via simulation context |
 | ChefCook (broadcast+delay) | items.ts:330 | REIMPLEMENT | Engine emits COOK event + uses delayed action |
 | FishingRod (stage+fish) | items.ts:428 | REIMPLEMENT | Engine provides `pickFish()` + `spawnOnBench()` |
 | EvolutionStone (evolution) | items.ts:1200 | REIMPLEMENT | Call `checkEvolutions()` as engine method |
 | PachirisuBerry (dig) | passives.ts:507 | REIMPLEMENT | Engine emits DIG event + uses delayed action |
 
-**Key pattern**: Most references use `room.clock.setTimeout()` for delayed effects. Replace with `simulation.addDelayedAction(delay, callback)` — a simple queue processed during `update()`.
+### Infrastructure references (3 — previously missed)
+
+| Reference | File | Action | Replacement |
+|-----------|------|--------|-------------|
+| MiniGame constructor | mini-game.ts | REIMPLEMENT | Constructor takes `room: GameRoom` for `room.state`, `room.clients`, `room.broadcast()`, `room.clock.setTimeout()` — replace with engine context object |
+| Simulation.room field | simulation.ts:94,127,1499 | REIMPLEMENT | Optional `room?: GameRoom` field passed to abilities/effects — replace with engine context interface |
+| Effect args | effects/effect.ts | REIMPLEMENT | `OnStageStartEffectArgs` has `room?: GameRoom` — replace with engine context interface |
+
+### Delayed action mechanism
+
+**Key pattern**: Most references use `room.clock.setTimeout()` for delayed effects. The existing per-Pokemon `DelayedCommand` pattern (`commands.push(new DelayedCommand(callback, delay))`) only covers effects tied to a specific Pokemon entity. Effects without a Pokemon context (e.g., MiniGame timers, ChefCook broadcast, PachirisuBerry dig) need an engine-level mechanism.
+
+**Solution**: Add a `delayedActions` queue to `LocalGameEngine`:
+
+```typescript
+// Engine-level delayed actions (replaces room.clock.setTimeout)
+interface DelayedAction {
+  executeAt: number      // timestamp when to fire
+  callback: () => void
+}
+
+class LocalGameEngine {
+  private delayedActions: DelayedAction[] = []
+  private elapsedTime = 0
+
+  addDelayedAction(delayMs: number, callback: () => void) {
+    this.delayedActions.push({
+      executeAt: this.elapsedTime + delayMs,
+      callback
+    })
+  }
+
+  tick(deltaTime: number) {
+    this.elapsedTime += deltaTime
+    // Process delayed actions
+    this.delayedActions = this.delayedActions.filter(action => {
+      if (this.elapsedTime >= action.executeAt) {
+        action.callback()
+        return false  // remove executed action
+      }
+      return true
+    })
+    // ... rest of tick logic
+  }
+}
+```
+
+Core logic accesses this via the engine context interface (same interface that replaces `room` in simulation.ts, mini-game.ts, effect.ts):
+
+```typescript
+interface IGameEngineContext {
+  state: GameState
+  addDelayedAction(delayMs: number, callback: () => void): void
+  emit(event: string, payload: any): void
+  // ... other methods previously on room
+}
+```
 
 ## R5: Transfer Message Handling
 
