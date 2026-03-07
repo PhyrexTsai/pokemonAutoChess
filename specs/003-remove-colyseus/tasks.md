@@ -90,7 +90,7 @@ Extract game logic from `game-commands.ts` and `game-room.ts` into 3 new engine 
 
 ### Implementation for User Story 2
 
-- [ ] T028 [US2] Verify all 18 Transfer event emissions in `app/public/src/local-engine.ts` match the contract in `specs/003-remove-colyseus/contracts/engine-api.md`. Ensure `processBattleEvent` correctly emits ABILITY, POKEMON_DAMAGE, POKEMON_HEAL events. Ensure phase transition logic emits PLAYER_DAMAGE, PLAYER_INCOME, FINAL_RANK, GAME_END, SIMULATION_STOP, BOARD_EVENT, CLEAR_BOARD_EVENT, CLEAR_BOARD. Ensure item/passive effects emit COOK, DIG via `context.emit`. Ensure minigame emits NPC_DIALOG, PRELOAD_MAPS. Ensure SHOW_EMOTE, LOADING_COMPLETE, DRAG_DROP_CANCEL are emitted at correct points. Fix any missing or incorrect emissions.
+- [x] T028 [US2] Verify all 18 Transfer event emissions in `app/public/src/local-engine.ts` match the contract in `specs/003-remove-colyseus/contracts/engine-api.md`. Ensure `processBattleEvent` correctly emits ABILITY, POKEMON_DAMAGE, POKEMON_HEAL events. Ensure phase transition logic emits PLAYER_DAMAGE, PLAYER_INCOME, FINAL_RANK, GAME_END, SIMULATION_STOP, BOARD_EVENT, CLEAR_BOARD_EVENT, CLEAR_BOARD. Ensure item/passive effects emit COOK, DIG via `context.emit`. Ensure minigame emits NPC_DIALOG, PRELOAD_MAPS. Ensure SHOW_EMOTE, LOADING_COMPLETE, DRAG_DROP_CANCEL are emitted at correct points. Fix any missing or incorrect emissions.
 
 **Note**: US2 coverage is largely provided by US1's event wiring in T015-T018 (which connects the event pipeline). T028 is a verification/fix task — ensuring all 18 event types are correctly emitted, not new implementation.
 
