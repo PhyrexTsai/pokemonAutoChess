@@ -76,7 +76,7 @@ Extract game logic from `game-commands.ts` and `game-room.ts` into 3 new engine 
 - [ ] T024 [P] [US1] Modify `app/public/src/game/components/loading-manager.ts` — replace `room.state` accesses with `engine.clientState` (~2 changes).
 - [ ] T025 [P] [US1] Modify `app/public/src/game/components/sell-zone.ts` — replace `room.state` accesses with `engine.clientState` (~2 changes).
 - [ ] T026 [US1] Update Redux stores — in `app/public/src/stores/GameStore.ts` remove Colyseus type imports; in `app/public/src/stores/LobbyStore.ts` remove `RoomAvailable` type from `@colyseus/sdk` and replace with plain interface; in `app/public/src/stores/NetworkStore.ts` replace `leaveAllRooms` with `engine.dispose()`, remove room references.
-- [ ] T027 [US1] Strip Colyseus from server entry points — in `app/index.ts` remove Colyseus server initialization (keep Express static file serving for Phase 3); in `app/app.config.ts` remove all room definitions and Colyseus-related middleware (keep static API routes).
+- [ ] T027 [US1] Strip Colyseus from server entry points — in `app/index.ts` remove Colyseus server initialization (keep Express static file serving for Phase 3); in `app/app.config.ts` remove all room definitions and Colyseus-related middleware (keep static API routes: `/pokemons`, `/items`, `/types`, `/titles` — these are removed in Phase 3).
 
 **Checkpoint**: At this point, the game should be fully playable in-browser with no server dependency. All game commands (buy, sell, drag-drop, reroll, level-up, lock shop) work locally. Phase transitions, battle simulation, income, damage, and ranking all function.
 
@@ -91,6 +91,8 @@ Extract game logic from `game-commands.ts` and `game-room.ts` into 3 new engine 
 ### Implementation for User Story 2
 
 - [ ] T028 [US2] Verify all 18 Transfer event emissions in `app/public/src/local-engine.ts` match the contract in `specs/003-remove-colyseus/contracts/engine-api.md`. Ensure `processBattleEvent` correctly emits ABILITY, POKEMON_DAMAGE, POKEMON_HEAL events. Ensure phase transition logic emits PLAYER_DAMAGE, PLAYER_INCOME, FINAL_RANK, GAME_END, SIMULATION_STOP, BOARD_EVENT, CLEAR_BOARD_EVENT, CLEAR_BOARD. Ensure item/passive effects emit COOK, DIG via `context.emit`. Ensure minigame emits NPC_DIALOG, PRELOAD_MAPS. Ensure SHOW_EMOTE, LOADING_COMPLETE, DRAG_DROP_CANCEL are emitted at correct points. Fix any missing or incorrect emissions.
+
+**Note**: US2 coverage is largely provided by US1's event wiring in T015-T018 (which connects the event pipeline). T028 is a verification/fix task — ensuring all 18 event types are correctly emitted, not new implementation.
 
 **Checkpoint**: Battle visuals render identically to pre-refactoring version. Schema loopback automatically handles state-based rendering (HP bars, positions, status icons, weather). Event emissions handle RPC-style visuals (ability animations, floating numbers).
 
