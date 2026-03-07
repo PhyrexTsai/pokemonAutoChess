@@ -72,6 +72,7 @@ export default class GameScene extends Scene {
   lastPokemonDetail: PokemonSprite | null = null
   minigameManager: MinigameManager | null = null
   loadingManager: LoadingManager | null = null
+  mapPreloadPromise: Promise<unknown> | null = null
   started: boolean = false
   spectate: boolean = false
 
@@ -102,9 +103,16 @@ export default class GameScene extends Scene {
 
     this.load.once("complete", () => {
       logger.debug("Loading complete")
-      if (!this.started) {
-        this.engine?.reportLoadingComplete()
-      }
+      const waitForMaps = this.mapPreloadPromise ?? Promise.resolve()
+      waitForMaps.then(() => {
+        // Start second pass for any tileset images queued by preloadMaps
+        this.load.once("complete", () => {
+          if (!this.started) {
+            this.engine?.reportLoadingComplete()
+          }
+        })
+        this.load.start()
+      })
     })
 
     this.engine!.on(Transfer.LOADING_COMPLETE, () => {

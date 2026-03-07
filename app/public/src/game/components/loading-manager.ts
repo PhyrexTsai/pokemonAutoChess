@@ -107,11 +107,8 @@ export default class LoadingManager {
         .filter<DungeonPMDO>((map): map is DungeonPMDO => map !== "town")
       if (maps.length > 0) {
         // Fetch tilemap JSON async, then queue tileset images for loading
-        scene.preloadMaps(maps).then(() => {
-          if (!scene.load.isLoading()) {
-            scene.load.start()
-          }
-        })
+        // The "complete" handler in game-scene awaits this before proceeding
+        scene.mapPreloadPromise = scene.preloadMaps(maps)
       }
       preloadMusic(scene, RegionDetails[player.map].music)
       preloadPortraits(this.scene, player)
