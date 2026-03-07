@@ -13,7 +13,7 @@ export default function GamePlayerDetail(props: { player: IPlayer }) {
   const { t } = useTranslation()
   const synergyList = useMemo(
     () =>
-      [...props.player.synergies.entries()]
+      [...Object.entries(props.player.synergies)]
         .filter(([syn, val]) => val >= SynergyTriggers[syn]?.[0])
         .sort((a, b) => b[1] - a[1])
         .map(([syn]) => syn),
