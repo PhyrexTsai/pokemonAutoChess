@@ -1,7 +1,7 @@
 import { Emotion, Role, Title } from ".."
 import { Language } from "../enum/Language"
 
-interface IUserMetadata {
+export interface IUserMetadata {
   uid: string
   displayName: string
   language: Language | ""
@@ -23,7 +23,7 @@ interface IUserMetadata {
   pokemonCollection: Map<string, IPokemonCollectionItem>
 }
 
-interface IPokemonCollectionItem {
+export interface IPokemonCollectionItem {
   id: string
   selectedEmotion: Emotion | null
   selectedShiny: boolean

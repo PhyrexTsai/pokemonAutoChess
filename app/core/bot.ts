@@ -1,6 +1,7 @@
 import Player from "../models/colyseus-models/player"
-import { BotV2, IBot } from "../models/mongo-models/bot-v2"
+import { getBotById } from "../models/local-store"
 import PokemonFactory from "../models/pokemon-factory"
+import { IBot } from "../types/interfaces/bot"
 import { AbilityPerTM, Emotion, TMs } from "../types"
 import { PokemonActionState } from "../types/enum/Game"
 import { Synergy } from "../types/enum/Synergy"
@@ -19,9 +20,9 @@ export default class Bot {
     this.initialize()
   }
 
-  async initialize() {
+  initialize() {
     try {
-      const data = await BotV2.findOne({ id: this.player.id }, ["steps"])
+      const data = getBotById(this.player.id)
       if (data) {
         this.scenario = data
         this.updatePlayerTeam()

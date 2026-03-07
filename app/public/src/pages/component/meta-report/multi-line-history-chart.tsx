@@ -1,7 +1,7 @@
 import React from "react"
 import { useTranslation } from "react-i18next"
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts"
-import { IHistoryEntry } from "../../../../../models/mongo-models/pokemons-statistic-v2"
+import { IHistoryEntry } from "../../../api/meta"
 import { Pkm, PkmIndex } from "../../../../../types/enum/Pokemon"
 import { getPortraitSrc } from "../../../../../utils/avatar"
 import { formatDateShort } from "./history-utils"

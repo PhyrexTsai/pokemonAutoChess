@@ -1,5 +1,4 @@
 import { getStateCallbacks, Room } from "@colyseus/sdk"
-import firebase from "firebase/compat/app"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -92,6 +91,7 @@ import GameSynergies from "./component/game/game-synergies"
 import GameToasts from "./component/game/game-toasts"
 import { MainSidebar } from "./component/main-sidebar/main-sidebar"
 import { ConnectionStatusNotification } from "./component/system/connection-status-notification"
+import { saveHistoryEntry } from "../persistence/local-db"
 import { playMusic, preloadMusic } from "./utils/audio"
 import { LocalStoreKeys, localStore } from "./utils/store"
 
@@ -241,7 +241,7 @@ export default function Game() {
   const leave = useCallback(async () => {
     const afterPlayers = new Array<IAfterGamePlayer>()
 
-    const token = await firebase.auth().currentUser?.getIdToken()
+    const token = uid
 
     if (gameContainer && gameContainer.game) {
       gameContainer.game.destroy(true)
@@ -309,6 +309,31 @@ export default function Game() {
       !room?.state.noElo &&
       afterPlayers.filter((p) => p.role !== Role.BOT).length >= 2
     const gameMode = room?.state.gameMode
+
+    // Save game history entry to IndexedDB
+    const me = afterPlayers.find((p) => p.id === uid)
+    if (me) {
+      saveHistoryEntry({
+        id: crypto.randomUUID(),
+        playerId: uid,
+        elo: me.elo,
+        time: Date.now(),
+        name: me.name,
+        rank: me.rank,
+        nbplayers: nbPlayers,
+        avatar: me.avatar,
+        pokemons: me.pokemons.map((p) => ({
+          name: p.name,
+          avatar: p.avatar,
+          items: Array.from(p.items) as string[]
+        })),
+        synergies: Object.fromEntries(
+          me.synergies.map((s) => [s.name, s.value])
+        ),
+        regions: [],
+        gameMode: gameMode ?? "NORMAL"
+      }).catch(() => {})
+    }
 
     const r = await client.create<AfterGameState>("after-game", {
       players: afterPlayers,

@@ -1,4 +1,3 @@
-import firebase from "firebase/compat/app"
 import React, { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
@@ -110,11 +109,8 @@ export default function PreparationMenu() {
   }
 
   const startGame = throttle(async function startGame() {
-    if (rooms.preparation) {
-      const token = await firebase.auth().currentUser?.getIdToken()
-      if (token) {
-        gameStartRequest(token)
-      }
+    if (rooms.preparation && uid) {
+      gameStartRequest(uid)
     }
   }, 1000)
 

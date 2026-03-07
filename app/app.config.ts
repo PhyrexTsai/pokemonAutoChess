@@ -10,45 +10,19 @@ import {
 import cors from "cors"
 import express, { ErrorRequestHandler } from "express"
 import basicAuth from "express-basic-auth"
-import admin from "firebase-admin"
-import { UserRecord } from "firebase-admin/lib/auth/user-record"
 import helmet from "helmet"
-import { connect } from "mongoose"
 import path from "path"
 import pkg from "../package.json"
 import { MAX_CONCURRENT_PLAYERS_ON_SERVER, SynergyTriggers } from "./config"
-import { migrateShardsOfAltForms } from "./core/collection"
+import { getGameHistoryByPlayer, getPlayer, loadBotsFromJson } from "./models/local-store"
 import { initTilemap } from "./core/design"
 import { GameRecord } from "./models/colyseus-models/game-record"
-import chatV2 from "./models/mongo-models/chat-v2"
-import DetailledStatistic from "./models/mongo-models/detailled-statistic-v2"
-import TitleStatistic from "./models/mongo-models/title-statistic"
-import UserMetadata, {
-  toUserMetadataJSON
-} from "./models/mongo-models/user-metadata"
 import { PRECOMPUTED_POKEMONS_PER_TYPE } from "./models/precomputed/precomputed-types"
 import AfterGameRoom from "./rooms/after-game-room"
 import CustomLobbyRoom from "./rooms/custom-lobby-room"
 import GameRoom from "./rooms/game-room"
 import PreparationRoom from "./rooms/preparation-room"
-import {
-  addBotToDatabase,
-  approveBot,
-  deleteBotFromDatabase,
-  fetchBot,
-  fetchBotsList
-} from "./services/bots"
-import { getLeaderboard } from "./services/leaderboard"
-import {
-  computeSynergyAverages,
-  getDendrogram,
-  getMetadata,
-  getMetaItems,
-  getMetaPokemons,
-  getMetaRegions,
-  getMetaV2
-} from "./services/meta"
-import { ISuggestionUser, Role } from "./types"
+import { fetchBot, fetchBotsList } from "./services/bots"
 import { DungeonPMDO } from "./types/enum/Dungeon"
 import { Item } from "./types/enum/Item"
 import { Pkm, PkmIndex } from "./types/enum/Pokemon"
@@ -59,13 +33,6 @@ const clientSrc = __dirname.includes("server")
   : path.join(__dirname, "public", "dist", "client")
 const viewsSrc = path.join(clientSrc, "index.html")
 const isDevelopment = process.env.MODE === "dev"
-const setCacheControl = (res: any, maxAge: number = 86400) => {
-  if (!isDevelopment) {
-    res.set("Cache-Control", `max-age=${maxAge}`)
-  } else {
-    res.set("Cache-Control", "no-cache")
-  }
-}
 
 /**
  * Import your Room files
@@ -138,16 +105,13 @@ export const server = defineServer({
 
     app.use(
       helmet({
-        crossOriginOpenerPolicy: false, // required for firebase auth
+        crossOriginOpenerPolicy: false,
         contentSecurityPolicy: {
           directives: {
             defaultSrc: [
               "'self'",
               "https://*.pokemon-auto-chess.com",
               "wss://*.pokemon-auto-chess.com",
-              "https://*.firebaseapp.com",
-              "https://apis.google.com",
-              "https://*.googleapis.com",
               "https://*.doubleclick.net", // google ads, required for youtube embedded
               "https://*.githubusercontent.com",
               "http://raw.githubusercontent.com",
@@ -164,8 +128,6 @@ export const server = defineServer({
               "'self'",
               "'unsafe-inline'",
               "'unsafe-eval'",
-              "https://apis.google.com",
-              "https://*.googleapis.com",
               "https://*.doubleclick.net" // google ads, required for youtube embedded
             ],
             imgSrc: [
@@ -187,6 +149,9 @@ export const server = defineServer({
     app.use(cors())
     app.use(express.json())
     app.use(express.static(clientSrc))
+    app.use(express.static(path.join(clientSrc, "pokechess")))
+    // serve raw src assets (ui/, etc.) not included in pokechess dist
+    app.use("/assets", express.static(path.join(__dirname, "public", "src", "assets")))
 
     app.get("/", (req, res) => {
       res.sendFile(viewsSrc)
@@ -252,56 +217,8 @@ export const server = defineServer({
       res.send(SynergyTriggers)
     })
 
-    app.get("/titles", async (req, res) => {
-      res.send(await TitleStatistic.find().sort({ name: 1 }).exec()) // Ensure a consistent order by sorting on a unique field
-    })
-
-    app.get("/meta/metadata", async (req, res) => {
-      // Set Cache-Control header for 24 hours (86400 seconds)
-      setCacheControl(res, 86400)
-      res.send(getMetadata())
-    })
-
-    app.get("/meta/items", async (req, res) => {
-      // Set Cache-Control header for 24 hours (86400 seconds)
-      setCacheControl(res, 86400)
-      res.send(getMetaItems())
-    })
-
-    app.get("/meta/pokemons", async (req, res) => {
-      // Set Cache-Control header for 24 hours (86400 seconds)
-      setCacheControl(res, 86400)
-      res.send(getMetaPokemons())
-    })
-
-    app.get("/meta/regions", async (req, res) => {
-      // Set Cache-Control header for 24 hours (86400 seconds)
-      setCacheControl(res, 86400)
-      res.send(getMetaRegions())
-    })
-
-    app.get("/meta-v2", async (req, res) => {
-      // Set Cache-Control header for 24 hours (86400 seconds)
-      setCacheControl(res, 86400)
-      res.send(getMetaV2())
-    })
-
-    app.get("/dendrogram", async (req, res) => {
-      // Set Cache-Control header for 24 hours (86400 seconds)
-      setCacheControl(res, 86400)
-      res.send(getDendrogram())
-    })
-
-    app.get("/meta/types", async (req, res) => {
-      const userAuth = await authUser(req, res)
-      if (!userAuth) return
-      const user = await UserMetadata.findOne({ uid: userAuth.uid })
-      if (!user || user.role !== Role.ADMIN) {
-        res.status(403).send("Unauthorized")
-        return
-      }
-
-      res.send(computeSynergyAverages())
+    app.get("/titles", (req, res) => {
+      res.send([])
     })
 
     app.get("/tilemap/:map", async (req, res) => {
@@ -320,42 +237,7 @@ export const server = defineServer({
       }
     })
 
-    app.get("/leaderboards", async (req, res) => {
-      if (!isDevelopment) {
-        res.set("Cache-Control", "no-cache")
-      }
-      res.send(getLeaderboard())
-    })
-
-    app.get("/leaderboards/bots", async (req, res) => {
-      if (!isDevelopment) {
-        res.set("Cache-Control", "no-cache")
-      }
-      res.send(getLeaderboard()?.botLeaderboard)
-    })
-
-    app.get("/leaderboards/elo", async (req, res) => {
-      if (!isDevelopment) {
-        res.set("Cache-Control", "no-cache")
-      }
-      res.send(getLeaderboard()?.leaderboard)
-    })
-
-    app.get("/leaderboards/level", async (req, res) => {
-      if (!isDevelopment) {
-        res.set("Cache-Control", "no-cache")
-      }
-      res.send(getLeaderboard()?.levelLeaderboard)
-    })
-
-    app.get("/leaderboards/event", async (req, res) => {
-      if (!isDevelopment) {
-        res.set("Cache-Control", "no-cache")
-      }
-      res.send(getLeaderboard()?.eventLeaderboard)
-    })
-
-    app.get("/game-history/:playerUid", async (req, res) => {
+    app.get("/game-history/:playerUid", (req, res) => {
       if (!isDevelopment) {
         res.set("Cache-Control", "no-cache")
       }
@@ -364,211 +246,46 @@ export const server = defineServer({
       const limit = 10
       const skip = (Number(page) - 1) * limit
 
-      const stats = await DetailledStatistic.find(
-        { playerId: playerUid },
-        ["pokemons", "time", "rank", "elo", "gameMode"],
-        { limit: limit, skip: skip, sort: { time: -1 } }
+      const stats = getGameHistoryByPlayer(playerUid)
+        .sort((a, b) => b.time - a.time)
+        .slice(skip, skip + limit)
+
+      const records = stats.map(
+        (record) =>
+          new GameRecord(
+            record.time,
+            record.rank,
+            record.elo,
+            record.pokemons,
+            record.gameMode
+          )
       )
-      if (stats) {
-        const records = stats.map(
-          (record) =>
-            new GameRecord(
-              record.time,
-              record.rank,
-              record.elo,
-              record.pokemons,
-              record.gameMode
-            )
-        )
 
-        // Return the records as the response
-        return res.status(200).json(records)
-      }
-
-      // If no records found, return an empty array
-      return res.status(200).json([])
+      return res.status(200).json(records)
     })
 
-    app.get("/chat-history/:playerUid", async (req, res) => {
-      if (!isDevelopment) {
-        res.set("Cache-Control", "no-cache")
-      }
-      const { playerUid } = req.params
-      const { page = 1 } = req.query
-      const limit = 30
-      const skip = (Number(page) - 1) * limit
-      const messages = await chatV2.find({ authorId: playerUid }, undefined, {
-        limit: limit,
-        skip: skip,
-        sort: { time: -1 }
-      })
-      return res.status(200).json(messages ?? [])
-    })
-
-    app.get("/players", async (req, res) => {
-      try {
-        const searchTerm =
-          req.query?.name?.toString().trim().toLowerCase() || ""
-        const userAuth = await authUser(req, res)
-        if (!userAuth) return
-        const user = await UserMetadata.findOne({ uid: userAuth.uid })
-        const showBanned =
-          user?.role === Role.ADMIN || user?.role === Role.MODERATOR
-
-        const users = await UserMetadata.find(
-          {
-            displayName: {
-              $gte: searchTerm,
-              $lt: searchTerm + "\uffff"
-            },
-            ...(showBanned ? {} : { banned: false })
-          },
-          [
-            "uid",
-            "elo",
-            "displayName",
-            "level",
-            "avatar",
-            ...(showBanned ? ["banned"] : [])
-          ],
-          {
-            limit: 100,
-            sort: { level: -1 },
-            collation: { locale: "en", strength: 2 }
-          }
-        )
-
-        if (users) {
-          const suggestions: Array<ISuggestionUser> = users.map((u) => {
-            return {
-              id: u.uid,
-              elo: u.elo,
-              name: u.displayName,
-              level: u.level,
-              avatar: u.avatar,
-              banned: u.banned
-            }
-          })
-          res.status(200).json(suggestions)
-        }
-      } catch (error) {
-        logger.error(error)
-        res.status(500).json({ error: "Error fetching players" })
-      }
-    })
-
-    app.get("/bots", async (req, res) => {
+    app.get("/bots", (req, res) => {
       const approved =
         req.query.approved === "true"
           ? true
           : req.query.approved === "false"
             ? false
             : undefined
-      const botsData = await fetchBotsList(approved, req.query.pkm?.toString())
+      const botsData = fetchBotsList(approved, req.query.pkm?.toString())
       res.send(botsData)
     })
 
-    app.get("/bots/:id", async (req, res) => {
-      res.send(await fetchBot(req.params.id))
+    app.get("/bots/:id", (req, res) => {
+      res.send(fetchBot(req.params.id))
     })
 
-    const authUser = async (req, res): Promise<UserRecord | null> => {
-      let user
-      try {
-        //get header Authorization
-        const authHeader = req.headers.authorization
-        if (!authHeader) throw new Error("Unauthorized")
-        const token = authHeader.split(" ")[1]
-        if (!token) throw new Error("Unauthorized")
-        // get user from firebase
-        const decodedToken = await admin.auth().verifyIdToken(token)
-        user = await admin.auth().getUser(decodedToken.uid)
-        if (!user || !user.displayName) throw new Error("Unauthorized")
-        return user
-      } catch (error) {
-        res.status(401).send(error)
-        return null
+    app.get("/profile", (req, res) => {
+      const player = getPlayer()
+      if (!player) return res.status(404).send("No player")
+      if (!isDevelopment) {
+        res.set("Cache-Control", "no-cache")
       }
-    }
-
-    app.get("/profile", async (req, res) => {
-      try {
-        const userAuth = await authUser(req, res)
-        if (!userAuth) return
-        const mongoUser = await UserMetadata.findOne({ uid: userAuth.uid })
-        if (!mongoUser) return res.status(404).send("User not found")
-        await migrateShardsOfAltForms(mongoUser) // TEMPORARY migration; to be removed in future
-        if (!isDevelopment) {
-          res.set("Cache-Control", "no-cache")
-        }
-        res.send(toUserMetadataJSON(mongoUser))
-      } catch (error) {
-        logger.error("Error fetching profile", error)
-        res.status(500).send("Error fetching profile")
-      }
-    })
-
-    app.post("/bots", async (req, res) => {
-      try {
-        const userAuth = await authUser(req, res)
-        if (!userAuth) return
-        const user = await UserMetadata.findOne({ uid: userAuth.uid })
-        if (!user) return
-        const bot = req.body
-        bot.author = user.displayName
-        const botAdded = addBotToDatabase(bot)
-        res.status(201).send(botAdded)
-      } catch (error) {
-        logger.error("Error submitting bot", error)
-        res.status(500).send("Error submitting bot")
-      }
-    })
-
-    app.delete("/bots/:id", async (req, res) => {
-      const userAuth = await authUser(req, res)
-      if (!userAuth) return
-      const user = await UserMetadata.findOne({ uid: userAuth.uid })
-      if (
-        !user ||
-        (user.role !== Role.BOT_MANAGER && user.role !== Role.ADMIN)
-      ) {
-        res.status(403).send("Unauthorized")
-        return
-      }
-
-      try {
-        const deleteResult = await deleteBotFromDatabase(req.params.id, user)
-        res.status(deleteResult.deletedCount > 0 ? 200 : 404).send()
-      } catch (error) {
-        logger.error("Error deleting bot", error)
-        res.status(500).send("Error deleting bot")
-      }
-    })
-
-    app.post("/bots/:id/approve", async (req, res) => {
-      const userRecord = await authUser(req, res)
-      if (!userRecord) return
-      const user = await UserMetadata.findOne({ uid: userRecord.uid })
-      if (
-        !user ||
-        (user.role !== Role.BOT_MANAGER && user.role !== Role.ADMIN)
-      ) {
-        res.status(403).send("Unauthorized")
-        return
-      }
-
-      try {
-        const approved = req.body.approved
-        const updateResult = await approveBot(req.params.id, approved, user)
-        if (updateResult.modifiedCount === 0) {
-          res.status(404).send("Bot not found")
-          return
-        }
-        res.status(200).send()
-      } catch (error) {
-        logger.error("Error approving bot", error)
-        res.status(500).send("Error approving bot")
-      }
+      res.send(player)
     })
 
     app.get("/status", async (req, res) => {
@@ -598,18 +315,6 @@ export const server = defineServer({
   },
 
   beforeListen: () => {
-    /**
-     * Before before gameServer.listen() is called.
-     */
-    connect(process.env.MONGO_URI!, {
-      socketTimeoutMS: 45000
-    })
-    admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID!,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL!,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY!.replace(/\\n/g, "\n")
-      })
-    })
+    loadBotsFromJson()
   }
 })

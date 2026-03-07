@@ -2,7 +2,6 @@ import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import { GameUser } from "../../models/colyseus-models/game-user"
 import Message from "../../models/colyseus-models/message"
-import chatV2 from "../../models/mongo-models/chat-v2"
 import { EloRank } from "../../types/enum/EloRank"
 import { GameMode } from "../../types/enum/Game"
 import { SpecialGameRule } from "../../types/enum/SpecialGameRule"
@@ -82,16 +81,6 @@ export default class PreparationState
       params.avatar ?? "",
       time
     )
-    if (params.author) {
-      chatV2.create({
-        id: id,
-        payload: message.payload,
-        authorId: message.authorId,
-        author: message.author,
-        avatar: message.avatar,
-        time: time
-      })
-    }
     this.messages.push(message)
   }
 

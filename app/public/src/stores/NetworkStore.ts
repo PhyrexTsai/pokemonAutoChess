@@ -1,4 +1,3 @@
-import { User } from "@firebase/auth-types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import { CollectionUtils } from "../../../core/collection"
 import { Emotion, Title, Transfer } from "../../../types"
@@ -39,7 +38,10 @@ export const networkSlice = createSlice({
   name: "network",
   initialState: initalState,
   reducers: {
-    logIn: (state, action: PayloadAction<User>) => {
+    logIn: (
+      state,
+      action: PayloadAction<{ uid: string; displayName: string; email: string }>
+    ) => {
       if (action.payload) {
         state.uid = action.payload.uid
         state.displayName = action.payload.displayName ?? "Anonymous"

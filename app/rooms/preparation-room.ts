@@ -1,10 +1,16 @@
 import { Dispatcher } from "@colyseus/command"
 import { Client, ClientArray, CloseCode, Room, updateLobby } from "colyseus"
-import admin from "firebase-admin"
-import { UserRecord } from "firebase-admin/lib/auth/user-record"
+import { getPlayer } from "../models/local-store"
 import { MAX_PLAYERS_PER_GAME } from "../config"
-import { IBot } from "../models/mongo-models/bot-v2"
-import UserMetadata from "../models/mongo-models/user-metadata"
+
+export type LocalAuth = {
+  uid: string
+  displayName: string
+  email: string
+  photoURL: string
+  metadata: { language: string }
+}
+import { IBot } from "../types/interfaces/bot"
 import { IPreparationMetadata, Role, Transfer } from "../types"
 import { CloseCodes } from "../types/enum/CloseCodes"
 import { EloRank } from "../types/enum/EloRank"
@@ -31,7 +37,7 @@ import PreparationState from "./states/preparation-state"
 
 export default class PreparationRoom extends Room<{ state: PreparationState }> {
   dispatcher: Dispatcher<this>
-  clients!: ClientArray<Client<{ auth: UserRecord }>>
+  clients!: ClientArray<Client<{ auth: LocalAuth }>>
   private roomPassword: string | null
 
   constructor() {
@@ -340,29 +346,27 @@ export default class PreparationRoom extends Room<{ state: PreparationState }> {
 
   async onAuth(client: Client, options, context) {
     try {
-      const token = await admin.auth().verifyIdToken(options.idToken)
-      const user = await admin.auth().getUser(token.uid)
-      const userProfile = await UserMetadata.findOne({ uid: user.uid })
-      const isAdmin = userProfile?.role === Role.ADMIN
-
-      // Check password protection - room owner, admins and moderators bypass password protection
-      if (
-        this.state.password &&
-        userProfile?.role === Role.BASIC &&
-        this.state.ownerId !== user.uid
-      ) {
-        if (!options.password || options.password !== this.roomPassword) {
-          client.leave(CloseCodes.INVALID_PASSWORD)
-          return
-        }
+      const player = getPlayer()
+      const uid = options.uid ?? options.idToken ?? player?.uid ?? "local"
+      const displayName = options.displayName ?? player?.displayName
+      if (!displayName) {
+        client.leave(CloseCodes.ABNORMAL_CLOSURE)
+        return
+      }
+      const user: LocalAuth = {
+        uid,
+        displayName,
+        email: "local@player",
+        photoURL: "",
+        metadata: { language: (player?.language as string) ?? "en" }
       }
 
-      const isAlreadyInRoom = this.state.users.has(user.uid)
+      const isAlreadyInRoom = this.state.users.has(uid)
       const numberOfHumanPlayers = values(this.state.users).filter(
         (u) => !u.isBot
       ).length
 
-      if (numberOfHumanPlayers >= MAX_PLAYERS_PER_GAME && !isAdmin) {
+      if (numberOfHumanPlayers >= MAX_PLAYERS_PER_GAME) {
         client.leave(CloseCodes.ROOM_FULL)
         return
       } else if (isAlreadyInRoom) {
@@ -371,16 +375,19 @@ export default class PreparationRoom extends Room<{ state: PreparationState }> {
       } else if (this.state.gameStartedAt != null) {
         client.leave(CloseCodes.GAME_ALREADY_STARTED)
         return
-      } else if (userProfile?.banned) {
-        client.leave(CloseCodes.USER_BANNED)
+      } else if (
+        this.roomPassword &&
+        options.password !== this.roomPassword
+      ) {
+        client.leave(CloseCodes.ABNORMAL_CLOSURE)
         return
-      } else if (this.metadata.blacklist.includes(user.uid)) {
+      } else if (this.metadata.blacklist.includes(uid)) {
         client.leave(CloseCodes.USER_KICKED)
         return
       } else if (
         this.metadata.whitelist &&
         this.metadata.whitelist.length > 0 &&
-        !this.metadata.whitelist.includes(user.uid)
+        !this.metadata.whitelist.includes(uid)
       ) {
         client.leave(CloseCodes.USER_NOT_WHITELISTED)
         return
@@ -394,9 +401,9 @@ export default class PreparationRoom extends Room<{ state: PreparationState }> {
   }
 
   async onJoin(
-    client: Client<{ auth: UserRecord }>,
+    client: Client<{ auth: LocalAuth }>,
     options: any,
-    auth: UserRecord | undefined
+    auth: LocalAuth | undefined
   ) {
     if (auth) {
       /*logger.info(

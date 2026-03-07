@@ -1,9 +1,6 @@
 import { Client, Room } from "@colyseus/sdk"
-import { User } from "@firebase/auth-types"
-import firebase from "firebase/compat/app"
 import type { server } from "../../app.config.ts"
-import { FIREBASE_CONFIG } from "../../config"
-import { IBot } from "../../models/mongo-models/bot-v2.js"
+import { IBot } from "../../types/interfaces/bot"
 import AfterGameState from "../../rooms/states/after-game-state"
 import GameState from "../../rooms/states/game-state"
 import LobbyState from "../../rooms/states/lobby-state"
@@ -17,7 +14,7 @@ import { SpecialGameRule } from "../../types/enum/SpecialGameRule.js"
 import { IUserMetadataJSON } from "../../types/interfaces/UserMetadata"
 import { logger } from "../../utils/logger"
 import store from "./stores"
-import { logIn, setProfile } from "./stores/NetworkStore"
+import { setProfile } from "./stores/NetworkStore"
 
 const endpoint = `${window.location.protocol.replace("http", "ws")}//${
   window.location.host
@@ -27,31 +24,25 @@ logger.info(`Colyseus endpoint: ${endpoint}`)
 export const client = new Client<typeof server>(endpoint)
 
 export function authenticateUser() {
-  if (!firebase.apps.length) {
-    firebase.initializeApp(FIREBASE_CONFIG)
-  }
-
-  return new Promise<User>((resolve, reject) => {
-    firebase.auth().onAuthStateChanged(async (user) => {
-      if (!user) return reject(CloseCodes.USER_NOT_AUTHENTICATED)
-      store.dispatch(logIn(user))
-      fetchProfile()
-      resolve(user)
+  const state = store.getState().network
+  if (state.uid) {
+    return Promise.resolve({
+      uid: state.uid,
+      displayName: state.displayName,
+      getIdToken: () => Promise.resolve(state.uid)
     })
-  })
+  }
+  return Promise.reject(CloseCodes.USER_NOT_AUTHENTICATED)
 }
 
 export async function fetchProfile(forceRefresh: boolean = false) {
   const profile = store.getState().network.profile
-  const token = await firebase.auth().currentUser?.getIdToken()
   if (!forceRefresh && profile) {
     return Promise.resolve(profile)
   }
-  return fetch(`/profile?t=${Date.now()}`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  })
+  const uid = store.getState().network.uid
+  if (!uid) return
+  return fetch(`/profile?t=${Date.now()}`)
     .then((res) => res.json())
     .then((profile: IUserMetadataJSON) => {
       store.dispatch(setProfile(profile))

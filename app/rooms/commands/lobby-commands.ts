@@ -26,12 +26,8 @@ import {
   TournamentBracketSchema,
   TournamentPlayerSchema
 } from "../../models/colyseus-models/tournament"
-import { Tournament } from "../../models/mongo-models/tournament"
-import UserMetadata, {
-  toUserMetadataJSON
-} from "../../models/mongo-models/user-metadata"
+import { getPlayer, updatePlayer } from "../../models/local-store"
 import { getPokemonData } from "../../models/precomputed/precomputed-pokemon-data"
-import { discordService } from "../../services/discord"
 import { notificationsService } from "../../services/notifications"
 import {
   CollectionEmotions,
@@ -54,20 +50,32 @@ import {
   PkmIndex,
   Unowns
 } from "../../types/enum/Pokemon"
-import { StarterAvatars } from "../../types/enum/Starters"
 import { ITournamentPlayer } from "../../types/interfaces/Tournament"
 import {
   IPokemonCollectionItemMongo,
+  IUserMetadataJSON,
   IUserMetadataMongo
 } from "../../types/interfaces/UserMetadata"
 import { getPortraitSrc } from "../../utils/avatar"
 import { getRank } from "../../utils/elo"
 import { logger } from "../../utils/logger"
-import { generateRandomName } from "../../utils/name-generation"
 import { cleanProfanity } from "../../utils/profanity-filter"
-import { pickRandomIn } from "../../utils/random"
-import { convertSchemaToRawObject, values } from "../../utils/schemas"
+import { values } from "../../utils/schemas"
 import CustomLobbyRoom from "../custom-lobby-room"
+
+function toUserMetadataJSON(user: IUserMetadataMongo): IUserMetadataJSON {
+  const pokemonCollection: {
+    [index: string]: IUserMetadataJSON["pokemonCollection"][string]
+  } = {}
+  user.pokemonCollection.forEach((item, index) => {
+    pokemonCollection[index] = CollectionUtils.toCollectionItemClient(item)
+  })
+  const { pokemonCollection: _pc, ...rest } = user
+  return {
+    ...rest,
+    pokemonCollection
+  } as IUserMetadataJSON
+}
 
 export class OnJoinCommand extends Command<
   CustomLobbyRoom,
@@ -88,57 +96,24 @@ export class OnJoinCommand extends Command<
       client.send(Transfer.ROOMS, this.room.rooms)
       client.userData = { joinedAt: Date.now() }
 
-      if (user) {
-        // load existing account
-        this.room.users.set(client.auth.uid, user)
-        const pendingGame = await getPendingGame(
-          this.room.presence,
-          client.auth.uid
-        )
-        if (pendingGame != null && !pendingGame.isExpired) {
-          client.send(Transfer.RECONNECT_PROMPT, pendingGame.gameId)
-        }
+      if (!user) return // player not initialized yet (profile created in username-input)
 
-        // Send any pending notifications
-        const notifications = notificationsService.getNotifications(
-          client.auth.uid
-        )
-        if (notifications.length > 0) {
-          client.send(Transfer.NOTIFICATIONS, notifications)
-        }
-      } else {
-        // create new user account
-        const starterBoosters = 3
-        const starterAvatar = pickRandomIn(StarterAvatars)
-        const randomName = generateRandomName()
-        await UserMetadata.create({
-          uid: client.auth.uid,
-          displayName: randomName,
-          avatar: starterAvatar,
-          booster: starterBoosters,
-          pokemonCollection: new Map<string, IPokemonCollectionItemMongo>()
-        })
-        const newUser: IUserMetadataMongo = {
-          uid: client.auth.uid,
-          displayName: randomName,
-          language: client.auth.metadata.language,
-          avatar: starterAvatar,
-          games: 0,
-          wins: 0,
-          exp: 0,
-          level: 0,
-          elo: 1000,
-          maxElo: 1000,
-          eventPoints: 0,
-          maxEventPoints: 0,
-          eventFinishTime: null,
-          pokemonCollection: new Map<string, IPokemonCollectionItemMongo>(),
-          booster: starterBoosters,
-          titles: [],
-          title: "",
-          role: Role.BASIC
-        }
-        this.room.users.set(client.auth.uid, newUser)
+      // load existing account
+      this.room.users.set(client.auth.uid, user)
+      const pendingGame = await getPendingGame(
+        this.room.presence,
+        client.auth.uid
+      )
+      if (pendingGame != null && !pendingGame.isExpired) {
+        client.send(Transfer.RECONNECT_PROMPT, pendingGame.gameId)
+      }
+
+      // Send any pending notifications
+      const notifications = notificationsService.getNotifications(
+        client.auth.uid
+      )
+      if (notifications.length > 0) {
+        client.send(Transfer.NOTIFICATIONS, notifications)
       }
     } catch (error) {
       logger.error(error)
@@ -180,10 +155,9 @@ export class GiveTitleCommand extends Command<
       const targetUser = this.room.users.get(uid)
 
       if (u && u.role && u.role === Role.ADMIN) {
-        const user = await UserMetadata.findOne({ uid })
+        const user = getPlayer()
         if (user && user.titles && !user.titles.includes(title)) {
           user.titles.push(title)
-          user.save()
 
           if (targetUser) {
             targetUser.titles.push(title)
@@ -203,7 +177,7 @@ export class DeleteAccountCommand extends Command<CustomLobbyRoom> {
         logger.info(
           `User ${client.auth.displayName} [${client.auth.uid}] has deleted their account`
         )
-        await UserMetadata.deleteOne({ uid: client.auth.uid })
+        // noop in single-player mode — no persistent account to delete
         client.leave(CloseCodes.USER_DELETED)
       }
     } catch (error) {
@@ -237,10 +211,9 @@ export class GiveBoostersCommand extends Command<
       const targetUser = this.room.users.get(uid)
 
       if (u && u.role && u.role === Role.ADMIN) {
-        const user = await UserMetadata.findOne({ uid: uid })
+        const user = getPlayer()
         if (user) {
           user.booster += numberOfBoosters
-          user.save()
 
           if (targetUser) {
             targetUser.booster = user.booster
@@ -271,10 +244,9 @@ export class GiveRoleCommand extends Command<
       const targetUser = this.room.users.get(uid)
       // logger.debug(u.role, uid)
       if (u && u.role === Role.ADMIN) {
-        const user = await UserMetadata.findOne({ uid: uid })
+        const user = getPlayer()
         if (user) {
           user.role = role
-          user.save()
 
           if (targetUser) {
             targetUser.role = user.role
@@ -338,51 +310,33 @@ export class OpenBoosterCommand extends Command<
       const user = this.room.users.get(client.auth.uid)
       if (!user) return
 
-      // Immediately find and decrement booster count to avoid any possible race condition
-      let userDoc = await UserMetadata.findOneAndUpdate(
-        {
-          uid: client.auth.uid,
-          booster: { $gt: 0 }
-        },
-        {
-          $inc: { booster: -1 }
-        },
-        { new: true }
-      )
+      if (user.booster <= 0) return // No boosters available
 
-      if (!userDoc) return // No boosters available or user not found
+      // Decrement booster count
+      user.booster -= 1
 
-      // Build update operations for all booster cards
-      const updateOperations: any = {}
-      const boosterContent = createBooster(userDoc)
+      // Generate booster cards and apply directly to in-memory user
+      const boosterContent = createBooster(user)
       boosterContent.forEach((card) => {
         const index = PkmIndex[card.name]
-        const existingItem = userDoc!.pokemonCollection.get(index)
+        const existingItem = user.pokemonCollection.get(index)
 
         if (!existingItem) {
-          if (`pokemonCollection.${index}` in updateOperations) {
-            // If the item already exists in the update operations, we need to merge
-            // the new emotions with the existing ones.
-            const unlocked =
-              updateOperations[`pokemonCollection.${index}`].unlocked
-            CollectionUtils.unlockEmotion(unlocked, card.emotion, card.shiny)
-          } else {
-            // Create new collection item
-            const newCollectionItem: IPokemonCollectionItemMongo = {
-              id: index,
-              unlocked: Buffer.alloc(5, 0),
-              dust: 0,
-              selectedEmotion: Emotion.NORMAL,
-              selectedShiny: false,
-              played: 0
-            }
-            CollectionUtils.unlockEmotion(
-              newCollectionItem.unlocked,
-              card.emotion,
-              card.shiny
-            )
-            updateOperations[`pokemonCollection.${index}`] = newCollectionItem
+          // Create new collection item
+          const newCollectionItem: IPokemonCollectionItemMongo = {
+            id: index,
+            unlocked: Buffer.alloc(5, 0),
+            dust: 0,
+            selectedEmotion: Emotion.NORMAL,
+            selectedShiny: false,
+            played: 0
           }
+          CollectionUtils.unlockEmotion(
+            newCollectionItem.unlocked,
+            card.emotion,
+            card.shiny
+          )
+          user.pokemonCollection.set(index, newCollectionItem)
         } else {
           // Check if already unlocked
           const hasUnlocked = CollectionUtils.hasUnlocked(
@@ -392,12 +346,13 @@ export class OpenBoosterCommand extends Command<
           )
 
           if (hasUnlocked) {
-            // Add dust
+            // Add dust to the base form
             const dustGain = card.shiny ? DUST_PER_SHINY : DUST_PER_BOOSTER
             const shardIndex = PkmIndex[getBaseAltForm(card.name)]
-            updateOperations.$inc = updateOperations.$inc || {}
-            updateOperations.$inc[`pokemonCollection.${shardIndex}.dust`] =
-              dustGain
+            const shardItem = user.pokemonCollection.get(shardIndex)
+            if (shardItem) {
+              shardItem.dust += dustGain
+            }
           } else {
             // Add new emotion
             CollectionUtils.unlockEmotion(
@@ -405,66 +360,13 @@ export class OpenBoosterCommand extends Command<
               card.emotion,
               card.shiny
             )
-            updateOperations[`pokemonCollection.${index}.unlocked`] =
-              Buffer.copyBytesFrom(existingItem.unlocked, 0, 5)
           }
         }
       })
 
-      // Perform atomic update
-      await userDoc.updateOne(updateOperations)
-
-      // Reload updated user
-      userDoc = await UserMetadata.findOne({ uid: client.auth.uid })
-      if (!userDoc) {
-        logger.error(
-          `User document not found after opening booster: ${client.auth.uid}`
-        )
-        return
-      }
-
-      // resync, db-authoritative
-      user.booster = userDoc.booster
-      boosterContent.forEach((pkmWithCustom) => {
-        const index = PkmIndex[pkmWithCustom.name]
-        const pokemonCollectionItem = user.pokemonCollection.get(index)
-        const mongoPokemonCollectionItem = userDoc.pokemonCollection.get(index)
-        if (!mongoPokemonCollectionItem) {
-          logger.error(`Missing mongo collection item after booster open`, {
-            index,
-            pkmWithCustom,
-            clientUid: client.auth.uid
-          })
-          return
-        }
-        if (pokemonCollectionItem) {
-          pokemonCollectionItem.dust = mongoPokemonCollectionItem.dust
-          pokemonCollectionItem.unlocked = Buffer.copyBytesFrom(
-            mongoPokemonCollectionItem.unlocked,
-            0,
-            5
-          )
-        } else {
-          const newConfig: IPokemonCollectionItemMongo = {
-            dust: mongoPokemonCollectionItem.dust,
-            id: mongoPokemonCollectionItem.id,
-            selectedEmotion: mongoPokemonCollectionItem.selectedEmotion,
-            selectedShiny: mongoPokemonCollectionItem.selectedShiny,
-            played: mongoPokemonCollectionItem.played,
-            unlocked: Buffer.copyBytesFrom(
-              mongoPokemonCollectionItem.unlocked,
-              0,
-              5
-            )
-          }
-          user.pokemonCollection.set(index, newConfig)
-        }
-      })
-
-      checkTitlesAfterEmotionUnlocked(userDoc, boosterContent)
-      await userDoc.save()
+      checkTitlesAfterEmotionUnlocked(user, boosterContent)
       client.send(Transfer.BOOSTER_CONTENT, boosterContent)
-      client.send(Transfer.USER_PROFILE, toUserMetadataJSON(userDoc))
+      client.send(Transfer.USER_PROFILE, toUserMetadataJSON(user))
     } catch (error) {
       logger.error(error)
     }
@@ -482,11 +384,7 @@ export class ChangeNameCommand extends Command<
       if (USERNAME_REGEXP.test(name)) {
         logger.info(`${client.auth.displayName} changed name to ${name}`)
         user.displayName = name
-        const mongoUser = await UserMetadata.findOne({ uid: client.auth.uid })
-        if (mongoUser) {
-          mongoUser.displayName = name
-          await mongoUser.save()
-        }
+        updatePlayer((p) => { p.displayName = name })
       }
     } catch (error) {
       logger.error(error)
@@ -506,11 +404,7 @@ export class ChangeTitleCommand extends Command<
       }
       if (user) {
         user.title = title
-        const mongoUser = await UserMetadata.findOne({ uid: client.auth.uid })
-        if (mongoUser) {
-          mongoUser.title = title
-          await mongoUser.save()
-        }
+        updatePlayer((p) => { p.title = title })
       }
     } catch (error) {
       logger.error(error)
@@ -555,13 +449,13 @@ export class ChangeSelectedEmotionCommand extends Command<
       ) {
         pokemonCollectionItem.selectedEmotion = emotion
         pokemonCollectionItem.selectedShiny = shiny
-        await UserMetadata.findOneAndUpdate(
-          { uid: client.auth.uid },
-          {
-            [`pokemonCollection.${index}.selectedEmotion`]: emotion,
-            [`pokemonCollection.${index}.selectedShiny`]: shiny
+        updatePlayer((p) => {
+          const item = p.pokemonCollection.get(index)
+          if (item) {
+            item.selectedEmotion = emotion
+            item.selectedShiny = shiny
           }
-        )
+        })
       }
     } catch (error) {
       logger.error(error)
@@ -586,10 +480,8 @@ export class ChangeAvatarCommand extends Command<
   }) {
     try {
       const user = this.room.users.get(client.auth.uid)
-      const mongoUser = await UserMetadata.findOne({ uid: client.auth.uid })
       if (!user) return
-      if (!mongoUser) return
-      const collectionItem = mongoUser.pokemonCollection.get(index)
+      const collectionItem = user.pokemonCollection.get(index)
       if (
         !collectionItem ||
         !CollectionUtils.hasUnlocked(collectionItem.unlocked, emotion, shiny)
@@ -599,8 +491,7 @@ export class ChangeAvatarCommand extends Command<
         .replace("/assets/portraits/", "")
         .replace(".png", "")
       user.avatar = portrait
-      mongoUser.avatar = portrait
-      mongoUser.save()
+      updatePlayer((p) => { p.avatar = portrait })
     } catch (error) {
       logger.error(error)
     }
@@ -644,55 +535,39 @@ export class BuyEmotionCommand extends Command<
         return // Already unlocked
       }
 
-      // Update MongoDB with optimized format
-      const mongoUser = await UserMetadata.findOne({ uid: client.auth.uid })
-      if (!mongoUser) return
-
-      const mongoItem = mongoUser.pokemonCollection.get(index)
-      const mongoShardItem = mongoUser.pokemonCollection.get(shardIndex)
-      if (!mongoItem || !mongoShardItem) return
-
-      if (mongoShardItem.dust < cost) return
+      if (shardCollectionItem.dust < cost) return
 
       // Add the emotion using optimized storage
-      CollectionUtils.unlockEmotion(mongoItem.unlocked, emotion, shiny)
-      mongoItem.selectedEmotion = emotion
-      mongoItem.selectedShiny = shiny
-      mongoUser.markModified(`pokemonCollection.${index}`) // mongoose does not track changes to Buffers automatically
-
-      // Deduct cost
-      mongoShardItem.dust -= cost
-
-      // Update in-memory user data
       CollectionUtils.unlockEmotion(
         pokemonCollectionItem.unlocked,
         emotion,
         shiny
       )
-      shardCollectionItem.dust = mongoShardItem.dust
       pokemonCollectionItem.selectedEmotion = emotion
       pokemonCollectionItem.selectedShiny = shiny
 
-      checkTitlesAfterEmotionUnlocked(mongoUser, [
+      // Deduct cost
+      shardCollectionItem.dust -= cost
+
+      checkTitlesAfterEmotionUnlocked(user, [
         { name: PkmByIndex[index], emotion, shiny }
       ])
-      await mongoUser.save()
-      client.send(Transfer.USER_PROFILE, toUserMetadataJSON(mongoUser))
+      client.send(Transfer.USER_PROFILE, toUserMetadataJSON(user))
     } catch (error) {
       logger.error(error)
     }
   }
 }
 
-async function checkTitlesAfterEmotionUnlocked(
-  mongoUser: IUserMetadataMongo,
+function checkTitlesAfterEmotionUnlocked(
+  player: IUserMetadataMongo,
   unlocked: PkmWithCustom[]
 ) {
   const newTitles: Title[] = []
-  if (!mongoUser.titles.includes(Title.SHINY_SEEKER)) {
+  if (!player.titles.includes(Title.SHINY_SEEKER)) {
     // update titles
     let numberOfShinies = 0
-    mongoUser.pokemonCollection.forEach((c) => {
+    player.pokemonCollection.forEach((c) => {
       const { shinyEmotions } = CollectionUtils.getEmotionsUnlocked(c)
       numberOfShinies += shinyEmotions.length
     })
@@ -701,7 +576,7 @@ async function checkTitlesAfterEmotionUnlocked(
     }
   }
 
-  if (!mongoUser.titles.includes(Title.DUKE)) {
+  if (!player.titles.includes(Title.DUKE)) {
     if (
       Object.values(Pkm)
         .filter(
@@ -715,7 +590,7 @@ async function checkTitlesAfterEmotionUnlocked(
               ? [baseForm, ...PkmAltFormsByPkm[baseForm]]
               : [baseForm]
           return accepted.some((form) => {
-            const item = mongoUser.pokemonCollection.get(PkmIndex[form])
+            const item = player.pokemonCollection.get(PkmIndex[form])
             if (!item) return false
             const { emotions, shinyEmotions } =
               CollectionUtils.getEmotionsUnlocked(item)
@@ -729,17 +604,17 @@ async function checkTitlesAfterEmotionUnlocked(
 
   if (
     unlocked.some((p) => p.emotion === Emotion.ANGRY && p.name === Pkm.ARBOK) &&
-    !mongoUser.titles.includes(Title.DENTIST)
+    !player.titles.includes(Title.DENTIST)
   ) {
     newTitles.push(Title.DENTIST)
   }
 
   if (
-    !mongoUser.titles.includes(Title.ARCHEOLOGIST) &&
+    !player.titles.includes(Title.ARCHEOLOGIST) &&
     Unowns.some((unown) => unlocked.map((p) => p.name).includes(unown)) &&
     Unowns.every((name) => {
       const unownIndex = PkmIndex[name]
-      const item = mongoUser.pokemonCollection.get(unownIndex)
+      const item = player.pokemonCollection.get(unownIndex)
       const isBeingUnlockedRightNow = unlocked.some((p) => p.name === name)
       let isAlreadyUnlocked = false
       if (item) {
@@ -753,10 +628,10 @@ async function checkTitlesAfterEmotionUnlocked(
     newTitles.push(Title.ARCHEOLOGIST)
   }
 
-  if (!mongoUser.titles.includes(Title.DUCHESS)) {
+  if (!player.titles.includes(Title.DUCHESS)) {
     if (
       unlocked.some((p) => {
-        const item = mongoUser.pokemonCollection.get(PkmIndex[p.name])
+        const item = player.pokemonCollection.get(PkmIndex[p.name])
         if (!item) return false
         const { emotions, shinyEmotions } =
           CollectionUtils.getEmotionsUnlocked(item)
@@ -771,7 +646,7 @@ async function checkTitlesAfterEmotionUnlocked(
   }
 
   if (newTitles.length > 0) {
-    mongoUser.titles.push(...newTitles) // NOTE: document needs to be saved after those modifications
+    player.titles.push(...newTitles) // mutates in-memory user directly
   }
 }
 
@@ -792,31 +667,14 @@ export class BuyBoosterCommand extends Command<
 
       const shardIndex = PkmIndex[getBaseAltForm(pkm)]
 
-      const mongoUser = await UserMetadata.findOneAndUpdate(
-        {
-          uid: client.auth.uid,
-          [`pokemonCollection.${shardIndex}.dust`]: { $gte: boosterCost }
-        },
-        {
-          $inc: {
-            booster: 1,
-            [`pokemonCollection.${shardIndex}.dust`]: -boosterCost
-          }
-        },
-        { new: true }
-      )
-      if (!mongoUser) return
-
       const pokemonCollectionItem = user.pokemonCollection.get(shardIndex)
       if (!pokemonCollectionItem) return
+      if (pokemonCollectionItem.dust < boosterCost) return
 
-      const mongoPokemonCollectionItem =
-        mongoUser.pokemonCollection.get(shardIndex)
-      if (!mongoPokemonCollectionItem) return
-
-      user.booster = mongoUser.booster
-      pokemonCollectionItem.dust = mongoPokemonCollectionItem.dust // resync shards to database value, db authoritative
-      client.send(Transfer.USER_PROFILE, toUserMetadataJSON(mongoUser))
+      // Direct in-memory mutation
+      pokemonCollectionItem.dust -= boosterCost
+      user.booster += 1
+      client.send(Transfer.USER_PROFILE, toUserMetadataJSON(user))
     } catch (error) {
       logger.error(error)
     }
@@ -829,8 +687,8 @@ export class OnSearchByIdCommand extends Command<
 > {
   async execute({ client, uid }: { client: Client; uid: string }) {
     try {
-      const user = await UserMetadata.findOne({ uid: uid })
-      if (user) {
+      const user = getPlayer()
+      if (user && user.uid === uid) {
         client.send(Transfer.USER, user)
       }
     } catch (error) {
@@ -852,41 +710,7 @@ export class BanUserCommand extends Command<
     uid: string
     reason: string
   }) {
-    try {
-      const bannedUser = await UserMetadata.findOne({ uid: uid })
-      const user = this.room.users.get(client.auth.uid)
-      if (
-        user &&
-        bannedUser &&
-        (user.role === Role.ADMIN || user.role === Role.MODERATOR) &&
-        bannedUser.role !== Role.ADMIN
-      ) {
-        this.state.removeMessages(uid)
-        if (!bannedUser.banned) {
-          await UserMetadata.updateOne({ uid }, { banned: true })
-          client.send(
-            Transfer.BANNED,
-            `${user.displayName} banned the user ${bannedUser.displayName}`
-          )
-
-          discordService.announceBan(user, bannedUser, reason)
-          bannedUser.banned = true
-          client.send(Transfer.USER, bannedUser)
-        } else {
-          client.send(
-            Transfer.BANNED,
-            `${bannedUser.displayName} was already banned`
-          )
-        }
-        this.room.clients.forEach((c) => {
-          if (c.auth.uid === uid) {
-            c.leave(CloseCodes.USER_BANNED)
-          }
-        })
-      }
-    } catch (error) {
-      logger.error(error)
-    }
+    // noop in single-player mode — no banning needed
   }
 }
 
@@ -903,23 +727,7 @@ export class UnbanUserCommand extends Command<
     uid: string
     name: string
   }) {
-    try {
-      const user = this.room.users.get(client.auth.uid)
-      if (user && (user.role === Role.ADMIN || user.role === Role.MODERATOR)) {
-        const res = await UserMetadata.updateOne({ uid }, { banned: false })
-        if (res.modifiedCount > 0) {
-          client.send(
-            Transfer.BANNED,
-            `${user.displayName} unbanned the user ${name}`
-          )
-          discordService.announceUnban(user, name)
-          const unbannedUser = await UserMetadata.findOne({ uid })
-          if (unbannedUser) client.send(Transfer.USER, unbannedUser)
-        }
-      }
-    } catch (error) {
-      logger.error(error)
-    }
+    // noop in single-player mode — no unbanning needed
   }
 }
 
@@ -931,12 +739,8 @@ export class SelectLanguageCommand extends Command<
     try {
       const u = this.room.users.get(client.auth.uid)
       if (client.auth.uid && u) {
-        const user = await UserMetadata.findOne({ uid: client.auth.uid })
-        if (user) {
-          user.language = message
-          await user.save()
-        }
         u.language = message
+        updatePlayer((p) => { p.language = message })
       }
     } catch (error) {
       logger.error(error)
@@ -1158,39 +962,7 @@ export class ParticipateInTournamentCommand extends Command<
     participate: boolean
   }) {
     try {
-      if (!client.auth.uid || this.room.users.has(client.auth.uid) === false)
-        return
-      const tournament = this.state.tournaments.find(
-        (t) => t.id === tournamentId
-      )
-
-      if (!tournament)
-        return logger.error(`Tournament not found: ${tournamentId}`)
-
-      const user = await UserMetadata.findOne({ uid: client.auth.uid })
-      if (!user) return
-
-      if (participate) {
-        //logger.debug(`${user.uid} participates in tournament ${tournamentId}`)
-        const tournamentPlayer = new TournamentPlayerSchema(
-          user.displayName,
-          user.avatar,
-          user.elo
-        )
-
-        tournament.players.set(user.uid, tournamentPlayer)
-      } else if (tournament.players.has(user.uid)) {
-        /*logger.debug(
-          `${user.uid} no longer participates in tournament ${tournamentId}`
-        )*/
-        tournament.players.delete(user.uid)
-      }
-
-      const mongoTournament = await Tournament.findById(tournamentId)
-      if (mongoTournament) {
-        mongoTournament.players = convertSchemaToRawObject(tournament.players)
-        mongoTournament.save()
-      }
+      // noop in single-player mode — tournaments are multiplayer-only
     } catch (error) {
       logger.error(error)
     }
@@ -1282,13 +1054,6 @@ export class CreateTournamentLobbiesCommand extends Command<
         //await wait(1000)
       }
 
-      //save brackets to db
-      const mongoTournament = await Tournament.findById(tournamentId)
-      if (mongoTournament) {
-        mongoTournament.brackets = convertSchemaToRawObject(tournament.brackets)
-        await mongoTournament.save()
-      }
-
       tournament.pendingLobbiesCreation = false
     } catch (error) {
       logger.error(error)
@@ -1343,13 +1108,6 @@ export class RemakeTournamentLobbyCommand extends Command<
         tournamentId,
         bracketId
       })
-
-      //save brackets to db
-      const mongoTournament = await Tournament.findById(tournamentId)
-      if (mongoTournament) {
-        mongoTournament.brackets = convertSchemaToRawObject(tournament.brackets)
-        await mongoTournament.save()
-      }
 
       tournament.pendingLobbiesCreation = false
     } catch (error) {
@@ -1413,16 +1171,6 @@ export class EndTournamentMatchCommand extends Command<
         values(tournament.brackets).every((b) => b.finished)
       ) {
         tournament.pendingLobbiesCreation = true // prevent executing command multiple times
-        //save brackets and player ranks to db before moving to next stage
-        const mongoTournament = await Tournament.findById(tournamentId)
-        if (mongoTournament) {
-          mongoTournament.players = convertSchemaToRawObject(tournament.players)
-          mongoTournament.brackets = convertSchemaToRawObject(
-            tournament.brackets
-          )
-          mongoTournament.save()
-        }
-
         return [new NextTournamentStageCommand().setPayload({ tournamentId })]
       }
     } catch (error) {
@@ -1471,49 +1219,34 @@ export class EndTournamentCommand extends Command<
       for (const player of finalists) {
         const rank = player.ranks.at(-1) ?? 1
         const user = this.room.users.get(player.id)
-
-        const mongoUser = await UserMetadata.findOne({ uid: player.id })
-        if (mongoUser === null) continue
+        if (!user) continue
 
         logger.debug(
           `Tournament ${tournamentId} finalist ${player.name} finished with rank ${rank}, distributing rewards`
         )
 
-        mongoUser.booster += 3 // 3 boosters for top 8
-        if (mongoUser.titles.includes(Title.ACE_TRAINER) === false) {
-          mongoUser.titles.push(Title.ACE_TRAINER)
-          if (user) user.titles.push(Title.ACE_TRAINER)
+        user.booster += 3 // 3 boosters for top 8
+        if (!user.titles.includes(Title.ACE_TRAINER)) {
+          user.titles.push(Title.ACE_TRAINER)
         }
 
         if (rank <= 4) {
-          mongoUser.booster += 3 // 6 boosters for top 4
-          if (mongoUser.titles.includes(Title.ELITE_FOUR_MEMBER) === false) {
-            mongoUser.titles.push(Title.ELITE_FOUR_MEMBER)
-            if (user) user.titles.push(Title.ELITE_FOUR_MEMBER)
+          user.booster += 3 // 6 boosters for top 4
+          if (!user.titles.includes(Title.ELITE_FOUR_MEMBER)) {
+            user.titles.push(Title.ELITE_FOUR_MEMBER)
           }
         }
 
         if (rank === 1) {
-          mongoUser.booster += 4 // 10 boosters for top 1
-          if (mongoUser.titles.includes(Title.CHAMPION) === false) {
-            mongoUser.titles.push(Title.CHAMPION)
-            if (user) user.titles.push(Title.CHAMPION)
+          user.booster += 4 // 10 boosters for top 1
+          if (!user.titles.includes(Title.CHAMPION)) {
+            user.titles.push(Title.CHAMPION)
           }
         }
-
-        if (user) user.booster = mongoUser.booster
-        await mongoUser.save()
       }
 
       tournament.brackets.clear()
       tournament.finished = true
-
-      const mongoTournament = await Tournament.findById(tournamentId)
-      if (mongoTournament) {
-        mongoTournament.finished = true
-        mongoTournament.brackets = convertSchemaToRawObject(tournament.brackets)
-        await mongoTournament.save()
-      }
     } catch (error) {
       logger.error(error)
     }

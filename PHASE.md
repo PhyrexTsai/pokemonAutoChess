@@ -159,8 +159,8 @@ await localDB.users.put(user)
 
 ### Risk
 
-- 🟡 Firebase Auth 移除後登入流程完全改變
-- 對策：先替換持久化層，auth 移除放最後一步
+- 🟡 Firebase Auth 全面移除（含 Client SDK），登入流程完全改變
+- 對策：用 username 輸入 + crypto.randomUUID() 取代，複雜度極低（1 個 input + 1 個 button，淨刪除 3 個 auth 元件 + 13 個 firebase import）
 
 ### Completion Criteria
 

@@ -1,5 +1,4 @@
 import { getStateCallbacks, Room, RoomAvailable } from "@colyseus/sdk"
-import firebase from "firebase/compat/app"
 import { t } from "i18next"
 import { NavigateFunction } from "react-router-dom"
 import {
@@ -28,7 +27,7 @@ import {
   rooms
 } from "../network"
 import { LocalStoreKeys, localStore } from "../pages/utils/store"
-import { AppDispatch } from "../stores"
+import store, { AppDispatch } from "../stores"
 import {
   addRoom,
   addTournament,
@@ -85,7 +84,7 @@ export async function joinLobbyRoom(
           if (!room) {
             // otherwise, connect to the lobby room
             const idToken = await user.getIdToken()
-            room = await client.join<LobbyState>("lobby", { idToken })
+            room = await client.join<LobbyState>("lobby", { idToken, displayName: user.displayName })
           }
 
           if (!room) {
@@ -302,7 +301,7 @@ export async function joinExistingPreparationRoom(
   password?: string
 ) {
   try {
-    const token = await firebase.auth().currentUser?.getIdToken()
+    const token = store.getState().network.uid
     if (token) {
       dispatch(resetPreparation())
       const room = await client.joinById<PreparationState>(roomId, {

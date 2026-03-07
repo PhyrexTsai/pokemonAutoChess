@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react"
-import { IDetailledPokemon } from "../../../../../models/mongo-models/bot-v2"
+import { IDetailledPokemon } from "../../../../../types/interfaces/bot"
 import { isSameFamily } from "../../../../../models/pokemon-factory"
 import { Pkm } from "../../../../../types/enum/Pokemon"
 import { useAppSelector } from "../../../hooks"

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import {
   fetchTitles,
   ITitleStatistic
-} from "../../../../../models/mongo-models/title-statistic"
+} from "../../../api/meta"
 import { Title } from "../../../../../types"
 import { isIn } from "../../../../../utils/array"
 import { useAppDispatch, useAppSelector } from "../../../hooks"

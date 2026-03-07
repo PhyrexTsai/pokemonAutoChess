@@ -1,0 +1,240 @@
+[
+  {
+    "id": "bot-placeholder-001",
+    "name": "Rock Steady",
+    "author": "system",
+    "avatar": "0076/Normal",
+    "elo": 900,
+    "approved": true,
+    "steps": [
+      {
+        "board": [
+          { "name": "GEODUDE", "x": 0, "y": 0, "items": [] },
+          { "name": "ONIX", "x": 2, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 3
+      },
+      {
+        "board": [
+          { "name": "GOLEM", "x": 0, "y": 0, "items": ["ROCKY_HELMET"] },
+          { "name": "STEELIX", "x": 2, "y": 0, "items": [] },
+          { "name": "GRAVELER", "x": 4, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      },
+      {
+        "board": [
+          { "name": "GOLEM", "x": 0, "y": 0, "items": ["ROCKY_HELMET", "LEFTOVERS"] },
+          { "name": "STEELIX", "x": 2, "y": 0, "items": ["ASSAULT_VEST"] },
+          { "name": "GRAVELER", "x": 4, "y": 0, "items": [] },
+          { "name": "RHYHORN", "x": 6, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      }
+    ]
+  },
+  {
+    "id": "bot-placeholder-002",
+    "name": "Water Lord",
+    "author": "system",
+    "avatar": "0130/Normal",
+    "elo": 1000,
+    "approved": true,
+    "steps": [
+      {
+        "board": [
+          { "name": "SQUIRTLE", "x": 1, "y": 0, "items": [] },
+          { "name": "MAGIKARP", "x": 3, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 3
+      },
+      {
+        "board": [
+          { "name": "WARTORTLE", "x": 1, "y": 0, "items": ["MYSTIC_WATER"] },
+          { "name": "GYARADOS", "x": 3, "y": 0, "items": [] },
+          { "name": "LAPRAS", "x": 5, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      },
+      {
+        "board": [
+          { "name": "BLASTOISE", "x": 1, "y": 0, "items": ["MYSTIC_WATER", "SHELL_BELL"] },
+          { "name": "GYARADOS", "x": 3, "y": 0, "items": ["SCOPE_LENS"] },
+          { "name": "LAPRAS", "x": 5, "y": 0, "items": ["LEFTOVERS"] },
+          { "name": "VAPOREON", "x": 7, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      }
+    ]
+  },
+  {
+    "id": "bot-placeholder-003",
+    "name": "Fire Breather",
+    "author": "system",
+    "avatar": "0006/Normal",
+    "elo": 1100,
+    "approved": true,
+    "steps": [
+      {
+        "board": [
+          { "name": "CHARMANDER", "x": 2, "y": 0, "items": [] },
+          { "name": "GROWLITHE", "x": 4, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 3
+      },
+      {
+        "board": [
+          { "name": "CHARMELEON", "x": 2, "y": 0, "items": ["CHARCOAL"] },
+          { "name": "ARCANINE", "x": 4, "y": 0, "items": [] },
+          { "name": "RAPIDASH", "x": 6, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      },
+      {
+        "board": [
+          { "name": "CHARIZARD", "x": 2, "y": 0, "items": ["CHARCOAL", "SCOPE_LENS"] },
+          { "name": "ARCANINE", "x": 4, "y": 0, "items": ["ASSAULT_VEST"] },
+          { "name": "RAPIDASH", "x": 6, "y": 0, "items": [] },
+          { "name": "FLAREON", "x": 0, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      }
+    ]
+  },
+  {
+    "id": "bot-placeholder-004",
+    "name": "Psychic Eye",
+    "author": "system",
+    "avatar": "0065/Normal",
+    "elo": 1200,
+    "approved": true,
+    "steps": [
+      {
+        "board": [
+          { "name": "ABRA", "x": 3, "y": 3, "items": [] },
+          { "name": "DROWZEE", "x": 5, "y": 3, "items": [] }
+        ],
+        "roundsRequired": 3
+      },
+      {
+        "board": [
+          { "name": "ALAKAZAM", "x": 3, "y": 3, "items": ["TWISTED_SPOON"] },
+          { "name": "HYPNO", "x": 5, "y": 3, "items": [] },
+          { "name": "MR_MIME", "x": 1, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      },
+      {
+        "board": [
+          { "name": "ALAKAZAM", "x": 3, "y": 3, "items": ["TWISTED_SPOON", "CHOICE_SPECS"] },
+          { "name": "HYPNO", "x": 5, "y": 3, "items": ["SHELL_BELL"] },
+          { "name": "MR_MIME", "x": 1, "y": 0, "items": ["LEFTOVERS"] },
+          { "name": "ESPEON", "x": 7, "y": 3, "items": [] }
+        ],
+        "roundsRequired": 5
+      }
+    ]
+  },
+  {
+    "id": "bot-placeholder-005",
+    "name": "Thunder Strike",
+    "author": "system",
+    "avatar": "0025/Normal",
+    "elo": 1000,
+    "approved": true,
+    "steps": [
+      {
+        "board": [
+          { "name": "PIKACHU", "x": 2, "y": 1, "items": [] },
+          { "name": "MAGNEMITE", "x": 4, "y": 1, "items": [] }
+        ],
+        "roundsRequired": 3
+      },
+      {
+        "board": [
+          { "name": "RAICHU", "x": 2, "y": 1, "items": ["MAGNET"] },
+          { "name": "MAGNETON", "x": 4, "y": 1, "items": [] },
+          { "name": "JOLTEON", "x": 6, "y": 1, "items": [] }
+        ],
+        "roundsRequired": 5
+      },
+      {
+        "board": [
+          { "name": "RAICHU", "x": 2, "y": 1, "items": ["MAGNET", "SCOPE_LENS"] },
+          { "name": "MAGNETON", "x": 4, "y": 1, "items": ["ASSAULT_VEST"] },
+          { "name": "JOLTEON", "x": 6, "y": 1, "items": ["SHELL_BELL"] },
+          { "name": "AMPHAROS", "x": 0, "y": 1, "items": [] }
+        ],
+        "roundsRequired": 5
+      }
+    ]
+  },
+  {
+    "id": "bot-placeholder-006",
+    "name": "Dragon Fury",
+    "author": "system",
+    "avatar": "0149/Normal",
+    "elo": 1300,
+    "approved": true,
+    "steps": [
+      {
+        "board": [
+          { "name": "DRATINI", "x": 3, "y": 0, "items": [] },
+          { "name": "BAGON", "x": 5, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 4
+      },
+      {
+        "board": [
+          { "name": "DRAGONAIR", "x": 3, "y": 0, "items": ["DRAGON_SCALE"] },
+          { "name": "SHELGON", "x": 5, "y": 0, "items": [] },
+          { "name": "GABITE", "x": 1, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      },
+      {
+        "board": [
+          { "name": "DRAGONITE", "x": 3, "y": 0, "items": ["DRAGON_SCALE", "SCOPE_LENS"] },
+          { "name": "SALAMENCE", "x": 5, "y": 0, "items": ["ASSAULT_VEST"] },
+          { "name": "GARCHOMP", "x": 1, "y": 0, "items": ["MUSCLE_BAND"] },
+          { "name": "HYDREIGON", "x": 7, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      }
+    ]
+  },
+  {
+    "id": "bot-placeholder-007",
+    "name": "Ghost Whisper",
+    "author": "system",
+    "avatar": "0094/Normal",
+    "elo": 1100,
+    "approved": true,
+    "steps": [
+      {
+        "board": [
+          { "name": "GASTLY", "x": 2, "y": 3, "items": [] },
+          { "name": "MISDREAVUS", "x": 5, "y": 3, "items": [] }
+        ],
+        "roundsRequired": 3
+      },
+      {
+        "board": [
+          { "name": "HAUNTER", "x": 2, "y": 3, "items": ["BLACK_GLASSES"] },
+          { "name": "MISMAGIUS", "x": 5, "y": 3, "items": [] },
+          { "name": "SABLEYE", "x": 0, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      },
+      {
+        "board": [
+          { "name": "GENGAR", "x": 2, "y": 3, "items": ["BLACK_GLASSES", "CHOICE_SPECS"] },
+          { "name": "MISMAGIUS", "x": 5, "y": 3, "items": ["SHELL_BELL"] },
+          { "name": "SABLEYE", "x": 0, "y": 0, "items": ["LEFTOVERS"] },
+          { "name": "DUSKNOIR", "x": 7, "y": 0, "items": [] }
+        ],
+        "roundsRequired": 5
+      }
+    ]
+  }
+]

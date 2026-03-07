@@ -8,7 +8,7 @@ import {
   fetchMetaItems,
   IItemsStatisticV2,
   IItemV2
-} from "../../../../../models/mongo-models/items-statistic-v2"
+} from "../../../api/meta"
 import { EloRank } from "../../../../../types/enum/EloRank"
 import {
   CraftableItems,

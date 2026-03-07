@@ -1,10 +1,9 @@
-import firebase from "firebase/compat/app"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { AutoSizer } from "react-virtualized-auto-sizer"
 import { List } from "react-window"
-import { IBotLight } from "../../../../../models/mongo-models/bot-v2"
+import { IBotLight } from "../../../../../types/interfaces/bot"
 import { Pkm } from "../../../../../types/enum/Pokemon"
 import { authenticateUser } from "../../../network"
 import { cc } from "../../utils/jsx"
@@ -92,12 +91,8 @@ function BotsList(props: { approved?: boolean; filteredPokemon: Pkm | "" }) {
       )
     )
       return
-    const token = await firebase.auth().currentUser?.getIdToken()
     const res = await fetch(`/bots/${bot.id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      method: "DELETE"
     })
     if (res.ok) {
       setBots((bots) => bots?.filter((b) => b.id !== bot.id) ?? [])
@@ -105,11 +100,9 @@ function BotsList(props: { approved?: boolean; filteredPokemon: Pkm | "" }) {
   }
 
   async function approveBot(botId: string, approved: boolean) {
-    const token = await firebase.auth().currentUser?.getIdToken()
     const res = await fetch(`/bots/${botId}/approve`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ approved })

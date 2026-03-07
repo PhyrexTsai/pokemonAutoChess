@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next"
 import pkg from "../../../../package.json"
 import { useAppDispatch, useAppSelector } from "../hooks"
 import { setErrorAlertMessage } from "../stores/NetworkStore"
-import Login from "./component/auth/login"
+import UsernameInput from "./component/auth/username-input"
 import DiscordButton from "./component/buttons/discord-button"
 import GithubButton from "./component/buttons/github-button"
 import PolicyButton from "./component/buttons/policy-button"
@@ -35,7 +35,7 @@ export default function Auth() {
         </div>
       </header>
       <main>
-        <Login />
+        <UsernameInput />
       </main>
       <div className="media">
         <DiscordButton url={discordUrl} />

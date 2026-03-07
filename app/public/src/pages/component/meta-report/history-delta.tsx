@@ -1,5 +1,5 @@
 import React from "react"
-import { IHistoryEntry } from "../../../../../models/mongo-models/pokemons-statistic-v2"
+import { IHistoryEntry } from "../../../api/meta"
 import "./history-delta.css"
 
 function computeDelta(

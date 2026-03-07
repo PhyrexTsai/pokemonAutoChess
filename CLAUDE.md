@@ -104,6 +104,10 @@ Four Colyseus rooms, each a game phase:
 ## Active Technologies
 - TypeScript 5.x (strict mode, target es2016, commonjs) + Colyseus 0.15.x (Schema, MapSchema), Phaser 3, React 19, Redux Toolki (001-extract-game-engine)
 - N/A for this phase (001-extract-game-engine)
+- TypeScript 5.7, Node.js >=20.16.0 + `idb` (IndexedDB wrapper, ~1KB gzip) — only new dependency (002-remove-mongodb)
+- IndexedDB (browser-native) for player profile + game history; static JSON for bots (002-remove-mongodb)
+- TypeScript 5.7, Node.js >=20.16.0 + `idb` (IndexedDB wrapper, ~1KB gzip) — only new dependency (client-side only) (002-remove-mongodb)
+- Server: in-memory Maps/objects; Client: IndexedDB via `idb`; Bots: static JSON (002-remove-mongodb)
 
 ## Recent Changes
 - 001-extract-game-engine: Added TypeScript 5.x (strict mode, target es2016, commonjs) + Colyseus 0.15.x (Schema, MapSchema), Phaser 3, React 19, Redux Toolki

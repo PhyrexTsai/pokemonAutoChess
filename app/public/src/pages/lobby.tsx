@@ -1,5 +1,4 @@
 import { RoomAvailable } from "@colyseus/sdk"
-import firebase from "firebase/compat/app"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -9,6 +8,7 @@ import { throttle } from "../../../utils/function"
 import { joinLobbyRoom } from "../game/lobby-logic"
 import { useAppDispatch, useAppSelector } from "../hooks"
 import { client, leaveRoom, rooms } from "../network"
+import store from "../stores"
 import { resetLobby } from "../stores/LobbyStore"
 import {
   clearNotification,
@@ -49,8 +49,9 @@ export default function Lobby() {
   }, [lobbyJoined])
 
   const signOut = useCallback(async () => {
+    const { deleteProfile } = await import("../persistence/local-db")
+    await deleteProfile()
     leaveRoom("lobby")
-    await firebase.auth().signOut()
     dispatch(resetLobby())
     dispatch(logOut())
     navigate("/")
@@ -64,7 +65,7 @@ export default function Lobby() {
   }
 
   const reconnectToGame = throttle(async function reconnectToGame() {
-    const idToken = await firebase.auth().currentUser?.getIdToken()
+    const idToken = store.getState().network.uid
     if (idToken && pendingGameId) {
       const game = await client.joinById<GameState>(pendingGameId, {
         idToken

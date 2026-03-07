@@ -1,4 +1,3 @@
-import firebase from "firebase/compat/app"
 import React, { useCallback, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs"
@@ -49,12 +48,10 @@ export default function Profile() {
     setLoading(true)
     setError("")
     try {
-      const token = await firebase.auth().currentUser?.getIdToken()
       const res = await fetch(`/players?name=${encodeURIComponent(query)}`, {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+          "Content-Type": "application/json"
         },
         signal
       })
