@@ -8,6 +8,7 @@ import Count from "../models/colyseus-models/count"
 import ExperienceManager from "../models/colyseus-models/experience-manager"
 import { IPokemonRecord } from "../models/colyseus-models/game-record"
 import HistoryItem from "../models/colyseus-models/history-item"
+import type GameState from "../models/colyseus-models/game-state"
 import type { ISimulationPlayer } from "./interfaces/ISimulationPlayer"
 import { Pokemon } from "../models/colyseus-models/pokemon"
 import { PokemonCustoms } from "../models/colyseus-models/pokemon-customs"
@@ -32,6 +33,7 @@ import { Item } from "./enum/Item"
 import { Passive } from "./enum/Passive"
 import { Pkm, PkmProposition } from "./enum/Pokemon"
 import { Synergy } from "./enum/Synergy"
+import { WandererBehavior, WandererType } from "./enum/Wanderer"
 import { Weather } from "./enum/Weather"
 
 export * from "./enum/Emotion"
@@ -227,6 +229,27 @@ export interface IFloatingItem {
   name: Item
   x: number
   y: number
+}
+
+export interface WanderingPokemonParams {
+  pkm: Pkm
+  type: WandererType
+  behavior: WandererBehavior
+  player: IPlayer
+}
+
+export interface IGameEngineContext {
+  state: GameState
+  addDelayedAction(delayMs: number, callback: () => void): void
+  emit(event: string, payload: any): void
+  spawnOnBench(player: IPlayer, pkm: Pkm, anim?: "fishing" | "spawn"): void
+  spawnWanderingPokemon(params: WanderingPokemonParams): void
+  checkEvolutionsAfterPokemonAcquired(playerId: string): boolean
+  checkEvolutionsAfterItemAcquired(
+    playerId: string,
+    pokemon: IPokemon
+  ): IPokemon | void
+  getTeamSize(board: MapSchema<IPokemon>): number
 }
 
 export interface IPortal {
