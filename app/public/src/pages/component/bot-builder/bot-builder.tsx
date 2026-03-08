@@ -27,6 +27,7 @@ import PokemonFactory from "../../../../../models/pokemon-factory"
 import { PkmWithCustom, Role } from "../../../../../types"
 import { PkmIndex } from "../../../../../types/enum/Pokemon"
 import { Synergy } from "../../../../../types/enum/Synergy"
+import { fetchBot } from "../../../../../services/bots"
 import { getAvatarString } from "../../../../../utils/avatar"
 import { logger } from "../../../../../utils/logger"
 import { max, min } from "../../../../../utils/number"
@@ -77,13 +78,11 @@ export default function BotBuilder() {
     const botId = queryParams.get("bot")
     if (botId && (!bot || bot.id !== botId)) {
       logger.debug(`loading bot ${botId}`)
-      // query param but no matching bot data, so we request it
-      fetch(`/bots/${botId}`)
-        .then((r) => r.json())
-        .then((botData) => {
-          setBot(rewriteBotRoundsRequiredto1(structuredClone(botData)))
-          logger.debug(`bot ${botId} imported`)
-        })
+      const botData = fetchBot(botId)
+      if (botData) {
+        setBot(rewriteBotRoundsRequiredto1(structuredClone(botData)))
+        logger.debug(`bot ${botId} imported`)
+      }
     }
   }, [queryParams])
 
@@ -365,27 +364,7 @@ export function SubmitBotModal(props: {
   const [success, setSuccess] = useState<boolean>(false)
 
   async function submitBot() {
-    if (loading) return
-    setLoading(true)
-    setError("")
-    setSuccess(false)
-    try {
-      const res = await fetch("/bots", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(props.bot)
-      })
-      if (res.ok) {
-        setSuccess(true)
-      } else {
-        setError(res.statusText)
-      }
-    } catch (err: any) {
-      setError(err.message)
-    }
-    setLoading(false)
+    setError("Not available in single-player mode")
   }
 
   return (
