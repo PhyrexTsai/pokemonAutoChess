@@ -90,9 +90,9 @@ Remove all 318 `@type()` decorator lines, all 24 `extends Schema` → plain clas
 
 ### Step 6: Package Removal and Cleanup
 
-- [ ] T016 [US2] Remove `@colyseus/schema` from `package.json` dependencies
-- [ ] T017 [US2] Remove duck-typing dead code (constructor.name checks for `'MapSchema'`/`'SetSchema'`/`'ArraySchema'`) from `app/public/src/state-tracker.ts`
-- [ ] T018 [US2] Final clean build verification: `rm -rf node_modules && npm install && npm run build`
+- [x] T016 [US2] Remove `@colyseus/schema` from `package.json` dependencies
+- [x] T017 [US2] Remove duck-typing dead code (constructor.name checks for `'MapSchema'`/`'SetSchema'`/`'ArraySchema'`) from `app/public/src/state-tracker.ts`
+- [x] T018 [US2] Final clean build verification: `rm -rf node_modules && npm install && npm run build`
 
 **Checkpoint**: Zero `@colyseus/schema` references anywhere. Clean build passes. US2 complete.
 
@@ -104,8 +104,8 @@ Remove all 318 `@type()` decorator lines, all 24 `extends Schema` → plain clas
 
 **Independent Test**: Compare `app/public/dist/client/` output size before and after
 
-- [ ] T019 [P] [US3] Measure client bundle size from `app/public/dist/client/` and compare to pre-refactoring baseline (target: ≥50KB reduction per SC-004)
-- [ ] T020 [P] [US3] Verify game startup time (page load → game ready) does not increase compared to pre-refactoring baseline
+- [x] T019 [P] [US3] Measure client bundle size from `app/public/dist/client/` and compare to pre-refactoring baseline (target: ≥50KB reduction per SC-004)
+- [x] T020 [P] [US3] Verify game startup time (page load → game ready) does not increase compared to pre-refactoring baseline
 
 **Checkpoint**: Bundle size reduction confirmed. US3 complete.
 
@@ -115,8 +115,8 @@ Remove all 318 `@type()` decorator lines, all 24 `extends Schema` → plain clas
 
 **Purpose**: Final verification across all user stories
 
-- [ ] T021 Full manual play-test: complete game session (start → pick → battle × multiple rounds → end) after all changes
-- [ ] T022 Validate quickstart.md developer scenarios (add Pokemon field, add collection, build & run)
+- [x] T021 Full manual play-test: complete game session (start → pick → battle × multiple rounds → end) after all changes
+- [x] T022 Validate quickstart.md developer scenarios (add Pokemon field, add collection, build & run)
 
 ---
 
