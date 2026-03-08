@@ -1,5 +1,5 @@
 import { getRegionTint, RegionDetails } from "../../../../config"
-import { DesignTiled } from "../../../../core/design"
+import { DesignTiled, initTilemap } from "../../../../core/design"
 import PokemonFactory from "../../../../models/pokemon-factory"
 import { AnimationType } from "../../../../types/Animation"
 import { DungeonPMDO } from "../../../../types/enum/Dungeon"
@@ -189,8 +189,7 @@ export class DebugScene extends Phaser.Scene {
       })
     }
 
-    return fetch(`/tilemap/${mapName}`)
-      .then((res) => res.json())
+    return initTilemap(mapName)
       .then((tilemap: DesignTiled) => {
         this.tilemap = tilemap
         return new Promise((resolve) => {
