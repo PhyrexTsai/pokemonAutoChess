@@ -52,7 +52,7 @@
 ### Implementation for User Story 1
 
 - [x] T003 [US1] Wire StateTracker into `app/public/src/local-engine.ts` — remove Encoder/Decoder/getDecoderStateCallbacks imports, replace `syncState()` body with `this.stateTracker.flush()`, keep `clientState` as getter alias for `engineState`
-- [ ] T004 [US1] Build verification (`npm run build`) + manual play-test: full game session confirming shop/drag-drop/battles/abilities/items/synergies all work. Also verify loading existing IndexedDB saved data works correctly (FR-011/SC-006)
+- [x] T004 [US1] Build verification (`npm run build`) + manual play-test: full game session confirming shop/drag-drop/battles/abilities/items/synergies all work. Also verify loading existing IndexedDB saved data works correctly (FR-011/SC-006)
 
 **Checkpoint**: Game is fully playable with StateTracker. Schema collections still present (duck-typing active). US1 complete.
 
@@ -68,24 +68,24 @@
 
 Replace `MapSchema<V>` → `Map<string, V>`, `SetSchema<T>` → `Set<T>`, `ArraySchema<T>` → `T[]` across all files. Order: models → core → utils → client.
 
-- [ ] T005 [P] [US2] Replace 1,116 `SetSchema` → `Set` in `app/models/colyseus-models/pokemon.ts` (mechanical: `new SetSchema([...])` → `new Set([...])`)
-- [ ] T006 [P] [US2] Replace Schema collections in `app/models/colyseus-models/player.ts` (3 MapSchema→Map, 12 ArraySchema→Array), `game-state.ts` (7 MapSchema→Map), `synergies.ts` (MapSchema→Map, SetSchema→Set), `tournament.ts` (5 MapSchema→Map, 8 ArraySchema→Array)
-- [ ] T007 [P] [US2] Replace Schema collections in remaining `app/models/colyseus-models/` files: `after-game-player.ts` (5 ArraySchema→Array), `game-record.ts` (5 ArraySchema→Array), and other files with Schema collection usage
-- [ ] T008 [P] [US2] Replace Schema collections in `app/core/` files: `simulation.ts` (9 MapSchema→Map), `pokemon-entity.ts` (5 SetSchema→Set), `mini-game.ts` (10 MapSchema→Map), `dps.ts`, and remaining core files
-- [ ] T009 [P] [US2] Replace Schema collections in `app/models/pokemon-factory.ts`, `app/models/effects.ts`, `app/models/shop.ts`, `app/public/src/game-engine-phases.ts`, and client component files under `app/public/src/game/`
-- [ ] T010 [US2] Build checkpoint: `npm run build` must pass after all collection replacements
+- [x] T005 [P] [US2] Replace 1,116 `SetSchema` → `Set` in `app/models/colyseus-models/pokemon.ts` (mechanical: `new SetSchema([...])` → `new Set([...])`)
+- [x] T006 [P] [US2] Replace Schema collections in `app/models/colyseus-models/player.ts` (3 MapSchema→Map, 12 ArraySchema→Array), `game-state.ts` (7 MapSchema→Map), `synergies.ts` (MapSchema→Map, SetSchema→Set), `tournament.ts` (5 MapSchema→Map, 8 ArraySchema→Array)
+- [x] T007 [P] [US2] Replace Schema collections in remaining `app/models/colyseus-models/` files: `after-game-player.ts` (5 ArraySchema→Array), `game-record.ts` (5 ArraySchema→Array), and other files with Schema collection usage
+- [x] T008 [P] [US2] Replace Schema collections in `app/core/` files: `simulation.ts` (9 MapSchema→Map), `pokemon-entity.ts` (5 SetSchema→Set), `mini-game.ts` (10 MapSchema→Map), `dps.ts`, and remaining core files
+- [x] T009 [P] [US2] Replace Schema collections in `app/models/pokemon-factory.ts`, `app/models/effects.ts`, `app/models/shop.ts`, `app/public/src/game-engine-phases.ts`, and client component files under `app/public/src/game/`
+- [x] T010 [US2] Build checkpoint: `npm run build` must pass after all collection replacements
 
 ### Step 4: Remove Decorators and Schema Inheritance
 
 Remove all 318 `@type()` decorator lines, all 24 `extends Schema` → plain class, all `super()` calls. Keep constructor guards (`if (id === undefined) return`) as harmless dead code.
 
-- [ ] T011 [P] [US2] Remove @type() decorators, `extends Schema`, and `super()` from all `app/models/colyseus-models/` files (18 files: pokemon.ts 34, status.ts 36, player.ts 53, count.ts 20, game-state.ts 20, tournament.ts 14, pokemon-avatar.ts 12, portal.ts 10, and others)
-- [ ] T012 [P] [US2] Remove @type() decorators, `extends Schema`, and `super()` from all `app/core/` files (9 files: pokemon-entity.ts 40, simulation.ts 11, dps.ts 10, and others)
+- [x] T011 [P] [US2] Remove @type() decorators, `extends Schema`, and `super()` from all `app/models/colyseus-models/` files (18 files: pokemon.ts 34, status.ts 36, player.ts 53, count.ts 20, game-state.ts 20, tournament.ts 14, pokemon-avatar.ts 12, portal.ts 10, and others)
+- [x] T012 [P] [US2] Remove @type() decorators, `extends Schema`, and `super()` from all `app/core/` files (9 files: pokemon-entity.ts 40, simulation.ts 11, dps.ts 10, and others)
 
 ### Step 5: Update Utilities and Types
 
-- [ ] T013 [US2] Rewrite `app/utils/schemas.ts` for native types: `keys()`/`values()`/`entries()` → thin wrappers over native methods (30+ call sites for `values()`), `resetArraySchema(arr, newArr)` → `arr.length = 0; arr.push(...newArr)`, delete `convertSchemaToRawObject()` (dead code — 0 call sites)
-- [ ] T014 [P] [US2] Update `app/types/index.ts` — replace Schema collection type references with native TypeScript types (`Map`, `Set`, `Array`)
+- [x] T013 [US2] Rewrite `app/utils/schemas.ts` for native types: `keys()`/`values()`/`entries()` → thin wrappers over native methods (30+ call sites for `values()`), `resetArraySchema(arr, newArr)` → `arr.length = 0; arr.push(...newArr)`, delete `convertSchemaToRawObject()` (dead code — 0 call sites)
+- [x] T014 [P] [US2] Update `app/types/index.ts` — replace Schema collection type references with native TypeScript types (`Map`, `Set`, `Array`)
 - [ ] T015 [US2] Remove all remaining `@colyseus/schema` imports from all 43 files — no import references should remain
 
 ### Step 6: Package Removal and Cleanup

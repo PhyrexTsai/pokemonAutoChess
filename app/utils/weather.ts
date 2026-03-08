@@ -1,4 +1,3 @@
-import { MapSchema } from "@colyseus/schema"
 import { WeatherThreshold } from "../config"
 import Player from "../models/colyseus-models/player"
 import { Pokemon } from "../models/colyseus-models/pokemon"
@@ -14,7 +13,7 @@ import { hasKey } from "./map"
 export function getWeather(
   bluePlayer: Player,
   redPlayer: Player | null,
-  redPlayerBoard: MapSchema<Pokemon, string>,
+  redPlayerBoard: Map<string, Pokemon>,
   isGhostBattle = false
 ): Weather {
   function getDominantWeather(

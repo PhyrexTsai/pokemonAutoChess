@@ -1,4 +1,3 @@
-import { ArraySchema } from "@colyseus/schema"
 
 // see https://stackoverflow.com/questions/56565528/typescript-const-assertions-how-to-use-array-prototype-includes
 export function isIn<T>(values: readonly T[], x: any): x is T {
@@ -25,9 +24,9 @@ export function deduplicateArray<T>(arr: T[]): T[] {
 }
 
 export function removeInArray<T>(
-  arr: T[] | ArraySchema<T>,
+  arr: T[],
   el: T
-): T[] | ArraySchema<T> {
+): T[] {
   const index = arr.indexOf(el)
   if (index > -1) {
     arr.splice(index, 1)
@@ -35,7 +34,7 @@ export function removeInArray<T>(
   return arr
 }
 
-export function count<T>(arr: T[] | ArraySchema<T>, el: T): number {
+export function count<T>(arr: T[], el: T): number {
   let count = 0
   for (let i = 0; i < arr.length; i++) if (arr[i] === el) count++
   return count

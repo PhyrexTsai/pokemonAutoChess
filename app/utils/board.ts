@@ -1,4 +1,3 @@
-import { MapSchema } from "@colyseus/schema"
 import { PokemonEntity } from "../core/pokemon-entity"
 import { Pokemon } from "../models/colyseus-models/pokemon"
 import PokemonSprite from "../public/src/game/components/pokemon"
@@ -13,7 +12,7 @@ export function isOnBench(pokemon: IPokemon | PokemonEntity | PokemonSprite) {
 export function isPositionEmpty(
   x: number,
   y: number,
-  board: MapSchema<Pokemon, string>
+  board: Map<string, Pokemon>
 ) {
   return (
     values(board).some((p) => p.positionX === x && p.positionY === y) === false
@@ -21,7 +20,7 @@ export function isPositionEmpty(
 }
 
 export function getFirstAvailablePositionInBench(
-  board: MapSchema<Pokemon, string>
+  board: Map<string, Pokemon>
 ): number | null {
   for (let i = 0; i < 8; i++) {
     if (isPositionEmpty(i, 0, board)) {
@@ -32,7 +31,7 @@ export function getFirstAvailablePositionInBench(
 }
 
 export function getFirstAvailablePositionOnBoard(
-  board: MapSchema<Pokemon, string>,
+  board: Map<string, Pokemon>,
   range: number
 ) {
   let rowsOrder: number[]
@@ -59,7 +58,7 @@ export function getFirstAvailablePositionOnBoard(
   }
 }
 
-export function getFreeSpaceOnBench(board: MapSchema<Pokemon, string>): number {
+export function getFreeSpaceOnBench(board: Map<string, Pokemon>): number {
   let numberOfFreeSpace = 0
   for (let i = 0; i < 8; i++) {
     if (isPositionEmpty(i, 0, board)) {

@@ -1,4 +1,3 @@
-import { ArraySchema } from "@colyseus/schema"
 import React, { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { AutoSizer } from "react-virtualized-auto-sizer"
@@ -115,7 +114,7 @@ function GameHistoryRow({
 }
 
 function getTopSynergies(
-  team: IPokemonRecord[] | ArraySchema<IPokemonRecord>
+  team: IPokemonRecord[]
 ): [Synergy, number][] {
   const synergies = computeSynergies(
     team.map((pkmRecord) => {

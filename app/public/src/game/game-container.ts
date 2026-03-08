@@ -1,4 +1,4 @@
-import type { SchemaCallbackProxy } from "@colyseus/schema"
+import type { StateCallbackProxy } from "../state-tracker"
 import { t } from "i18next"
 import Phaser from "phaser"
 import MoveToPlugin from "phaser3-rex-plugins/plugins/moveto-plugin.js"
@@ -55,7 +55,7 @@ import GameScene from "./scenes/game-scene"
 
 class GameContainer {
   engine: LocalGameEngine
-  $: SchemaCallbackProxy<GameState>
+  $: StateCallbackProxy
   div: HTMLDivElement
   game: Phaser.Game | undefined
   player: Player | undefined
