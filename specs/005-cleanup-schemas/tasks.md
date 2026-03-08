@@ -51,7 +51,7 @@
 
 ### Implementation for User Story 1
 
-- [ ] T003 [US1] Wire StateTracker into `app/public/src/local-engine.ts` — remove Encoder/Decoder/getDecoderStateCallbacks imports, replace `syncState()` body with `this.stateTracker.flush()`, keep `clientState` as getter alias for `engineState`
+- [x] T003 [US1] Wire StateTracker into `app/public/src/local-engine.ts` — remove Encoder/Decoder/getDecoderStateCallbacks imports, replace `syncState()` body with `this.stateTracker.flush()`, keep `clientState` as getter alias for `engineState`
 - [ ] T004 [US1] Build verification (`npm run build`) + manual play-test: full game session confirming shop/drag-drop/battles/abilities/items/synergies all work. Also verify loading existing IndexedDB saved data works correctly (FR-011/SC-006)
 
 **Checkpoint**: Game is fully playable with StateTracker. Schema collections still present (duck-typing active). US1 complete.

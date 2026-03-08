@@ -2,10 +2,11 @@
  * local-engine.ts
  * LocalGameEngine — runs the entire game loop in-browser.
  * Implements IGameEngineContext so core game logic can call engine methods.
- * Uses Schema encode/decode loopback for state synchronization.
+ * Uses snapshot-diff StateTracker for reactive state synchronization.
  */
 
-import { Encoder, Decoder, MapSchema, getDecoderStateCallbacks, type SchemaCallbackProxy } from "@colyseus/schema"
+import { MapSchema } from "@colyseus/schema"
+import { createStateTracker, type StateCallbackProxy } from "./state-tracker"
 import { nanoid } from "nanoid"
 import { MAX_SIMULATION_DELTA_TIME } from "../../config/server/network"
 import {
@@ -70,11 +71,12 @@ export interface GameConfig {
 
 export class LocalGameEngine implements IGameEngineContext {
   engineState!: GameState
-  clientState!: GameState
-  encoder!: Encoder
-  decoder!: Decoder
-  /** Single callback proxy — shared by all consumers to avoid overwriting decoder.triggerChanges */
-  $!: SchemaCallbackProxy<GameState>
+  /** clientState is now an alias for engineState — no more encode/decode duplication */
+  get clientState(): GameState {
+    return this.engineState
+  }
+  private stateTracker!: ReturnType<typeof createStateTracker>
+  $!: StateCallbackProxy
   intervalId: ReturnType<typeof setInterval> | null = null
   lastTickTime = 0
   humanPlayerId = ""
@@ -102,15 +104,7 @@ export class LocalGameEngine implements IGameEngineContext {
       config.maxRank,
       config.specialGameRule
     )
-    this.clientState = new GameState(
-      preparationId,
-      config.name,
-      config.noElo,
-      config.gameMode,
-      config.minRank,
-      config.maxRank,
-      config.specialGameRule
-    )
+    // clientState is now a getter alias for engineState — no duplicate needed
 
     // Initialize mini-game
     this.miniGame = new MiniGame(this)
@@ -233,24 +227,16 @@ export class LocalGameEngine implements IGameEngineContext {
       }
     }
 
-    // Schema encode/decode loopback initialization
-    Encoder.BUFFER_SIZE = 64 * 1024 // 64 KB — default 8KB overflows on full GameState
-    this.encoder = new Encoder(this.engineState)
-    this.decoder = new Decoder(this.clientState)
-    this.$ = getDecoderStateCallbacks(this.decoder)
-
-    // First sync: full state snapshot
-    const fullSnapshot = this.encoder.encodeAll()
-    this.decoder.decode(fullSnapshot)
-    this.encoder.discardChanges()
+    // Initialize StateTracker for snapshot-diff reactivity
+    this.stateTracker = createStateTracker()
+    this.$ = this.stateTracker.$
 
     // Mark game as loaded and start the game loop
     this.engineState.gameLoaded = true
     this.engineState.botManager.updateBots()
     this.miniGame.initialize(this.engineState)
 
-    // Sync portals/items created by MiniGame.initialize to clientState
-    // (they were added after encodeAll, so a second sync is needed)
+    // Flush state so callbacks registered after startGame see initial state
     this.syncState()
 
     console.log("[Engine] startGame complete", {
@@ -288,7 +274,7 @@ export class LocalGameEngine implements IGameEngineContext {
       console.error("Engine tick error:", error)
     }
 
-    // Sync state to client via encode/decode loopback
+    // Flush state changes to fire UI callbacks
     this.syncState()
   }
 
@@ -317,11 +303,7 @@ export class LocalGameEngine implements IGameEngineContext {
   }
 
   syncState() {
-    const patches = this.encoder.encode()
-    if (patches && patches.byteLength > 0) {
-      this.decoder.decode(patches)
-    }
-    this.encoder.discardChanges()
+    this.stateTracker.flush()
   }
 
   // --- IGameEngineContext implementation ---
