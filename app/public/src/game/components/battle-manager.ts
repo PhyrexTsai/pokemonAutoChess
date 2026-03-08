@@ -1329,6 +1329,13 @@ export default class BattleManager {
     this.simulation = simulation
     this.clear()
     this.buildPokemons()
+    // For PvE (or any case where started is already true when the simulation
+    // is assigned), the listen("started") callback won't fire — its immediate
+    // trigger is suppressed inside simulations.onAdd, and started never changes
+    // again.  Explicitly set sprites visible here as a safety net.
+    if (this.simulation.started) {
+      this.onSimulationStart()
+    }
   }
 
   onSimulationStart() {
