@@ -42,36 +42,8 @@ export default function Profile() {
   const [error, setError] = useState<string>("")
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  async function searchName(query: string) {
-    abortControllerRef.current = new AbortController()
-    const { signal } = abortControllerRef.current
-    setLoading(true)
-    setError("")
-    try {
-      const res = await fetch(`/players?name=${encodeURIComponent(query)}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        signal
-      })
-      if (res.ok) {
-        const suggestions = await res.json()
-        if (suggestions.length === 0) {
-          setError(t("no_results_found"))
-        } else {
-          setSuggestions(suggestions)
-          setError("")
-        }
-      } else {
-        setError(res.statusText)
-      }
-    } catch (err: any) {
-      if (err.name !== "AbortError") {
-        setError(err.message)
-      }
-    }
-    setLoading(false)
+  async function searchName(_query: string) {
+    setError("Not available in single-player mode")
   }
 
   const debouncedSearchName = useRef(debounce(searchName, 500)).current

@@ -5,7 +5,7 @@
  * Uses Schema encode/decode loopback for state synchronization.
  */
 
-import { Encoder, Decoder, MapSchema } from "@colyseus/schema"
+import { Encoder, Decoder, MapSchema, getDecoderStateCallbacks, type SchemaCallbackProxy } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import { MAX_SIMULATION_DELTA_TIME } from "../../config/server/network"
 import {
@@ -73,6 +73,8 @@ export class LocalGameEngine implements IGameEngineContext {
   clientState!: GameState
   encoder!: Encoder
   decoder!: Decoder
+  /** Single callback proxy — shared by all consumers to avoid overwriting decoder.triggerChanges */
+  $!: SchemaCallbackProxy<GameState>
   intervalId: ReturnType<typeof setInterval> | null = null
   lastTickTime = 0
   humanPlayerId = ""
@@ -235,6 +237,7 @@ export class LocalGameEngine implements IGameEngineContext {
     Encoder.BUFFER_SIZE = 64 * 1024 // 64 KB — default 8KB overflows on full GameState
     this.encoder = new Encoder(this.engineState)
     this.decoder = new Decoder(this.clientState)
+    this.$ = getDecoderStateCallbacks(this.decoder)
 
     // First sync: full state snapshot
     const fullSnapshot = this.encoder.encodeAll()

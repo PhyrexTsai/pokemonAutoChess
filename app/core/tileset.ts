@@ -1,4 +1,3 @@
-import { readJsonSync } from "fs-extra"
 import {
   DTEF_TILESET_WIDTH,
   DtefTileset,
@@ -50,19 +49,34 @@ export type FrameTiled = {
   tileid: number
 }
 
-const src = "app/public/dist/client/assets/tilesets"
+const src = "/assets/tilesets"
+
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`)
+  }
+  return res.json()
+}
 
 export default class Tileset {
   id: DungeonPMDO
   metadata: TilesetExchangeFile
 
-  constructor(id: DungeonPMDO) {
+  private constructor(id: DungeonPMDO, metadata: TilesetExchangeFile) {
     this.id = id
+    this.metadata = metadata
+  }
+
+  static async create(id: DungeonPMDO): Promise<Tileset> {
     if (!id) {
-      logger.error("Invalid dungeon ID provided to Tileset constructor", { id })
-      throw new Error("Invalid dungeon ID provided to Tileset constructor")
+      logger.error("Invalid dungeon ID provided to Tileset.create", { id })
+      throw new Error("Invalid dungeon ID provided to Tileset.create")
     }
-    this.metadata = readJsonSync(`${src}/${this.id}/metadata.json`)
+    const metadata = await fetchJson<TilesetExchangeFile>(
+      `${src}/${id}/metadata.json`
+    )
+    return new Tileset(id, metadata)
   }
 
   getTilemapId(terrain: TerrainType, mask: Mask): TileMapping[] {
@@ -142,18 +156,22 @@ export default class Tileset {
       : undefined
   }
 
-  exportToTiled() {
-    const tilesets = new Array<TilesetTiled>()
+  async exportToTiled(): Promise<TilesetTiled[]> {
+    const fetches: Promise<TilesetTiled>[] = []
     for (let i = 0; i < 3; i++) {
       const t = this.metadata[`tileset_${i}`] as DtefTileset
-      tilesets.push(readJsonSync(`${src}/${this.id}/${t.static.name}.json`))
+      fetches.push(
+        fetchJson<TilesetTiled>(`${src}/${this.id}/${t.static.name}.json`)
+      )
       t.animation.forEach((animatedFrame) => {
-        tilesets.push(
-          readJsonSync(`${src}/${this.id}/${animatedFrame.name}.json`)
+        fetches.push(
+          fetchJson<TilesetTiled>(
+            `${src}/${this.id}/${animatedFrame.name}.json`
+          )
         )
       })
     }
-    return tilesets
+    return Promise.all(fetches)
   }
 }
 

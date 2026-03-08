@@ -1,4 +1,3 @@
-import { getDecoderStateCallbacks } from "@colyseus/schema"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -327,15 +326,7 @@ export default function Game() {
   }, [])
 
   useEffect(() => {
-    try {
-      fetch("/leaderboards")
-        .then((res) => res.json())
-        .then((data) => {
-          dispatch(setPodium(data.leaderboard.slice(0, 3)))
-        })
-    } catch (e) {
-      console.error("error fetching leaderboard", e)
-    }
+    dispatch(setPodium([]))
   }, [])
 
   useEffect(() => {
@@ -487,6 +478,10 @@ export default function Game() {
       )
 
       engine.on(Transfer.SIMULATION_STOP, () => {
+        console.log("[Viz:9] SIMULATION_STOP received", {
+          hasBattle: !!getGameScene()?.battle,
+          spriteCount: getGameScene()?.battle?.pokemonSprites.size ?? 0
+        })
         if (gameContainer.game) {
           const g = getGameScene()
           if (g && g.battle) {
@@ -497,7 +492,7 @@ export default function Game() {
 
       engine.on(Transfer.GAME_END, leave)
 
-      const $ = getDecoderStateCallbacks(engine.decoder)
+      const $ = engine.$
       const $state = $<GameState>(engine.clientState)
 
       $state.listen("gameMode", (mode) => {
@@ -519,6 +514,12 @@ export default function Game() {
       })
 
       $state.listen("phase", (newPhase, previousPhase) => {
+        console.log("[Viz:P] phase changed", previousPhase, "→", newPhase, {
+          hasGame: !!gameContainer.game,
+          hasGameScene: !!getGameScene(),
+          hasBattle: !!getGameScene()?.battle,
+          currentSimId: gameContainer.simulation?.id
+        })
         if (gameContainer.game) {
           const g = getGameScene()
           if (g) {
@@ -544,11 +545,26 @@ export default function Game() {
         dispatch(setAdditionalPokemons(values(engine.clientState.additionalPokemons)))
       })
 
-      $state.simulations.onRemove(() => {
-        gameContainer.resetSimulation()
+      $state.simulations.onRemove((simulation) => {
+        console.log("[Viz:1] simulations.onRemove", {
+          removedSimId: simulation.id,
+          currentSimId: gameContainer.simulation?.id,
+          willReset: !gameContainer.simulation || gameContainer.simulation.id === simulation.id
+        })
+        if (!gameContainer.simulation || gameContainer.simulation.id === simulation.id) {
+          gameContainer.resetSimulation()
+        }
       })
 
       $state.simulations.onAdd((simulation) => {
+        console.log("[Viz:2] simulations.onAdd", {
+          simId: simulation.id,
+          started: simulation.started,
+          blueTeamSize: simulation.blueTeam.size,
+          redTeamSize: simulation.redTeam.size,
+          bluePlayerId: simulation.bluePlayerId,
+          redPlayerId: simulation.redPlayerId
+        })
         gameContainer.initializeSimulation(simulation)
         const $simulation = $(simulation)
 

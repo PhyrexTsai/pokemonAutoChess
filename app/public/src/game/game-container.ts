@@ -1,4 +1,4 @@
-import { getDecoderStateCallbacks, SchemaCallbackProxy } from "@colyseus/schema"
+import type { SchemaCallbackProxy } from "@colyseus/schema"
 import { t } from "i18next"
 import Phaser from "phaser"
 import MoveToPlugin from "phaser3-rex-plugins/plugins/moveto-plugin.js"
@@ -64,7 +64,7 @@ class GameContainer {
   spectate: boolean
   constructor(div: HTMLDivElement, uid: string, engine: LocalGameEngine) {
     this.engine = engine
-    this.$ = getDecoderStateCallbacks(engine.decoder)
+    this.$ = engine.$
     this.div = div
     this.uid = uid
     this.spectate = false
@@ -72,27 +72,36 @@ class GameContainer {
   }
 
   resetSimulation() {
+    console.log("[Viz:3] resetSimulation", {
+      oldSimId: this.simulation?.id,
+      hasBattle: !!this.gameScene?.battle,
+      spriteCount: this.gameScene?.battle?.pokemonSprites.size ?? 0
+    })
     this.simulation = undefined
     this.gameScene?.battle?.clear()
   }
 
   initializeSimulation(simulation: Simulation) {
-    console.log("[GameContainer] initializeSimulation", {
+    const isMySimulation =
+      simulation.bluePlayerId === this.player?.id ||
+      (simulation.redPlayerId === this.player?.id && !simulation.isGhostBattle)
+    console.log("[Viz:4] initializeSimulation", {
       simId: simulation.id,
-      bluePlayerId: simulation.bluePlayerId,
-      redPlayerId: simulation.redPlayerId,
-      playerId: this.player?.id,
       started: simulation.started,
       blueTeamSize: simulation.blueTeam.size,
       redTeamSize: simulation.redTeam.size,
+      isMySimulation,
       hasGameScene: !!this.gameScene,
       hasBattle: !!this.gameScene?.battle
     })
-    if (
-      simulation.bluePlayerId === this.player?.id ||
-      (simulation.redPlayerId === this.player?.id && !simulation.isGhostBattle)
-    ) {
+    if (isMySimulation) {
       this.setSimulation(simulation)
+    } else {
+      console.warn("[Viz:4] ⚠ NOT my simulation — skipping setSimulation", {
+        bluePlayerId: simulation.bluePlayerId,
+        redPlayerId: simulation.redPlayerId,
+        myPlayerId: this.player?.id
+      })
     }
 
     const $simulation = this.$<Simulation>(simulation)
@@ -124,13 +133,28 @@ class GameContainer {
     }
 
     $simulation.listen("started", (value, previousValue) => {
+      console.log("[Viz:7] listen(started) fired", {
+        simId: simulation.id,
+        value,
+        previousValue,
+        boardSimId: this.gameScene?.board?.player.simulationId,
+        hasBattle: !!this.gameScene?.battle,
+        spriteCount: this.gameScene?.battle?.pokemonSprites.size ?? 0
+      })
       if (
         this.gameScene?.board?.player.simulationId === simulation.id &&
         value === true &&
         value !== previousValue
       ) {
+        console.log("[Viz:7] → calling removePokemonsOnBoard + onSimulationStart")
         this.gameScene?.board?.removePokemonsOnBoard()
         this.gameScene?.battle?.onSimulationStart()
+      } else {
+        console.warn("[Viz:7] ⚠ guard failed — NOT calling onSimulationStart", {
+          simIdMatch: this.gameScene?.board?.player.simulationId === simulation.id,
+          valueIsTrue: value === true,
+          valueChanged: value !== previousValue
+        })
       }
     })
   }
@@ -783,14 +807,18 @@ class GameContainer {
   setSimulation(simulation: Simulation) {
     this.simulation = simulation
     store.dispatch(setSimulation(simulation))
-    console.log("[GameContainer] setSimulation", {
-      hasBattle: !!this.gameScene?.battle,
-      blueTeamSize: simulation?.blueTeam.size,
-      redTeamSize: simulation?.redTeam.size,
-      started: simulation?.started
+    const hasBattle = !!this.gameScene?.battle
+    console.log("[Viz:5] GameContainer.setSimulation", {
+      simId: simulation.id,
+      started: simulation.started,
+      blueTeamSize: simulation.blueTeam.size,
+      redTeamSize: simulation.redTeam.size,
+      hasBattle
     })
-    if (this.gameScene?.battle) {
-      this.gameScene?.battle.setSimulation(this.simulation)
+    if (hasBattle) {
+      this.gameScene!.battle!.setSimulation(this.simulation)
+    } else {
+      console.warn("[Viz:5] ⚠ battle NOT ready — sprites will be created when GameScene.startGame() runs")
     }
   }
 

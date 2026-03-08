@@ -3,9 +3,8 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { AutoSizer } from "react-virtualized-auto-sizer"
 import { List } from "react-window"
-import { IBotLight } from "../../../../../types/interfaces/bot"
+import { fetchBotsList, IBotListItem } from "../../../../../services/bots"
 import { Pkm } from "../../../../../types/enum/Pokemon"
-import { authenticateUser } from "../../../network"
 import { cc } from "../../utils/jsx"
 import PokemonPortrait from "../pokemon-portrait"
 import { PokemonTypeahead } from "../typeahead/pokemon-typeahead"
@@ -69,51 +68,24 @@ export function BotManagerPanel() {
 function BotsList(props: { approved?: boolean; filteredPokemon: Pkm | "" }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [bots, setBots] = useState<IBotLight[] | null>(null)
+  const [bots, setBots] = useState<IBotListItem[] | null>(null)
   const [sortColumn, setSortColumn] = useState<string>("")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
   useEffect(() => {
-    authenticateUser()
-    fetch(
-      `/bots?${props.filteredPokemon ? `pkm=${props.filteredPokemon}` : ""}&t=${Date.now()}`
+    const data = fetchBotsList(
+      undefined,
+      props.filteredPokemon || undefined
     )
-      .then((res) => res.json())
-      .then((data) => {
-        setBots(data)
-      })
+    setBots(data)
   }, [props.filteredPokemon])
 
-  async function deleteBot(bot: IBotLight) {
-    if (
-      !confirm(
-        `Are you sure you want to delete bot ${bot.name} of ${bot.author} ?`
-      )
-    )
-      return
-    const res = await fetch(`/bots/${bot.id}`, {
-      method: "DELETE"
-    })
-    if (res.ok) {
-      setBots((bots) => bots?.filter((b) => b.id !== bot.id) ?? [])
-    } else alert(res.statusText)
+  async function deleteBot(_bot: IBotListItem) {
+    alert("Not available in single-player mode")
   }
 
-  async function approveBot(botId: string, approved: boolean) {
-    const res = await fetch(`/bots/${botId}/approve`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ approved })
-    })
-    if (res.ok) {
-      setBots(
-        (bots) =>
-          bots?.map((bot) => (bot.id === botId ? { ...bot, approved } : bot)) ??
-          []
-      )
-    } else alert(res.statusText)
+  async function approveBot(_botId: string, _approved: boolean) {
+    alert("Not available in single-player mode")
   }
 
   function handleSort(column: string) {
@@ -133,8 +105,8 @@ function BotsList(props: { approved?: boolean; filteredPokemon: Pkm | "" }) {
       )
       .sort((a, b) => {
         if (!sortColumn) return 0
-        let aValue = a[sortColumn as keyof IBotLight]
-        let bValue = b[sortColumn as keyof IBotLight]
+        let aValue = a[sortColumn as keyof IBotListItem]
+        let bValue = b[sortColumn as keyof IBotListItem]
         // Special handling for name (translated), elo (number), and avatar (string)
         if (sortColumn === "name") {
           aValue = t(`pkm.${a.name}`)
@@ -255,11 +227,11 @@ function BotsList(props: { approved?: boolean; filteredPokemon: Pkm | "" }) {
 }
 
 type BotRowData = {
-  filteredBots: IBotLight[]
+  filteredBots: IBotListItem[]
   t: (key: string) => string
   navigate: (path: string) => void
   onApprove: (botId: string, approved: boolean) => Promise<void>
-  onDelete: (bot: IBotLight) => Promise<void>
+  onDelete: (bot: IBotListItem) => Promise<void>
 }
 
 function BotRow({

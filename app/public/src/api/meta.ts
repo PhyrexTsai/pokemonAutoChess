@@ -176,40 +176,40 @@ export interface IMeta {
   y: number
 }
 
-// --- Fetch wrappers (thin HTTP GET, no Mongoose) ---
+// --- Direct returns (no server) ---
 
 export async function fetchMetaPokemons(): Promise<IPokemonsStatisticV2[]> {
-  return fetch("/meta/pokemons").then((res) => res.json())
+  return []
 }
 
 export async function fetchMetaTypes(): Promise<ITypeStatistics> {
-  return fetch("/meta/types").then((res) => res.json())
+  return {} as ITypeStatistics
 }
 
 export async function fetchMetadata(): Promise<IReportMetadata[]> {
-  return fetch("/meta/metadata").then((res) => res.json())
+  return []
 }
 
 export async function fetchMetaItems(): Promise<IItemsStatisticV2[]> {
-  return fetch("/meta/items").then((res) => res.json())
+  return []
 }
 
 export async function fetchMetaRegions(): Promise<IRegionStatistic[]> {
-  return fetch("/meta/regions").then((res) => res.json())
+  return []
 }
 
 export async function fetchMetaV2(): Promise<IMetaV2[]> {
-  return fetch("/meta-v2").then((res) => res.json())
+  return []
 }
 
 export async function fetchDendrogram(): Promise<IDendrogram | null> {
-  return fetch("/dendrogram").then((res) => res.json())
+  return null
 }
 
 export async function fetchTitles(): Promise<ITitleStatistic[]> {
-  return fetch("/titles").then((res) => res.json())
+  return []
 }
 
 export async function fetchMeta(): Promise<IMeta[]> {
-  return fetch("/meta").then((res) => res.json())
+  return []
 }

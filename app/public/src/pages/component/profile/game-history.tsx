@@ -1,13 +1,12 @@
 import { ArraySchema } from "@colyseus/schema"
-import React, { useCallback, useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { AutoSizer } from "react-virtualized-auto-sizer"
 import { List, useDynamicRowHeight } from "react-window"
 import { SynergyTriggers } from "../../../../../config"
-import {
-  IGameRecord,
-  IPokemonRecord
-} from "../../../../../models/colyseus-models/game-record"
+import { IPokemonRecord } from "../../../../../models/colyseus-models/game-record"
+import { getGameHistoryByPlayer } from "../../../../../models/local-store"
+import { IDetailledStatistic } from "../../../../../types/interfaces/detailled-statistic"
 import { computeSynergies } from "../../../../../models/colyseus-models/synergies"
 import PokemonFactory from "../../../../../models/pokemon-factory"
 import { Synergy } from "../../../../../types/enum/Synergy"
@@ -22,12 +21,10 @@ const ROW_HEIGHT = 72
 
 export default function GameHistory(props: {
   uid: string
-  onUpdate?: (history: IGameRecord[]) => void
+  onUpdate?: (history: IDetailledStatistic[]) => void
 }) {
   const { t } = useTranslation()
-  const [gameHistory, setGameHistory] = useState<IGameRecord[]>([])
-  const [loading, setLoading] = useState<boolean>(false)
-  const [hasMore, setHasMore] = useState<boolean>(true)
+  const [gameHistory, setGameHistory] = useState<IDetailledStatistic[]>([])
 
   useEffect(() => {
     if (props.onUpdate) {
@@ -35,65 +32,16 @@ export default function GameHistory(props: {
     }
   }, [gameHistory, props.onUpdate])
 
-  const pageSize = 10
-  const loadHistory = async (uid: string, page: number) => {
-    try {
-      setLoading(true)
-
-      const response = await fetch(
-        `/game-history/${uid}?page=${page}&t=${Date.now()}`
-      )
-      const data: IGameRecord[] = await response.json()
-      if (props.uid !== uid) return // ignore response if uid changed in the meantime
-
-      if (data.length < pageSize) {
-        setHasMore(false) // No more data to load
-      }
-
-      setGameHistory((prevHistory) => [
-        ...prevHistory,
-        ...data.filter(
-          (h) => prevHistory.some((p) => p.time == h.time) == false
-        )
-      ])
-    } catch (error) {
-      console.error("Failed to load history:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadMore = async () => {
-    if (loading || !hasMore) return
-    const skip = gameHistory.length
-    const page = Math.floor(skip / pageSize + 1)
-    loadHistory(props.uid, page)
-  }
-
   useEffect(() => {
-    // reset history on uid change
-    setGameHistory([])
-    setHasMore(true)
-    loadHistory(props.uid, 1) // load last 10 games history
+    const records = getGameHistoryByPlayer(props.uid)
+      .sort((a, b) => b.time - a.time)
+    setGameHistory(records)
   }, [props.uid])
 
   const dynamicRowHeight = useDynamicRowHeight({
     defaultRowHeight: ROW_HEIGHT,
     key: gameHistory.length
   })
-
-  // Trigger loadMore when user scrolls near the end
-  const handleRowsRendered = useCallback(
-    (
-      _visibleRows: { startIndex: number; stopIndex: number },
-      allRows: { startIndex: number; stopIndex: number }
-    ) => {
-      if (hasMore && !loading && allRows.stopIndex >= gameHistory.length - 3) {
-        loadMore()
-      }
-    },
-    [hasMore, loading, gameHistory.length]
-  )
 
   return (
     <article className="game-history-list">
@@ -116,7 +64,6 @@ export default function GameHistory(props: {
                     gameHistory,
                     t
                   }}
-                  onRowsRendered={handleRowsRendered}
                 />
               )
             }}
@@ -128,7 +75,7 @@ export default function GameHistory(props: {
 }
 
 type HistoryRowData = {
-  gameHistory: IGameRecord[]
+  gameHistory: IDetailledStatistic[]
   t: (key: string) => string
 }
 
