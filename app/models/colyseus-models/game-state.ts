@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
@@ -22,28 +21,28 @@ import { TownEncounter } from "../../types/enum/TownEncounter"
 import { Weather } from "../../types/enum/Weather"
 import { pickRandomIn, randomBetween } from "../../utils/random"
 
-export default class GameState extends Schema {
-  @type("string") afterGameId = ""
-  @type("uint8") roundTime = StageDuration[0]
-  @type("uint8") phase = GamePhaseState.TOWN
-  @type({ map: Player }) players = new Map<string, Player>()
-  @type({ map: PokemonAvatarModel }) avatars =
+export default class GameState {
+  afterGameId = ""
+  roundTime = StageDuration[0]
+  phase = GamePhaseState.TOWN
+  players = new Map<string, Player>()
+  avatars =
     new Map<string, PokemonAvatarModel>()
-  @type({ map: FloatingItem }) floatingItems = new Map<string, FloatingItem>()
-  @type({ map: Portal }) portals = new Map<string, Portal>()
-  @type({ map: SynergySymbol }) symbols = new Map<string, SynergySymbol>()
-  @type(["string"]) additionalPokemons: Pkm[] = []
-  @type("uint8") stageLevel = 0
-  @type("string") weather: Weather
-  @type("boolean") shinyEncounter = false
-  @type("boolean") noElo = false
-  @type("string") gameMode: GameMode = GameMode.CUSTOM_LOBBY
-  @type({ set: "string" }) spectators = new Set<string>()
-  @type({ map: Simulation }) simulations = new Map<string, Simulation>()
-  @type("uint8") lightX = randomBetween(0, BOARD_WIDTH - 1)
-  @type("uint8") lightY = randomBetween(1, BOARD_HEIGHT / 2)
-  @type("string") specialGameRule: SpecialGameRule | null = null
-  @type("string") townEncounter: TownEncounter | null = null
+  floatingItems = new Map<string, FloatingItem>()
+  portals = new Map<string, Portal>()
+  symbols = new Map<string, SynergySymbol>()
+  additionalPokemons: Pkm[] = []
+  stageLevel = 0
+  weather: Weather
+  shinyEncounter = false
+  noElo = false
+  gameMode: GameMode = GameMode.CUSTOM_LOBBY
+  spectators = new Set<string>()
+  simulations = new Map<string, Simulation>()
+  lightX = randomBetween(0, BOARD_WIDTH - 1)
+  lightY = randomBetween(1, BOARD_HEIGHT / 2)
+  specialGameRule: SpecialGameRule | null = null
+  townEncounter: TownEncounter | null = null
   time = StageDuration[0] * 1000
   updatePhaseNeeded = false
   botManager: BotManager = new BotManager()
@@ -72,7 +71,6 @@ export default class GameState extends Schema {
     maxRank: EloRank | null,
     specialGameRule: SpecialGameRule | null
   ) {
-    super()
     this.preparationId = preparationId
     this.startTime = Date.now()
     this.name = name

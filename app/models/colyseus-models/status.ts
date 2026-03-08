@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import { ItemStats } from "../../config"
 import type { Board } from "../../core/board"
 import { PokemonEntity } from "../../core/pokemon-entity"
@@ -12,43 +11,43 @@ import { count } from "../../utils/array"
 import { max, min } from "../../utils/number"
 import { values } from "../../utils/schemas"
 
-export default class Status extends Schema implements IStatus {
-  @type("boolean") burn = false
-  @type("boolean") silence = false
-  @type("boolean") fatigue = false
-  @type("number") poisonStacks = 0
-  @type("boolean") freeze = false
-  @type("boolean") protect = false
-  @type("boolean") sleep = false
-  @type("boolean") confusion = false
-  @type("boolean") wound = false
-  @type("boolean") resurrection = false
-  @type("boolean") resurrecting = false
-  @type("boolean") paralysis = false
-  @type("boolean") pokerus = false
-  @type("boolean") possessed = false
-  @type("boolean") locked = false
-  @type("boolean") blinded = false
-  @type("boolean") armorReduction = false
-  @type("boolean") runeProtect = false
-  @type("boolean") charm = false
-  @type("boolean") flinch = false
-  @type("boolean") electricField = false
-  @type("boolean") psychicField = false
-  @type("boolean") grassField = false
-  @type("boolean") fairyField = false
-  @type("boolean") spikeArmor = false
-  @type("boolean") magicBounce = false
-  @type("boolean") reflect = false
-  @type("boolean") light = false
-  @type("boolean") curse = false
-  @type("boolean") curseVulnerability = false
-  @type("boolean") curseWeakness = false
-  @type("boolean") curseTorment = false
-  @type("boolean") curseFate = false
-  @type("boolean") enraged = false
-  @type("boolean") skydiving = false
-  @type("boolean") tree = false
+export default class Status implements IStatus {
+  burn = false
+  silence = false
+  fatigue = false
+  poisonStacks = 0
+  freeze = false
+  protect = false
+  sleep = false
+  confusion = false
+  wound = false
+  resurrection = false
+  resurrecting = false
+  paralysis = false
+  pokerus = false
+  possessed = false
+  locked = false
+  blinded = false
+  armorReduction = false
+  runeProtect = false
+  charm = false
+  flinch = false
+  electricField = false
+  psychicField = false
+  grassField = false
+  fairyField = false
+  spikeArmor = false
+  magicBounce = false
+  reflect = false
+  light = false
+  curse = false
+  curseVulnerability = false
+  curseWeakness = false
+  curseTorment = false
+  curseFate = false
+  enraged = false
+  skydiving = false
+  tree = false
   burnOrigin: PokemonEntity | undefined = undefined
   poisonOrigin: PokemonEntity | undefined = undefined
   silenceOrigin: PokemonEntity | undefined = undefined
@@ -85,7 +84,6 @@ export default class Status extends Schema implements IStatus {
   ccCooldown = 0
 
   constructor(simulation?: ISimulation) {
-    super()
     if (!simulation) return // Schema Decoder creates instances without args
     const elapsedTime = simulation.elapsedTime
     this.enrageDelay = this.enrageDelay - elapsedTime

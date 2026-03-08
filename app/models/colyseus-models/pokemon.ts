@@ -1,4 +1,3 @@
-import { entity, Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   DEFAULT_CRIT_CHANCE,
@@ -61,41 +60,41 @@ import PokemonFactory from "../pokemon-factory"
 import type { ISimulationPlayer } from "../../types/interfaces/ISimulationPlayer"
 import Player from "./player"
 
-export class Pokemon extends Schema implements IPokemon {
-  @type("string") id: string
-  @type("string") name: Pkm
-  @type({ set: "string" }) types = new Set<Synergy>()
-  @type("string") rarity: Rarity = Rarity.SPECIAL
-  @type("string") index: string
-  @type("string") evolution: Pkm = Pkm.DEFAULT
-  @type("int8") positionX = -1
-  @type("int8") positionY = -1
-  @type("uint8") speed = DEFAULT_SPEED
-  @type("uint8") def: number = 1
-  @type("uint8") speDef: number = 1
-  @type("uint16") atk: number = 1
-  @type("uint16") hp: number = 10
-  @type("uint16") maxHP: number = 10
-  @type("uint16") shield = 0
-  @type("uint8") critChance = DEFAULT_CRIT_CHANCE
-  @type("float32") critPower = DEFAULT_CRIT_POWER
-  @type("uint8") range: number = 1
-  @type("uint8") stars: number = 1
-  @type("uint8") pp = 0
-  @type("uint8") maxPP: number = 100
-  @type("int16") ap: number = 0
-  @type("uint8") luck: number = 0
-  @type("string") skill: Ability = Ability.DEFAULT
-  @type("string") tm: Ability = Ability.DEFAULT
-  @type("string") passive: Passive = Passive.NONE
-  @type({ set: "string" }) items = new Set<Item>()
-  @type({ set: "string" }) dishes = new Set<Item>()
-  @type("boolean") shiny: boolean
-  @type("string") emotion: Emotion
-  @type("string") action: PokemonActionState = PokemonActionState.IDLE
-  @type("uint8") stacks: number = 0
-  @type("uint8") stacksRequired: number = 0
-  @type("boolean") supercharged: boolean = false
+export class Pokemon implements IPokemon {
+  id: string
+  name: Pkm
+  types = new Set<Synergy>()
+  rarity: Rarity = Rarity.SPECIAL
+  index: string
+  evolution: Pkm = Pkm.DEFAULT
+  positionX = -1
+  positionY = -1
+  speed = DEFAULT_SPEED
+  def: number = 1
+  speDef: number = 1
+  atk: number = 1
+  hp: number = 10
+  maxHP: number = 10
+  shield = 0
+  critChance = DEFAULT_CRIT_CHANCE
+  critPower = DEFAULT_CRIT_POWER
+  range: number = 1
+  stars: number = 1
+  pp = 0
+  maxPP: number = 100
+  ap: number = 0
+  luck: number = 0
+  skill: Ability = Ability.DEFAULT
+  tm: Ability = Ability.DEFAULT
+  passive: Passive = Passive.NONE
+  items = new Set<Item>()
+  dishes = new Set<Item>()
+  shiny: boolean
+  emotion: Emotion
+  action: PokemonActionState = PokemonActionState.IDLE
+  stacks: number = 0
+  stacksRequired: number = 0
+  supercharged: boolean = false
   dodge: number = 0
   deathCount: number = 0
   killCount: number = 0
@@ -108,7 +107,6 @@ export class Pokemon extends Schema implements IPokemon {
   canBeSold = true
 
   constructor(name: Pkm, shiny = false, emotion = Emotion.NORMAL) {
-    super()
     this.id = nanoid()
     this.name = name
     this.index = PkmIndex[name]

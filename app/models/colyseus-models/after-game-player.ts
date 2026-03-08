@@ -1,39 +1,36 @@
-import { Schema, type } from "@colyseus/schema"
 import { IAfterGamePlayer, Role } from "../../types"
 import { Synergy } from "../../types/enum/Synergy"
 import { IPokemonRecord, PokemonRecord } from "./game-record"
 
-export class SampleSynergy extends Schema {
-  @type("string") name: Synergy
-  @type("number") value: number
+export class SampleSynergy {
+  name: Synergy
+  value: number
 
   constructor(name: Synergy, value: number) {
-    super()
     this.name = name
     this.value = value
   }
 }
 
 export default class AfterGamePlayer
-  extends Schema
   implements IAfterGamePlayer
 {
-  @type("string") id: string
-  @type("string") name: string
-  @type("string") avatar: string
-  @type("uint8") rank: number
-  @type([PokemonRecord]) pokemons: IPokemonRecord[] = []
-  @type("uint16") elo: number
-  @type("uint16") games: number
-  @type("string") title: string
-  @type("string") role: Role
-  @type([SampleSynergy]) synergies: {
+  id: string
+  name: string
+  avatar: string
+  rank: number
+  pokemons: IPokemonRecord[] = []
+  elo: number
+  games: number
+  title: string
+  role: Role
+  synergies: {
     name: Synergy
     value: number
   }[] = []
-  @type("uint16") moneyEarned: number
-  @type("uint16") playerDamageDealt: number
-  @type("uint16") rerollCount: number
+  moneyEarned: number
+  playerDamageDealt: number
+  rerollCount: number
 
   constructor(
     id: string,
@@ -50,7 +47,6 @@ export default class AfterGamePlayer
     playerDamageDealt: number,
     rerollCount: number
   ) {
-    super()
     this.id = id
     this.name = name
     this.avatar = avatar

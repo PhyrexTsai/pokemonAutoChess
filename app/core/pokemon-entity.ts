@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   ARMOR_FACTOR,
@@ -76,47 +75,7 @@ import PokemonState from "./pokemon-state"
 import Simulation from "./simulation"
 import { DelayedCommand, SimulationCommand } from "./simulation-command"
 
-export class PokemonEntity extends Schema implements IPokemonEntity {
-  @type("boolean") shiny!: boolean
-  @type("uint8") positionX!: number
-  @type("uint8") positionY!: number
-  @type("string") action = PokemonActionState.WALK
-  @type("string") index!: string
-  @type("string") id!: string
-  @type("string") orientation = Orientation.DOWNLEFT
-  @type("uint16") maxHP!: number
-  @type("uint16") hp!: number
-  @type("uint16") shield = 0
-  @type("uint8") maxPP!: number
-  @type("uint8") pp = 0
-  @type("uint16") atk!: number
-  @type("uint16") def!: number
-  @type("uint16") speDef!: number
-  @type("int16") ap = 0
-  @type("int16") luck = 0
-  @type("uint8") critChance = DEFAULT_CRIT_CHANCE
-  @type("float32") critPower = DEFAULT_CRIT_POWER
-  @type("uint8") team!: Team
-  @type("uint8") range!: number
-  @type("uint16") speed!: number
-  @type("string") targetEntityId: string = ""
-  @type("int8") targetX = -1
-  @type("int8") targetY = -1
-  @type("string") rarity!: Rarity
-  @type("string") name!: Pkm
-  @type({ set: "string" }) effects = new Set<EffectEnum>()
-  @type({ set: "string" }) items = new Set<Item>()
-  @type({ set: "string" }) types = new Set<Synergy>()
-  @type("uint8") stars!: number
-  @type("string") skill!: Ability
-  @type("string") tm!: Ability
-  @type("string") passive!: Passive
-  @type(Status) status!: Status
-  @type(Count) count!: Count
-  @type("uint16") healDone!: number
-  @type("string") emotion!: Emotion
-  @type("uint8") stacks: number = 0
-  @type("uint8") stacksRequired: number = 0
+export class PokemonEntity implements IPokemonEntity {
   cooldown = 500
   oneSecondCooldown = 1000
   state!: PokemonState
@@ -150,7 +109,6 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
     team?: number,
     simulation?: Simulation
   ) {
-    super()
     if (!pokemon) return // Schema Decoder creates instances without args
     this.state = new MovingState()
     this.refToBoardPokemon = pokemon

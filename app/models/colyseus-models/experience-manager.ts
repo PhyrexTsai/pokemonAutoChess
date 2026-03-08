@@ -1,19 +1,16 @@
-import { Schema, type } from "@colyseus/schema"
 import { ExpTable } from "../../config"
 import { IExperienceManager } from "../../types"
 import { SpecialGameRule } from "../../types/enum/SpecialGameRule"
 
 export default class ExperienceManager
-  extends Schema
   implements IExperienceManager
 {
-  @type("uint8") level: number
-  @type("uint8") experience: number
-  @type("uint8") expNeeded: number
+  level: number
+  experience: number
+  expNeeded: number
   maxLevel: number
 
   constructor() {
-    super()
     this.level = 2
     this.experience = 0
     this.expNeeded = ExpTable[2]

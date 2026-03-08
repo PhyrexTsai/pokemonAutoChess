@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import { BattleEvent } from "../types/BattleEvent"
 import { BOARD_HEIGHT, BOARD_WIDTH } from "../config"
 import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
@@ -79,18 +78,7 @@ import {
 import { getStrongestUnit, getUnitScore, PokemonEntity } from "./pokemon-entity"
 import { DelayedCommand } from "./simulation-command"
 
-export default class Simulation extends Schema implements ISimulation {
-  @type("string") weather: Weather = Weather.NEUTRAL
-  @type("string") winnerId = ""
-  @type({ map: PokemonEntity }) blueTeam = new Map<string, IPokemonEntity>()
-  @type({ map: PokemonEntity }) redTeam = new Map<string, IPokemonEntity>()
-  @type({ map: Dps }) blueDpsMeter = new Map<string, Dps>()
-  @type({ map: Dps }) redDpsMeter = new Map<string, Dps>()
-  @type("string") id!: string
-  @type("string") bluePlayerId!: string
-  @type("string") redPlayerId!: string
-  @type("boolean") isGhostBattle!: boolean
-  @type("boolean") started!: boolean
+export default class Simulation implements ISimulation {
   context?: IGameEngineContext
   blueEffects = new Set<EffectEnum>()
   redEffects = new Set<EffectEnum>()
@@ -122,7 +110,6 @@ export default class Simulation extends Schema implements ISimulation {
     isGhostBattle = false,
     context?: IGameEngineContext | any
   ) {
-    super()
     if (id === undefined) return // Schema Decoder creates instances without args
     this.id = id
     if (context) this.context = context as IGameEngineContext

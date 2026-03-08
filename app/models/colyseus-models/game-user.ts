@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import { Role } from "../../types"
 
 export interface IGameUser {
@@ -13,17 +12,17 @@ export interface IGameUser {
   role: Role
   anonymous: boolean
 }
-export class GameUser extends Schema implements IGameUser {
-  @type("string") uid: string
-  @type("string") name: string
-  @type("string") avatar: string
-  @type("boolean") ready: boolean
-  @type("boolean") isBot: boolean
-  @type("uint16") elo: number
-  @type("uint16") games: number
-  @type("string") title: string
-  @type("string") role: Role
-  @type("boolean") anonymous: boolean
+export class GameUser implements IGameUser {
+  uid: string
+  name: string
+  avatar: string
+  ready: boolean
+  isBot: boolean
+  elo: number
+  games: number
+  title: string
+  role: Role
+  anonymous: boolean
 
   constructor(
     uid: string,
@@ -37,7 +36,6 @@ export class GameUser extends Schema implements IGameUser {
     role: Role,
     anonymous: boolean
   ) {
-    super()
     this.uid = uid
     this.name = name
     this.avatar = avatar

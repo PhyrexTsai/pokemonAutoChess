@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import { Emotion } from "../../types"
 import { GameMode } from "../../types/enum/Game"
 import { Item } from "../../types/enum/Item"
@@ -8,13 +7,12 @@ export interface IPokemonRecord {
   items: Item[]
   avatar: string
 }
-export class PokemonRecord extends Schema implements IPokemonRecord {
-  @type("string") name: Pkm
-  @type("string") avatar: string
-  @type(["string"]) items: Item[] = []
+export class PokemonRecord implements IPokemonRecord {
+  name: Pkm
+  avatar: string
+  items: Item[] = []
 
   constructor(mongoPokemon: IPokemonRecord) {
-    super()
     this.name = mongoPokemon.name
     this.avatar = mongoPokemon.avatar
       ? mongoPokemon.avatar
@@ -34,12 +32,12 @@ export interface IGameRecord {
   gameMode: GameMode
 }
 
-export class GameRecord extends Schema implements IGameRecord {
-  @type("uint64") time: number
-  @type("uint8") rank: number
-  @type([PokemonRecord]) pokemons: IPokemonRecord[] = []
-  @type("uint16") elo: number
-  @type("string") gameMode: GameMode = GameMode.CUSTOM_LOBBY
+export class GameRecord implements IGameRecord {
+  time: number
+  rank: number
+  pokemons: IPokemonRecord[] = []
+  elo: number
+  gameMode: GameMode = GameMode.CUSTOM_LOBBY
 
   constructor(
     time: number,
@@ -48,7 +46,6 @@ export class GameRecord extends Schema implements IGameRecord {
     pokemons: any[],
     gameMode: GameMode
   ) {
-    super()
     this.time = time
     this.rank = rank
     this.elo = elo

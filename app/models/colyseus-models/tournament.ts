@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import {
   ITournament,
   ITournamentBracket,
@@ -7,14 +6,13 @@ import {
 import { resetArraySchema } from "../../utils/schemas"
 
 export class TournamentPlayerSchema
-  extends Schema
   implements ITournamentPlayer
 {
-  @type("string") name: string
-  @type("string") avatar: string
-  @type("number") elo: number
-  @type(["number"]) ranks: number[] = []
-  @type("boolean") eliminated: boolean
+  name: string
+  avatar: string
+  elo: number
+  ranks: number[] = []
+  eliminated: boolean
 
   constructor(
     name: string,
@@ -23,7 +21,6 @@ export class TournamentPlayerSchema
     ranks: number[] = [],
     eliminated: boolean = false
   ) {
-    super()
     this.name = name
     this.avatar = avatar
     this.elo = elo
@@ -33,34 +30,32 @@ export class TournamentPlayerSchema
 }
 
 export class TournamentBracketSchema
-  extends Schema
   implements ITournamentBracket
 {
-  @type("string") name: string
-  @type(["string"]) playersId: string[] = []
-  @type("boolean") finished: boolean
+  name: string
+  playersId: string[] = []
+  finished: boolean
 
   constructor(
     name: string,
     playersId: string[],
     finished: boolean = false
   ) {
-    super()
     this.name = name
     this.finished = finished
     resetArraySchema(this.playersId, playersId)
   }
 }
 
-export class TournamentSchema extends Schema implements ITournament {
-  @type("string") id: string
-  @type("string") name: string
-  @type("string") startDate: string
-  @type({ map: TournamentPlayerSchema }) players =
+export class TournamentSchema implements ITournament {
+  id: string
+  name: string
+  startDate: string
+  players =
     new Map<string, TournamentPlayerSchema>()
-  @type({ map: TournamentBracketSchema }) brackets =
+  brackets =
     new Map<string, TournamentBracketSchema>()
-  @type("boolean") finished: boolean
+  finished: boolean
   pendingLobbiesCreation: boolean = false
 
   constructor(
@@ -71,7 +66,6 @@ export class TournamentSchema extends Schema implements ITournament {
     brackets: Map<string, ITournamentBracket>,
     finished: boolean = false
   ) {
-    super()
     this.id = id
     this.name = name
     this.startDate = startDate

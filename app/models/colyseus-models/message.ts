@@ -1,13 +1,12 @@
-import { Schema, type } from "@colyseus/schema"
 import { IChatV2 } from "../../types/index"
 
-export default class Message extends Schema implements IChatV2 {
-  @type("string") id: string
-  @type("string") payload: string
-  @type("string") authorId: string
-  @type("string") author: string
-  @type("string") avatar: string
-  @type("number") time: number
+export default class Message implements IChatV2 {
+  id: string
+  payload: string
+  authorId: string
+  author: string
+  avatar: string
+  time: number
 
   constructor(
     id: string,
@@ -17,7 +16,6 @@ export default class Message extends Schema implements IChatV2 {
     avatar: string,
     time: number
   ) {
-    super()
     this.id = id
     this.payload = payload
     this.authorId = authorId

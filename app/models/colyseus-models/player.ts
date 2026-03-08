@@ -1,4 +1,3 @@
-import { Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   AdditionalPicksStages,
@@ -79,63 +78,63 @@ import { PokemonCustoms } from "./pokemon-customs"
 import Synergies, { computeSynergies, getSynergyStep } from "./synergies"
 import { Wanderer } from "./wanderer"
 
-export default class Player extends Schema implements IPlayer {
-  @type("string") id!: string
-  @type("string") simulationId = ""
-  @type("number") team: Team = Team.BLUE_TEAM
-  @type("string") name!: string
-  @type("string") avatar!: string
-  @type({ map: Pokemon }) board = new Map<string, Pokemon>()
-  @type(["string"]) shop: Pkm[] = []
-  @type(ExperienceManager) experienceManager = new ExperienceManager()
-  @type({ map: "uint8" }) synergies = new Synergies()
-  @type("uint16") money = process.env.MODE == "dev" ? 999 : 5
-  @type("int16") life = 100
-  @type("boolean") shopLocked: boolean = false
-  @type("uint8") shopFreeRolls: number = 0
-  @type("uint8") streak: number = 0
-  @type("uint8") maxInterest: number = 5
-  @type("uint8") interest: number = 0
-  @type("string") opponentId: string = ""
-  @type("string") opponentName: string = ""
-  @type("string") opponentAvatar: string = ""
-  @type("string") opponentTitle: string = ""
-  @type("string") spectatedPlayerId!: string
-  @type("uint8") boardSize: number = 0
-  @type(["string"]) items: Item[] = []
-  @type("uint8") rank!: number
-  @type("uint16") elo!: number
-  @type("uint16") games!: number // number of games played on this account
-  @type("boolean") alive = true
-  @type([HistoryItem]) history: HistoryItem[] = []
-  @type({ map: "uint8" }) pokemonCustoms: PokemonCustoms =
+export default class Player implements IPlayer {
+  id!: string
+  simulationId = ""
+  team: Team = Team.BLUE_TEAM
+  name!: string
+  avatar!: string
+  board = new Map<string, Pokemon>()
+  shop: Pkm[] = []
+  experienceManager = new ExperienceManager()
+  synergies = new Synergies()
+  money = process.env.MODE == "dev" ? 999 : 5
+  life = 100
+  shopLocked: boolean = false
+  shopFreeRolls: number = 0
+  streak: number = 0
+  maxInterest: number = 5
+  interest: number = 0
+  opponentId: string = ""
+  opponentName: string = ""
+  opponentAvatar: string = ""
+  opponentTitle: string = ""
+  spectatedPlayerId!: string
+  boardSize: number = 0
+  items: Item[] = []
+  rank!: number
+  elo!: number
+  games!: number // number of games played on this account
+  alive = true
+  history: HistoryItem[] = []
+  pokemonCustoms: PokemonCustoms =
     new Map<string, number>()
-  @type("string") emotesUnlocked = ""
-  @type("string") title!: Title | ""
-  @type("string") role!: Role
-  @type(["string"]) itemsProposition: Item[] = []
-  @type(["string"]) pokemonsProposition: PkmProposition[] = []
-  @type(["string"]) pveRewards: Item[] = []
-  @type(["string"]) pveRewardsPropositions: Item[] = []
-  @type("float32") loadingProgress: number = 0
-  @type(["string"]) berryTreesType: Item[] = pickNRandomIn(NonSpecialBerries, 3)
-  @type(["uint8"]) berryTreesStages: number[] = [1, 1, 1]
-  @type([Pokemon]) flowerPots: Pokemon[] = []
-  @type("uint8") mulch: number = 0
-  @type("uint8") mulchCap: number = MulchStockCaps[0]
-  @type(["uint8"]) groundHoles: number[] = new Array(
+  emotesUnlocked = ""
+  title!: Title | ""
+  role!: Role
+  itemsProposition: Item[] = []
+  pokemonsProposition: PkmProposition[] = []
+  pveRewards: Item[] = []
+  pveRewardsPropositions: Item[] = []
+  loadingProgress: number = 0
+  berryTreesType: Item[] = pickNRandomIn(NonSpecialBerries, 3)
+  berryTreesStages: number[] = [1, 1, 1]
+  flowerPots: Pokemon[] = []
+  mulch: number = 0
+  mulchCap: number = MulchStockCaps[0]
+  groundHoles: number[] = new Array(
     BOARD_WIDTH * BOARD_HEIGHT
   ).fill(0)
-  @type("string") map!: DungeonPMDO | "town"
-  @type({ set: "string" }) effects: Effects = new Effects()
-  @type(["string"]) regionalPokemons: Pkm[] = []
-  @type("uint16") rerollCount: number = 0
-  @type("uint16") totalMoneyEarned: number = 0
-  @type("uint16") totalPlayerDamageDealt: number = 0
-  @type("float32") eggChance: number = 0
-  @type("float32") goldenEggChance: number = 0
-  @type("uint8") cellBattery: number = 0
-  @type({ map: Wanderer }) wanderers: Map<string, Wanderer> = new Map<
+  map!: DungeonPMDO | "town"
+  effects: Effects = new Effects()
+  regionalPokemons: Pkm[] = []
+  rerollCount: number = 0
+  totalMoneyEarned: number = 0
+  totalPlayerDamageDealt: number = 0
+  eggChance: number = 0
+  goldenEggChance: number = 0
+  cellBattery: number = 0
+  wanderers: Map<string, Wanderer> = new Map<
     string,
     Wanderer
   >()
@@ -184,7 +183,6 @@ export default class Player extends Schema implements IPlayer {
     role?: Role,
     state?: GameState
   ) {
-    super()
     if (id === undefined) return // Schema Decoder creates instances without args
     this.id = id
     this.spectatedPlayerId = id
