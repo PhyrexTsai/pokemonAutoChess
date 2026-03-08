@@ -51,6 +51,14 @@ export type FrameTiled = {
 
 const src = "/assets/tilesets"
 
+async function fetchJson<T>(url: string): Promise<T> {
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`)
+  }
+  return res.json()
+}
+
 export default class Tileset {
   id: DungeonPMDO
   metadata: TilesetExchangeFile
@@ -65,9 +73,9 @@ export default class Tileset {
       logger.error("Invalid dungeon ID provided to Tileset.create", { id })
       throw new Error("Invalid dungeon ID provided to Tileset.create")
     }
-    const metadata: TilesetExchangeFile = await fetch(
+    const metadata = await fetchJson<TilesetExchangeFile>(
       `${src}/${id}/metadata.json`
-    ).then((r) => r.json())
+    )
     return new Tileset(id, metadata)
   }
 
@@ -153,12 +161,12 @@ export default class Tileset {
     for (let i = 0; i < 3; i++) {
       const t = this.metadata[`tileset_${i}`] as DtefTileset
       fetches.push(
-        fetch(`${src}/${this.id}/${t.static.name}.json`).then((r) => r.json())
+        fetchJson<TilesetTiled>(`${src}/${this.id}/${t.static.name}.json`)
       )
       t.animation.forEach((animatedFrame) => {
         fetches.push(
-          fetch(`${src}/${this.id}/${animatedFrame.name}.json`).then((r) =>
-            r.json()
+          fetchJson<TilesetTiled>(
+            `${src}/${this.id}/${animatedFrame.name}.json`
           )
         )
       })

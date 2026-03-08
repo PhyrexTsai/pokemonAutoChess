@@ -4,11 +4,9 @@ import { useTranslation } from "react-i18next"
 import { AutoSizer } from "react-virtualized-auto-sizer"
 import { List, useDynamicRowHeight } from "react-window"
 import { SynergyTriggers } from "../../../../../config"
-import {
-  IGameRecord,
-  IPokemonRecord
-} from "../../../../../models/colyseus-models/game-record"
+import { IPokemonRecord } from "../../../../../models/colyseus-models/game-record"
 import { getGameHistoryByPlayer } from "../../../../../models/local-store"
+import { IDetailledStatistic } from "../../../../../types/interfaces/detailled-statistic"
 import { computeSynergies } from "../../../../../models/colyseus-models/synergies"
 import PokemonFactory from "../../../../../models/pokemon-factory"
 import { Synergy } from "../../../../../types/enum/Synergy"
@@ -23,10 +21,10 @@ const ROW_HEIGHT = 72
 
 export default function GameHistory(props: {
   uid: string
-  onUpdate?: (history: IGameRecord[]) => void
+  onUpdate?: (history: IDetailledStatistic[]) => void
 }) {
   const { t } = useTranslation()
-  const [gameHistory, setGameHistory] = useState<IGameRecord[]>([])
+  const [gameHistory, setGameHistory] = useState<IDetailledStatistic[]>([])
 
   useEffect(() => {
     if (props.onUpdate) {
@@ -36,7 +34,7 @@ export default function GameHistory(props: {
 
   useEffect(() => {
     const records = getGameHistoryByPlayer(props.uid)
-      .sort((a, b) => b.time - a.time) as IGameRecord[]
+      .sort((a, b) => b.time - a.time)
     setGameHistory(records)
   }, [props.uid])
 
@@ -77,7 +75,7 @@ export default function GameHistory(props: {
 }
 
 type HistoryRowData = {
-  gameHistory: IGameRecord[]
+  gameHistory: IDetailledStatistic[]
   t: (key: string) => string
 }
 

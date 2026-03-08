@@ -5,7 +5,6 @@ import { AutoSizer } from "react-virtualized-auto-sizer"
 import { List } from "react-window"
 import { fetchBotsList, IBotListItem } from "../../../../../services/bots"
 import { Pkm } from "../../../../../types/enum/Pokemon"
-import { authenticateUser } from "../../../network"
 import { cc } from "../../utils/jsx"
 import PokemonPortrait from "../pokemon-portrait"
 import { PokemonTypeahead } from "../typeahead/pokemon-typeahead"
@@ -74,7 +73,6 @@ function BotsList(props: { approved?: boolean; filteredPokemon: Pkm | "" }) {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc")
 
   useEffect(() => {
-    authenticateUser()
     const data = fetchBotsList(
       undefined,
       props.filteredPokemon || undefined

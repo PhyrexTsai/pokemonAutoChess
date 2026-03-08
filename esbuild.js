@@ -52,10 +52,15 @@ context({
 })
   .then((ctx) => {
     if (isDev) {
+      // Copy index.html so it's available before the first build completes
+      fs.mkdirSync("app/public/dist/client", { recursive: true })
+      fs.copyFileSync(
+        "app/views/index.html",
+        "app/public/dist/client/index.html"
+      )
       ctx.watch()
       ctx.serve({
         servedir: "app/public/dist/client",
-        fallback: "app/public/dist/client/index.html",
         port: 9000
       }).then(({ host, port }) => {
         console.log(`Dev server running at http://${host}:${port}`)
