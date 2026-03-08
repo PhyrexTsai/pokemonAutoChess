@@ -1,4 +1,4 @@
-import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema"
+import { Schema, type } from "@colyseus/schema"
 import {
   ITournament,
   ITournamentBracket,
@@ -13,14 +13,14 @@ export class TournamentPlayerSchema
   @type("string") name: string
   @type("string") avatar: string
   @type("number") elo: number
-  @type(["number"]) ranks = new ArraySchema<number>()
+  @type(["number"]) ranks: number[] = []
   @type("boolean") eliminated: boolean
 
   constructor(
     name: string,
     avatar: string,
     elo: number,
-    ranks: number[] | ArraySchema<number> = [],
+    ranks: number[] = [],
     eliminated: boolean = false
   ) {
     super()
@@ -37,12 +37,12 @@ export class TournamentBracketSchema
   implements ITournamentBracket
 {
   @type("string") name: string
-  @type(["string"]) playersId = new ArraySchema<string>()
+  @type(["string"]) playersId: string[] = []
   @type("boolean") finished: boolean
 
   constructor(
     name: string,
-    playersId: string[] | ArraySchema<string>,
+    playersId: string[],
     finished: boolean = false
   ) {
     super()
@@ -57,9 +57,9 @@ export class TournamentSchema extends Schema implements ITournament {
   @type("string") name: string
   @type("string") startDate: string
   @type({ map: TournamentPlayerSchema }) players =
-    new MapSchema<TournamentPlayerSchema>()
+    new Map<string, TournamentPlayerSchema>()
   @type({ map: TournamentBracketSchema }) brackets =
-    new MapSchema<TournamentBracketSchema>()
+    new Map<string, TournamentBracketSchema>()
   @type("boolean") finished: boolean
   pendingLobbiesCreation: boolean = false
 
@@ -67,8 +67,8 @@ export class TournamentSchema extends Schema implements ITournament {
     id: string,
     name: string,
     startDate: string,
-    players: MapSchema<ITournamentPlayer, string>,
-    brackets: MapSchema<ITournamentBracket, string>,
+    players: Map<string, ITournamentPlayer>,
+    brackets: Map<string, ITournamentBracket>,
     finished: boolean = false
   ) {
     super()

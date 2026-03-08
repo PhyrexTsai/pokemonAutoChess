@@ -1,4 +1,3 @@
-import { MapSchema } from "@colyseus/schema"
 // logger replaced: was import { logger } from "colyseus"
 import {
   Bodies,
@@ -65,10 +64,10 @@ const AVATAR_RADIUS = 25
 const NB_SYMBOLS_PER_PLAYER = 4
 
 export class MiniGame {
-  avatars: MapSchema<PokemonAvatarModel> | undefined
-  items: MapSchema<FloatingItem> | undefined
-  portals: MapSchema<Portal> | undefined
-  symbols: MapSchema<SynergySymbol> | undefined
+  avatars: Map<string, PokemonAvatarModel> | undefined
+  items: Map<string, FloatingItem> | undefined
+  portals: Map<string, Portal> | undefined
+  symbols: Map<string, SynergySymbol> | undefined
   symbolsByPortal: Map<string, SynergySymbol[]> = new Map()
   bodies: Map<string, Body>
   alivePlayers: Player[]
@@ -243,10 +242,10 @@ export class MiniGame {
   }
 
   create(
-    avatars: MapSchema<PokemonAvatarModel>,
-    items: MapSchema<FloatingItem>,
-    portals: MapSchema<Portal>,
-    symbols: MapSchema<SynergySymbol>
+    avatars: Map<string, PokemonAvatarModel>,
+    items: Map<string, FloatingItem>,
+    portals: Map<string, Portal>,
+    symbols: Map<string, SynergySymbol>
   ) {
     this.avatars = avatars
     this.items = items
@@ -776,7 +775,7 @@ export class MiniGame {
   }
 
   stop(state: GameState) {
-    const players: MapSchema<Player> = state.players
+    const players: Map<string, Player> = state.players
     const encounter = state.townEncounter
     this.bodies.forEach((body, key) => {
       Composite.remove(this.engine.world, body)

@@ -1,4 +1,3 @@
-import { ArraySchema, MapSchema, Schema, SetSchema } from "@colyseus/schema"
 import type { Board } from "../core/board"
 import Dps from "../core/dps"
 import { Effect as EffectClass } from "../core/effects/effect"
@@ -192,10 +191,8 @@ export interface ISimplePlayer {
   avatar: string
   title: string
   role: Role
-  pokemons: IPokemonRecord[] | ArraySchema<IPokemonRecord>
-  synergies:
-    | Array<{ name: Synergy; value: number }>
-    | ArraySchema<{ name: Synergy; value: number }>
+  pokemons: IPokemonRecord[]
+  synergies: Array<{ name: Synergy; value: number }>
 }
 
 export interface IAfterGamePlayer extends ISimplePlayer {
@@ -254,7 +251,7 @@ export interface IGameEngineContext {
     playerId: string,
     pokemon: IPokemon
   ): IPokemon | void
-  getTeamSize(board: MapSchema<IPokemon>): number
+  getTeamSize(board: Map<string, IPokemon>): number
   miniGame?: IMiniGame
   additionalUncommonPool?: Pkm[]
   additionalRarePool?: Pkm[]
@@ -279,8 +276,8 @@ export interface IPlayer {
   id: string
   name: string
   avatar: string
-  board: MapSchema<Pokemon>
-  shop: ArraySchema<Pkm>
+  board: Map<string, Pokemon>
+  shop: Pkm[]
   simulationId: string
   team: Team
   experienceManager: ExperienceManager
@@ -296,16 +293,16 @@ export interface IPlayer {
   opponentAvatar: string
   opponentTitle: string
   boardSize: number
-  items: ArraySchema<Item>
+  items: Item[]
   rank: number
   elo: number
   alive: boolean
-  history: ArraySchema<HistoryItem>
+  history: HistoryItem[]
   pokemonCustoms: PokemonCustoms
   title: Title | ""
   role: Role
-  itemsProposition: ArraySchema<Item>
-  pokemonsProposition: ArraySchema<PkmProposition>
+  itemsProposition: Item[]
+  pokemonsProposition: PkmProposition[]
   loadingProgress: number
   berryTreesStages: number[]
   flowerPots: Pokemon[]
@@ -315,7 +312,7 @@ export interface IPlayer {
   effects: Effects
   isBot: boolean
   map: DungeonPMDO | "town"
-  regionalPokemons: ArraySchema<Pkm>
+  regionalPokemons: Pkm[]
   commonRegionalPool: Pkm[]
   uncommonRegionalPool: Pkm[]
   rareRegionalPool: Pkm[]
@@ -336,7 +333,7 @@ export interface IPlayer {
 export interface IPokemon {
   id: string
   name: Pkm
-  types: SetSchema<Synergy>
+  types: Set<Synergy>
   rarity: Rarity
   index: string
   evolution: Pkm
@@ -364,8 +361,8 @@ export interface IPokemon {
   skill: Ability
   tm: Ability
   passive: Passive
-  items: SetSchema<Item>
-  dishes: SetSchema<Item>
+  items: Set<Item>
+  dishes: Set<Item>
   shiny: boolean
   emotion: Emotion
   additional: boolean
@@ -398,10 +395,10 @@ export interface ISimulation {
   redPlayer: IPlayer | undefined
   blueEffects: Set<EffectEnum>
   redEffects: Set<EffectEnum>
-  blueTeam: MapSchema<IPokemonEntity>
-  redTeam: MapSchema<IPokemonEntity>
-  blueDpsMeter: MapSchema<Dps>
-  redDpsMeter: MapSchema<Dps>
+  blueTeam: Map<string, IPokemonEntity>
+  redTeam: Map<string, IPokemonEntity>
+  blueDpsMeter: Map<string, Dps>
+  redDpsMeter: Map<string, Dps>
   bluePlayerId: string
   redPlayerId: string
   elapsedTime: number
@@ -570,9 +567,9 @@ export interface IPokemonEntity {
   targetEntityId: string
   rarity: Rarity
   name: Pkm
-  effects: SetSchema<EffectEnum>
-  items: SetSchema<Item>
-  types: SetSchema<Synergy>
+  effects: Set<EffectEnum>
+  items: Set<Item>
+  types: Set<Synergy>
   stars: number
   skill: Ability
   tm: Ability

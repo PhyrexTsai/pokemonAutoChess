@@ -1,4 +1,3 @@
-import { ArraySchema, MapSchema, SetSchema } from "@colyseus/schema"
 import { describe, expect, it, vi } from "vitest"
 import Synergies from "../../models/colyseus-models/synergies"
 import { Pokemon } from "../../models/colyseus-models/pokemon"
@@ -13,7 +12,7 @@ import type { ISimulationPlayer } from "../../types/interfaces/ISimulationPlayer
 import Simulation from "../simulation"
 
 function createMockPlayer(
-  board: MapSchema<Pokemon>,
+  board: Map<string, Pokemon>,
   id: string,
   simulationId: string
 ): ISimulationPlayer {
@@ -22,9 +21,9 @@ function createMockPlayer(
     name: `Player-${id}`,
     simulationId,
     board,
-    effects: new SetSchema<EffectEnum>(),
+    effects: new Set<EffectEnum>(),
     synergies: new Synergies(),
-    items: new ArraySchema<Item>(),
+    items: [] as Item[],
     life: 100,
     money: 0,
     opponentId: "",
@@ -59,8 +58,8 @@ function createMockPlayer(
   } as unknown as ISimulationPlayer
 }
 
-function createBoardWith(pkm: Pkm, x: number, y: number): MapSchema<Pokemon> {
-  const board = new MapSchema<Pokemon>()
+function createBoardWith(pkm: Pkm, x: number, y: number): Map<string, Pokemon> {
+  const board = new Map<string, Pokemon>()
   const pokemon = PokemonFactory.createPokemonFromName(pkm)
   pokemon.positionX = x
   pokemon.positionY = y

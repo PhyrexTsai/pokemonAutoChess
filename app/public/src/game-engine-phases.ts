@@ -5,7 +5,6 @@
  * Also includes: game loop tick, achievements, streaks, income, death checks, wanderer spawning.
  */
 
-import { SetSchema } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   AdditionalPicksStages,
@@ -100,7 +99,6 @@ import {
 } from "../../utils/random"
 import { resetArraySchema, values } from "../../utils/schemas"
 import { getWeather } from "../../utils/weather"
-import type { MapSchema } from "@colyseus/schema"
 import type { IPokemonEntity } from "../../types"
 import type { PkmProposition } from "../../types/enum/Pokemon"
 
@@ -553,7 +551,7 @@ export function rankPlayers(state: GameState) {
 }
 
 export function computeRoundDamage(
-  opponentTeam: MapSchema<IPokemonEntity>,
+  opponentTeam: Map<string, IPokemonEntity>,
   stageLevel: number
 ) {
   let damage = Math.ceil(stageLevel / 2)
@@ -856,8 +854,8 @@ function updatePlayerBetweenStages(
       p.pokemon.positionY = substitute.positionY
       player.board.delete(substitute.id)
       player.board.set(p.pokemon.id, p.pokemon)
-      p.pokemon.types = new SetSchema<Synergy>(values(p.pokemon.types))
-      p.pokemon.items = new SetSchema<Item>()
+      p.pokemon.types = new Set<Synergy>(values(p.pokemon.types))
+      p.pokemon.items = new Set<Item>()
       p.pokemon.addItems(values(substitute.items), player)
       substitute.items.clear()
       context.checkEvolutionsAfterPokemonAcquired(player.id)

@@ -1,8 +1,6 @@
-import { ArraySchema, SetSchema } from "@colyseus/schema"
 import { GameObjects } from "phaser"
 import Player from "../../../../models/colyseus-models/player"
 import { Item } from "../../../../types/enum/Item"
-import { values } from "../../../../utils/schemas"
 import { DEPTH } from "../depths"
 import GameScene from "../scenes/game-scene"
 import ItemContainer from "./item-container"
@@ -15,7 +13,7 @@ export default class ItemsContainer extends GameObjects.Container {
 
   constructor(
     scene: GameScene,
-    inventory: SetSchema<Item> | ArraySchema<Item>,
+    inventory: Set<Item> | Item[],
     x: number,
     y: number,
     pokemonId: string | null,
@@ -30,12 +28,12 @@ export default class ItemsContainer extends GameObjects.Container {
     this.render(inventory)
   }
 
-  render(inventory: SetSchema<Item> | ArraySchema<Item>) {
+  render(inventory: Set<Item> | Item[]) {
     this.removeAll(true)
 
     const itemSize = this.pokemonId === null ? 70 : 25
     const ITEMS_PER_COLUMN = 6
-    const items = values(inventory)
+    const items = Array.from(inventory)
 
     this.items = []
     items.forEach((item, i) => {

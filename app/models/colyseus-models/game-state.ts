@@ -1,10 +1,4 @@
-import {
-  ArraySchema,
-  MapSchema,
-  Schema,
-  SetSchema,
-  type
-} from "@colyseus/schema"
+import { Schema, type } from "@colyseus/schema"
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
@@ -32,20 +26,20 @@ export default class GameState extends Schema {
   @type("string") afterGameId = ""
   @type("uint8") roundTime = StageDuration[0]
   @type("uint8") phase = GamePhaseState.TOWN
-  @type({ map: Player }) players = new MapSchema<Player>()
+  @type({ map: Player }) players = new Map<string, Player>()
   @type({ map: PokemonAvatarModel }) avatars =
-    new MapSchema<PokemonAvatarModel>()
-  @type({ map: FloatingItem }) floatingItems = new MapSchema<FloatingItem>()
-  @type({ map: Portal }) portals = new MapSchema<Portal>()
-  @type({ map: SynergySymbol }) symbols = new MapSchema<SynergySymbol>()
-  @type(["string"]) additionalPokemons = new ArraySchema<Pkm>()
+    new Map<string, PokemonAvatarModel>()
+  @type({ map: FloatingItem }) floatingItems = new Map<string, FloatingItem>()
+  @type({ map: Portal }) portals = new Map<string, Portal>()
+  @type({ map: SynergySymbol }) symbols = new Map<string, SynergySymbol>()
+  @type(["string"]) additionalPokemons: Pkm[] = []
   @type("uint8") stageLevel = 0
   @type("string") weather: Weather
   @type("boolean") shinyEncounter = false
   @type("boolean") noElo = false
   @type("string") gameMode: GameMode = GameMode.CUSTOM_LOBBY
-  @type({ set: "string" }) spectators = new SetSchema<string>()
-  @type({ map: Simulation }) simulations = new MapSchema<Simulation>()
+  @type({ set: "string" }) spectators = new Set<string>()
+  @type({ map: Simulation }) simulations = new Map<string, Simulation>()
   @type("uint8") lightX = randomBetween(0, BOARD_WIDTH - 1)
   @type("uint8") lightY = randomBetween(1, BOARD_HEIGHT / 2)
   @type("string") specialGameRule: SpecialGameRule | null = null

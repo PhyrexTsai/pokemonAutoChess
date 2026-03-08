@@ -1,4 +1,3 @@
-import { MapSchema, SetSchema } from "@colyseus/schema"
 import { SynergyTriggers } from "../../config"
 import { IPlayer, IPokemon } from "../../types"
 import { SynergyGivenByItem } from "../../types/enum/Item"
@@ -10,7 +9,7 @@ import { isOnBench } from "../../utils/board"
 import { values } from "../../utils/schemas"
 import { PVEStages } from "../pve-stages"
 
-export default class Synergies extends MapSchema<number, Synergy> {
+export default class Synergies extends Map<string, number> {
   constructor(synergies?: Map<Synergy, number>) {
     super()
     Object.keys(Synergy).forEach((key) => {
@@ -260,7 +259,7 @@ export function addSynergiesGivenByItems(pkm: IPokemon) {
     const synergy = SynergyGivenByItem[item]
     if (synergy) {
       if (synergy === Synergy.DRAGON) {
-        pkm.types = new SetSchema<Synergy>([synergy, ...pkm.types])
+        pkm.types = new Set<Synergy>([synergy, ...pkm.types])
       } else {
         pkm.types.add(synergy)
       }
@@ -269,7 +268,7 @@ export function addSynergiesGivenByItems(pkm: IPokemon) {
 }
 
 export function getSynergyStep(
-  synergies: Map<Synergy, number> | MapSchema<number, Synergy>,
+  synergies: Map<Synergy, number> | Map<string, number>,
   type: Synergy
 ): number {
   return SynergyTriggers[type].filter((n) => (synergies.get(type) ?? 0) >= n)

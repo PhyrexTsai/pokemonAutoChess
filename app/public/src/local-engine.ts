@@ -5,7 +5,6 @@
  * Uses snapshot-diff StateTracker for reactive state synchronization.
  */
 
-import { MapSchema } from "@colyseus/schema"
 import { createStateTracker, type StateCallbackProxy } from "./state-tracker"
 import { nanoid } from "nanoid"
 import { MAX_SIMULATION_DELTA_TIME } from "../../config/server/network"
@@ -417,7 +416,7 @@ export class LocalGameEngine implements IGameEngineContext {
     }
   }
 
-  getTeamSize(board: MapSchema<IPokemon>): number {
+  getTeamSize(board: Map<string, IPokemon>): number {
     let size = 0
     board.forEach((pokemon) => {
       if (

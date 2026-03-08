@@ -1,4 +1,3 @@
-import { MapSchema } from "@colyseus/schema"
 import { describe, expect, it } from "vitest"
 import { IPokemonEntity } from "../../types"
 import { Passive } from "../../types/enum/Passive"
@@ -16,7 +15,7 @@ function mockPokemon(
 
 describe("computeRoundDamage", () => {
   it("returns base damage from stage level when team is empty", () => {
-    const team = new MapSchema<IPokemonEntity>()
+    const team = new Map<string, IPokemonEntity>()
     expect(computeRoundDamage(team, 1)).toBe(1) // ceil(1/2)
     expect(computeRoundDamage(team, 2)).toBe(1) // ceil(2/2)
     expect(computeRoundDamage(team, 5)).toBe(3) // ceil(5/2)
@@ -24,7 +23,7 @@ describe("computeRoundDamage", () => {
   })
 
   it("adds 1 damage per non-spawn non-inanimate pokemon", () => {
-    const team = new MapSchema<IPokemonEntity>()
+    const team = new Map<string, IPokemonEntity>()
     team.set("a", mockPokemon())
     team.set("b", mockPokemon())
     team.set("c", mockPokemon())
@@ -33,7 +32,7 @@ describe("computeRoundDamage", () => {
   })
 
   it("excludes spawned pokemon from damage count", () => {
-    const team = new MapSchema<IPokemonEntity>()
+    const team = new Map<string, IPokemonEntity>()
     team.set("a", mockPokemon())
     team.set("b", mockPokemon({ isSpawn: true }))
     team.set("c", mockPokemon({ isSpawn: true }))
@@ -42,7 +41,7 @@ describe("computeRoundDamage", () => {
   })
 
   it("excludes inanimate passive pokemon from damage count", () => {
-    const team = new MapSchema<IPokemonEntity>()
+    const team = new Map<string, IPokemonEntity>()
     team.set("a", mockPokemon())
     team.set("b", mockPokemon({ passive: Passive.INANIMATE }))
     // base ceil(2/2)=1, only 1 non-inanimate = 2
@@ -50,7 +49,7 @@ describe("computeRoundDamage", () => {
   })
 
   it("scales base damage with stage level", () => {
-    const team = new MapSchema<IPokemonEntity>()
+    const team = new Map<string, IPokemonEntity>()
     team.set("a", mockPokemon())
     // stage 1: ceil(1/2)=1 + 1 = 2
     expect(computeRoundDamage(team, 1)).toBe(2)

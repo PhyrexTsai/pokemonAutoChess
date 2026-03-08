@@ -1,4 +1,3 @@
-import { MapSchema } from "@colyseus/schema"
 import Player from "../../models/colyseus-models/player"
 import type { ISimulationPlayer } from "../../types/interfaces/ISimulationPlayer"
 import { Pokemon } from "../../models/colyseus-models/pokemon"
@@ -90,7 +89,7 @@ export class OnStageStartEffect extends Effect {
 interface OnSimulationStartEffectArgs {
   simulation: Simulation
   player: ISimulationPlayer
-  team: MapSchema<IPokemonEntity>
+  team: Map<string, IPokemonEntity>
   entity: PokemonEntity
 }
 

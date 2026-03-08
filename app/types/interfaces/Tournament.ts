@@ -1,4 +1,3 @@
-import { ArraySchema, MapSchema } from "@colyseus/schema"
 import {
   TournamentBracketSchema,
   TournamentPlayerSchema
@@ -8,8 +7,8 @@ export interface ITournament {
   id: string
   name: string
   startDate: string
-  players: MapSchema<TournamentPlayerSchema>
-  brackets: MapSchema<TournamentBracketSchema>
+  players: Map<string, TournamentPlayerSchema>
+  brackets: Map<string, TournamentBracketSchema>
   finished: boolean
 }
 
@@ -17,12 +16,12 @@ export interface ITournamentPlayer {
   name: string
   avatar: string
   elo: number
-  ranks: ArraySchema<number>
+  ranks: number[]
   eliminated: boolean
 }
 
 export interface ITournamentBracket {
   name: string
-  playersId: ArraySchema<string>
+  playersId: string[]
   finished: boolean
 }

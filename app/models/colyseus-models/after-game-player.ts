@@ -1,4 +1,4 @@
-import { ArraySchema, Schema, type } from "@colyseus/schema"
+import { Schema, type } from "@colyseus/schema"
 import { IAfterGamePlayer, Role } from "../../types"
 import { Synergy } from "../../types/enum/Synergy"
 import { IPokemonRecord, PokemonRecord } from "./game-record"
@@ -22,15 +22,15 @@ export default class AfterGamePlayer
   @type("string") name: string
   @type("string") avatar: string
   @type("uint8") rank: number
-  @type([PokemonRecord]) pokemons = new ArraySchema<IPokemonRecord>()
+  @type([PokemonRecord]) pokemons: IPokemonRecord[] = []
   @type("uint16") elo: number
   @type("uint16") games: number
   @type("string") title: string
   @type("string") role: Role
-  @type([SampleSynergy]) synergies = new ArraySchema<{
+  @type([SampleSynergy]) synergies: {
     name: Synergy
     value: number
-  }>()
+  }[] = []
   @type("uint16") moneyEarned: number
   @type("uint16") playerDamageDealt: number
   @type("uint16") rerollCount: number
@@ -40,12 +40,10 @@ export default class AfterGamePlayer
     name: string,
     avatar: string,
     rank: number,
-    pokemons: IPokemonRecord[] | ArraySchema<IPokemonRecord>,
+    pokemons: IPokemonRecord[],
     title: string,
     role: Role,
-    synergies:
-      | Array<{ name: Synergy; value: number }>
-      | ArraySchema<{ name: Synergy; value: number }>,
+    synergies: Array<{ name: Synergy; value: number }>,
     elo: number,
     games: number,
     moneyEarned: number,

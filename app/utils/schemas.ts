@@ -1,71 +1,26 @@
-import {
-  ArraySchema,
-  CollectionSchema,
-  MapSchema,
-  Schema,
-  SetSchema
-} from "@colyseus/schema"
-
-export function keys(schema: MapSchema): string[] {
-  const keys: string[] = []
-  schema.forEach((value, key) => keys.push(key))
-  return keys
+export function keys<K extends string>(map: Map<K, any>): K[] {
+  return Array.from(map.keys())
 }
 
 export function values<T>(
-  schema: MapSchema<T> | SetSchema<T> | CollectionSchema<T> | ArraySchema<T>
+  collection: Map<string, T> | Set<T> | T[]
 ): T[] {
-  const values: T[] = []
-  schema.forEach((value: T) => values.push(value))
-  return values
+  if (Array.isArray(collection)) return collection.slice()
+  const result: T[] = []
+  collection.forEach((value: T) => result.push(value))
+  return result
 }
 
 export function entries<V, K extends string>(
-  schema: MapSchema<V, K>
+  map: Map<K, V>
 ): [K, V][] {
-  const entries: [K, V][] = []
-  schema.forEach((value, key) => entries.push([key, value]))
-  return entries
+  return Array.from(map.entries()) as [K, V][]
 }
 
 export function resetArraySchema<T>(
-  schema: ArraySchema<T>,
-  newArray: T[] | ArraySchema<T>
+  arr: T[],
+  newArr: T[]
 ) {
-  schema.clear()
-  newArray.forEach((value: T) => schema.push(value))
-}
-
-export function convertSchemaToRawObject(schema: any): any {
-  if (schema instanceof ArraySchema) {
-    const values: any[] = []
-    schema.forEach((value) => values.push(convertSchemaToRawObject(value)))
-    return values
-  }
-  if (schema instanceof CollectionSchema) {
-    const values: any[] = []
-    schema.forEach((value) => values.push(convertSchemaToRawObject(value)))
-    return values
-  }
-  if (schema instanceof MapSchema) {
-    const map = new Map()
-    schema.forEach((val, key) => map.set(key, convertSchemaToRawObject(val)))
-    return map
-  }
-  if (schema instanceof SetSchema) {
-    const set = new Set()
-    schema.forEach((val) => set.add(convertSchemaToRawObject(val)))
-    return set
-  }
-
-  if (schema instanceof Schema === false) return schema
-
-  const raw = {}
-  Object.getOwnPropertyNames(schema).forEach((prop) => {
-    if (prop.startsWith("_") === false && prop.startsWith("$") === false) {
-      raw[prop] = convertSchemaToRawObject(schema[prop])
-    }
-  })
-
-  return raw
+  arr.length = 0
+  arr.push(...newArr)
 }

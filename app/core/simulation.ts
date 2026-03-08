@@ -1,4 +1,4 @@
-import { MapSchema, Schema, type } from "@colyseus/schema"
+import { Schema, type } from "@colyseus/schema"
 import { BattleEvent } from "../types/BattleEvent"
 import { BOARD_HEIGHT, BOARD_WIDTH } from "../config"
 import type { ISimulationPlayer } from "../types/interfaces/ISimulationPlayer"
@@ -82,10 +82,10 @@ import { DelayedCommand } from "./simulation-command"
 export default class Simulation extends Schema implements ISimulation {
   @type("string") weather: Weather = Weather.NEUTRAL
   @type("string") winnerId = ""
-  @type({ map: PokemonEntity }) blueTeam = new MapSchema<IPokemonEntity>()
-  @type({ map: PokemonEntity }) redTeam = new MapSchema<IPokemonEntity>()
-  @type({ map: Dps }) blueDpsMeter = new MapSchema<Dps>()
-  @type({ map: Dps }) redDpsMeter = new MapSchema<Dps>()
+  @type({ map: PokemonEntity }) blueTeam = new Map<string, IPokemonEntity>()
+  @type({ map: PokemonEntity }) redTeam = new Map<string, IPokemonEntity>()
+  @type({ map: Dps }) blueDpsMeter = new Map<string, Dps>()
+  @type({ map: Dps }) redDpsMeter = new Map<string, Dps>()
   @type("string") id!: string
   @type("string") bluePlayerId!: string
   @type("string") redPlayerId!: string
@@ -112,8 +112,8 @@ export default class Simulation extends Schema implements ISimulation {
 
   constructor(
     id?: string,
-    blueBoard?: MapSchema<Pokemon>,
-    redBoard?: MapSchema<Pokemon>,
+    blueBoard?: Map<string, Pokemon>,
+    redBoard?: Map<string, Pokemon>,
     bluePlayer?: ISimulationPlayer,
     redPlayer?: ISimulationPlayer | undefined,
     stageLevel?: number,
@@ -515,8 +515,8 @@ export default class Simulation extends Schema implements ISimulation {
   }
 
   applyPostEffects(
-    blueBoard: MapSchema<Pokemon>,
-    redBoard: MapSchema<Pokemon>
+    blueBoard: Map<string, Pokemon>,
+    redBoard: Map<string, Pokemon>
   ) {
     /*
     in order:

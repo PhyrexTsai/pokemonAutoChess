@@ -1,4 +1,3 @@
-import { MapSchema } from "@colyseus/schema"
 import { CollectionEmotions, Emotion, PkmWithCustom } from "../../types"
 import { PkmIndex } from "../../types/enum/Pokemon"
 import { IPokemonCollectionItemMongo } from "../../types/interfaces/UserMetadata"
@@ -7,7 +6,7 @@ import { IPokemonCollectionItemMongo } from "../../types/interfaces/UserMetadata
 Schema used to expose in a compressed way (binary uint8) the player customizations for each pokemon
 */
 
-export class PokemonCustoms extends MapSchema<number> {
+export class PokemonCustoms extends Map<string, number> {
   constructor(pokemonCollection: Map<string, IPokemonCollectionItemMongo>) {
     super()
     pokemonCollection.forEach((item, index) => {

@@ -1,4 +1,4 @@
-import { ArraySchema, MapSchema, Schema, type } from "@colyseus/schema"
+import { Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   AdditionalPicksStages,
@@ -85,8 +85,8 @@ export default class Player extends Schema implements IPlayer {
   @type("number") team: Team = Team.BLUE_TEAM
   @type("string") name!: string
   @type("string") avatar!: string
-  @type({ map: Pokemon }) board = new MapSchema<Pokemon>()
-  @type(["string"]) shop = new ArraySchema<Pkm>()
+  @type({ map: Pokemon }) board = new Map<string, Pokemon>()
+  @type(["string"]) shop: Pkm[] = []
   @type(ExperienceManager) experienceManager = new ExperienceManager()
   @type({ map: "uint8" }) synergies = new Synergies()
   @type("uint16") money = process.env.MODE == "dev" ? 999 : 5
@@ -102,22 +102,21 @@ export default class Player extends Schema implements IPlayer {
   @type("string") opponentTitle: string = ""
   @type("string") spectatedPlayerId!: string
   @type("uint8") boardSize: number = 0
-  @type(["string"]) items = new ArraySchema<Item>()
+  @type(["string"]) items: Item[] = []
   @type("uint8") rank!: number
   @type("uint16") elo!: number
   @type("uint16") games!: number // number of games played on this account
   @type("boolean") alive = true
-  @type([HistoryItem]) history = new ArraySchema<HistoryItem>()
+  @type([HistoryItem]) history: HistoryItem[] = []
   @type({ map: "uint8" }) pokemonCustoms: PokemonCustoms =
-    new MapSchema<number>()
+    new Map<string, number>()
   @type("string") emotesUnlocked = ""
   @type("string") title!: Title | ""
   @type("string") role!: Role
-  @type(["string"]) itemsProposition = new ArraySchema<Item>()
-  @type(["string"]) pokemonsProposition =
-    new ArraySchema<PkmProposition>()
-  @type(["string"]) pveRewards = new ArraySchema<Item>()
-  @type(["string"]) pveRewardsPropositions = new ArraySchema<Item>()
+  @type(["string"]) itemsProposition: Item[] = []
+  @type(["string"]) pokemonsProposition: PkmProposition[] = []
+  @type(["string"]) pveRewards: Item[] = []
+  @type(["string"]) pveRewardsPropositions: Item[] = []
   @type("float32") loadingProgress: number = 0
   @type(["string"]) berryTreesType: Item[] = pickNRandomIn(NonSpecialBerries, 3)
   @type(["uint8"]) berryTreesStages: number[] = [1, 1, 1]
@@ -129,7 +128,7 @@ export default class Player extends Schema implements IPlayer {
   ).fill(0)
   @type("string") map!: DungeonPMDO | "town"
   @type({ set: "string" }) effects: Effects = new Effects()
-  @type(["string"]) regionalPokemons = new ArraySchema<Pkm>()
+  @type(["string"]) regionalPokemons: Pkm[] = []
   @type("uint16") rerollCount: number = 0
   @type("uint16") totalMoneyEarned: number = 0
   @type("uint16") totalPlayerDamageDealt: number = 0

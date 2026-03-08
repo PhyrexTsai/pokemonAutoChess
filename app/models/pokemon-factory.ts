@@ -1,4 +1,3 @@
-import { MapSchema } from "@colyseus/schema"
 import { Emotion, IPlayer, PkmCustom } from "../types"
 import { Stat } from "../types/enum/Game"
 import { Pkm, PkmFamily, PkmIndex } from "../types/enum/Pokemon"
@@ -15,8 +14,8 @@ export default class PokemonFactory {
     pveStage: PVEStage,
     shinyEncounter: boolean,
     townEncounter: TownEncounter | null
-  ): MapSchema<Pokemon> {
-    const pokemons = new MapSchema<Pokemon>()
+  ): Map<string, Pokemon> {
+    const pokemons = new Map<string, Pokemon>()
     pveStage.board.forEach(([pkm, x, y], index) => {
       const pokemon = PokemonFactory.createPokemonFromName(pkm, {
         emotion: pveStage.emotion ?? Emotion.NORMAL,

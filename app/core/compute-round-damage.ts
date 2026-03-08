@@ -1,9 +1,8 @@
-import { MapSchema } from "@colyseus/schema"
 import { IPokemonEntity } from "../types"
 import { Passive } from "../types/enum/Passive"
 
 export function computeRoundDamage(
-  opponentTeam: MapSchema<IPokemonEntity>,
+  opponentTeam: Map<string, IPokemonEntity>,
   stageLevel: number
 ): number {
   let damage = Math.ceil(stageLevel / 2)

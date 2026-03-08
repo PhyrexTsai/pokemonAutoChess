@@ -1,4 +1,3 @@
-import { SetSchema } from "@colyseus/schema"
 import Phaser, { GameObjects, Geom } from "phaser"
 import type MoveTo from "phaser3-rex-plugins/plugins/moveto"
 import type MoveToPlugin from "phaser3-rex-plugins/plugins/moveto-plugin"
@@ -198,7 +197,7 @@ export default class PokemonSprite extends DraggableObject {
 
     this.itemsContainer = new ItemsContainer(
       scene as GameScene,
-      pokemon.items ?? new SetSchema(),
+      pokemon.items ?? new Set(),
       this.sprite.width / 2 + 25,
       -35,
       this.id,

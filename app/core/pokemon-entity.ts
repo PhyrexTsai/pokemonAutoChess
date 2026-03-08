@@ -1,4 +1,4 @@
-import { Schema, SetSchema, type } from "@colyseus/schema"
+import { Schema, type } from "@colyseus/schema"
 import { nanoid } from "nanoid"
 import {
   ARMOR_FACTOR,
@@ -104,9 +104,9 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
   @type("int8") targetY = -1
   @type("string") rarity!: Rarity
   @type("string") name!: Pkm
-  @type({ set: "string" }) effects = new SetSchema<EffectEnum>()
-  @type({ set: "string" }) items = new SetSchema<Item>()
-  @type({ set: "string" }) types = new SetSchema<Synergy>()
+  @type({ set: "string" }) effects = new Set<EffectEnum>()
+  @type({ set: "string" }) items = new Set<Item>()
+  @type({ set: "string" }) types = new Set<Synergy>()
   @type("uint8") stars!: number
   @type("string") skill!: Ability
   @type("string") tm!: Ability
@@ -737,7 +737,7 @@ export class PokemonEntity extends Schema implements IPokemonEntity {
 
     if (type && !this.types.has(type)) {
       if (type === Synergy.DRAGON) {
-        this.types = new SetSchema<Synergy>([type, ...this.types]) // dragon always go first synergy
+        this.types = new Set<Synergy>([type, ...this.types]) // dragon always go first synergy
       } else {
         this.types.add(type)
       }
