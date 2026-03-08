@@ -6,7 +6,7 @@
 
 ## Summary
 
-Remove all `@colyseus/schema` residuals from the codebase: 318 `@type()` decorators, 24 `extends Schema` declarations, and 1,311 Schema collection usages (MapSchema/SetSchema/ArraySchema) across 43 files. Replace the Encoder/Decoder loopback in `local-engine.ts` with a lightweight snapshot-diff state tracker (~300 lines) that preserves the exact same `$` callback API, ensuring zero changes to UI consumer code. The only new file is `state-tracker.ts`.
+Remove all `@colyseus/schema` residuals from the codebase: 318 `@type()` decorators, 24 `extends Schema` declarations, and 1,311 Schema collection usages (MapSchema/SetSchema/ArraySchema) across 43 files. Replace the Encoder/Decoder loopback in `local-engine.ts` with a lightweight snapshot-diff state tracker (~350 lines) that preserves the exact same `$` callback API, ensuring zero changes to UI consumer code. The only new file is `state-tracker.ts`.
 
 ## Technical Context
 
@@ -18,7 +18,7 @@ Remove all `@colyseus/schema` residuals from the codebase: 318 `@type()` decorat
 **Project Type**: Single-player browser game (standalone SPA)
 **Performance Goals**: 60fps rendering, <50ms per game tick
 **Constraints**: Zero behavioral regression. Same `$` callback API for UI consumers.
-**Scale/Scope**: 43 files affected, ~25K lines of model code, 1 new file (~300 lines)
+**Scale/Scope**: 43 files affected, ~25K lines of model code, 1 new file (~350 lines)
 
 ## Constitution Check
 
@@ -31,7 +31,7 @@ Remove all `@colyseus/schema` residuals from the codebase: 318 `@type()` decorat
 | III. Gameplay Fidelity | ✅ PASS | All collection APIs are 1:1 compatible (MapSchema→Map, SetSchema→Set, ArraySchema→Array). State tracker fires same callbacks at same cadence. Zero logic changes. |
 | IV. Atomic Traceability | ✅ PASS | Plan follows one-commit-per-logical-change. Each commit must pass `npm run build`. |
 | V. Incremental Viability | ✅ PASS | Migration order ensures build passes after each step. State tracker is introduced before Schema is removed from engine. |
-| VI. Simplicity Over Abstraction | ✅ PASS | One new file (~300 lines). No adapter/strategy patterns. Snapshot-diff is the simplest viable approach. |
+| VI. Simplicity Over Abstraction | ✅ PASS | One new file (~350 lines). No adapter/strategy patterns. Snapshot-diff is the simplest viable approach. |
 
 **Post-Phase 1 Re-check**: No violations. State tracker is a direct replacement, not an abstraction layer.
 
@@ -70,6 +70,41 @@ Four ArraySchema fields have `.onChange()` callbacks registered:
 | `pokemonsProposition` | game.tsx:793 | `$player.pokemonsProposition.onChange((value, index) => ...)` |
 
 The StateTracker MUST snapshot array contents and detect per-index changes on `flush()`.
+
+### C4: Listener Cleanup on Object Removal (Memory Leak Prevention)
+
+Each battle Pokemon gets ~81 listeners registered via `$pokemon.listen()` (26 entity fields + 37 status fields + 18 count fields). When a Pokemon is removed from a MapSchema (e.g., `simulation.blueTeam`), Colyseus automatically cleans up all listeners via `delete this.callbacks[refId]` in its garbage collector (`ReferenceTracker.garbageCollectDeletedRefs()`).
+
+**game-container.ts does NOT manually clean up listeners on onRemove.** It relies entirely on Colyseus's automatic cleanup.
+
+The StateTracker MUST implement automatic listener cleanup: when `flush()` detects an object removed from a tracked collection (via `onRemove`), it MUST remove all listeners registered on that object and its nested children (status, count, items, effects).
+
+Without this: over 30+ battle rounds, ~50,000+ dead listeners accumulate (each round adds/removes ~20 Pokemon × 81 listeners), causing memory leaks and wasted CPU on stale snapshot comparisons.
+
+**Implementation**: Associate each listener with the object it was registered on (e.g., `WeakMap<object, Listener[]>`). When an object disappears from a tracked collection, batch-remove all its listeners.
+
+### C5: `flush()` Called After Every Player Action (Not Just Every 50ms)
+
+`syncState()` is called **16 times** per tick cycle in the worst case:
+
+- 2 tick-driven calls (gameTick every 50ms)
+- 14 action-driven calls (buyPokemon, sellPokemon, rerollShop, levelUp, lockShop, dragDropPokemon, dragDropItem, dragDropCombine, pickBerry, wandererClicked, switchBenchAndBoard, removeFromShop, pickPokemon, pickItem)
+
+During intense player activity (rapid buying/selling/dragging), `flush()` may be called 10-20+ times per second in bursts. The snapshot-diff approach handles this correctly because:
+- Scalar comparisons are O(1) per listener (~100 listeners = ~100 reference comparisons)
+- Collection diffs are O(M) where M is collection size (typically 3-9 items)
+- If no state changed between two consecutive flushes, zero callbacks fire (diff finds nothing)
+
+However, the implementation MUST NOT allocate memory on each flush (e.g., don't create new Map/Set snapshots unless changes are detected). Use size-check as a fast-path: if `collection.size === snapshot.size`, only then do a full diff.
+
+### C6: Confirmed Safe (No Action Needed)
+
+These potential risks were investigated and confirmed safe during deep review:
+
+- **SetSchema `.forEach()` 2nd parameter**: All ~70 forEach calls on SetSchema only use the first parameter (value). No code uses the numeric index. Native Set's `forEach(value, value2, set)` signature difference is harmless.
+- **SetSchema `.add()` return type**: All ~150 `.add()` calls ignore the return value. SetSchema returns `number | false`, native Set returns `this`. No chaining patterns found.
+- **clientState merge**: `engine.clientState` is read-only in all 50+ usage sites across game.tsx and game-container.ts. No identity comparisons, no thread isolation needed. Alias approach is safe.
+- **Callback re-entrancy**: No callbacks mutate engine state. All callbacks only dispatch Redux or call Phaser methods. No circular patterns. `flush()` iteration is safe from re-entrant modifications.
 
 ## Project Structure
 
@@ -125,12 +160,12 @@ app/
 
 ### Step 1: Create StateTracker (no existing code changes)
 
-Create `app/public/src/state-tracker.ts` (~300 lines) with API-compatible `$` proxy.
+Create `app/public/src/state-tracker.ts` (~350 lines) with API-compatible `$` proxy.
 
 **Required API surface:**
 
 ```
-createStateTracker(state: T) → { $, flush }
+createStateTracker() → { $, flush }
 
 $<T>(obj: T) → CallbackProxy<T>
 ├── .listen(prop, callback)               — scalar property changes
@@ -147,7 +182,8 @@ flush()
 ├── Compare scalar snapshots → fire listen callbacks for changed props
 ├── Diff Map key sets → fire onAdd/onRemove/onChange (provide old value for onRemove)
 ├── Diff Set value sets → fire onAdd/onRemove/onChange
-└── Diff Array elements per-index → fire onChange(value, index)
+├── Diff Array elements per-index → fire onChange(value, index)
+└── For each removed collection entry → auto-cleanup all nested listeners (see C4)
 ```
 
 **Collection detection strategy (see C1):**
@@ -157,7 +193,17 @@ flush()
 
 **Retroactive `onAdd` (see C2):**
 - When `onAdd(cb)` is registered, immediately iterate existing elements and call `cb(value, key)` for each
-- Then store empty snapshot so next `flush()` won't re-fire
+- Then store current state as snapshot so next `flush()` won't re-fire
+
+**Listener lifecycle management (see C4):**
+- Maintain `WeakMap<object, Listener[]>` mapping each tracked object to all its registered listeners
+- When `flush()` detects an object removed from a Map (via key diff), batch-remove all listeners for that object and fire `onRemove` callback
+- This prevents ~81 dead listeners per removed Pokemon from accumulating
+
+**Performance (see C5):**
+- `flush()` is called after every player action (not just every 50ms) — up to 16 calls per tick cycle
+- Fast-path: check `collection.size === snapshot.size` before full diff
+- Zero allocation on no-change flushes (reuse existing snapshot references)
 
 ### Step 2: Wire StateTracker into LocalGameEngine
 
@@ -219,6 +265,6 @@ Order: models first (dependencies), then core, then utils, then client.
 
 | Aspect | Complexity | Rationale |
 |--------|-----------|-----------|
-| StateTracker | ~300 lines, 1 new file | Snapshot-diff with retroactive onAdd + Array tracking + dual collection detection. Simplest approach that satisfies all 3 design constraints. |
+| StateTracker | ~350 lines, 1 new file | Snapshot-diff with retroactive onAdd + Array tracking + dual collection detection + auto listener cleanup. Simplest approach that satisfies all 6 design constraints (C1-C6). |
 | Collection replacement | Mechanical find-replace | All APIs are 1:1 compatible per research audit. |
 | UI consumer changes | Near-zero | Same `$` API preserved. `clientState` kept as alias. |
