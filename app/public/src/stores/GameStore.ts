@@ -113,7 +113,7 @@ export const gameSlice: Slice<GameStateStore> = createSlice({
       state.specialGameRule = action.payload
     },
     addPlayer: (state, action: PayloadAction<IPlayer>) => {
-      state.players.push(JSON.parse(JSON.stringify(action.payload)))
+      state.players.push(structuredClone(action.payload))
     },
     removePlayer: (state, action: PayloadAction<IPlayer>) => {
       state.players = state.players.filter((p) => p.id !== action.payload.id)
