@@ -56,6 +56,7 @@ export default class Design {
 
   constructor(
     id: DungeonPMDO,
+    tileset: Tileset,
     frequency: number,
     persistance: number,
     width?: number,
@@ -70,7 +71,7 @@ export default class Design {
     this.height = height ?? this.height
     this.arenaRect = arenaRect ?? this.arenaRect
     this.wallRect = wallRect ?? this.wallRect
-    this.tileset = new Tileset(this.id)
+    this.tileset = tileset
     this.create()
   }
 
@@ -187,11 +188,6 @@ export default class Design {
     }
   }
 
-  // generateLayers() {
-  //   this.meta
-  //   this.layers.push()
-  // }
-
   generateLayers() {
     for (let i = 0; i < this.height; i++) {
       for (let j = 0; j < this.width; j++) {
@@ -240,7 +236,7 @@ export default class Design {
     return names
   }
 
-  exportToTiled() {
+  async exportToTiled(): Promise<DesignTiled> {
     return {
       compressionlevel: -1,
       height: this.height,
@@ -252,22 +248,21 @@ export default class Design {
       renderorder: "right-down",
       tiledversion: "1.7.2",
       tileheight: 24,
-      tilesets: this.tileset.exportToTiled(),
+      tilesets: await this.tileset.exportToTiled(),
       tilewidth: 24,
       type: "map",
       version: "1.10",
       width: this.width
-    } as DesignTiled
+    }
   }
 }
 
-export function initTilemap(mapName: DungeonPMDO): DesignTiled {
+export async function initTilemap(mapName: DungeonPMDO): Promise<DesignTiled> {
   if (!mapName) {
     logger.error("Invalid map name provided to initTilemap", { mapName })
     throw new Error("Invalid map name provided to initTilemap")
   }
-  const design = new Design(mapName, 5, 0.1)
-  design.create()
-  const tilemap = design.exportToTiled()
-  return tilemap
+  const tileset = await Tileset.create(mapName)
+  const design = new Design(mapName, tileset, 5, 0.1)
+  return await design.exportToTiled()
 }

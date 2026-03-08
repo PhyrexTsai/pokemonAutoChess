@@ -129,7 +129,7 @@ app.get("/tilemap/:map", async (req, res) => {
     ) {
       return res.status(400).send({ error: "Invalid map parameter" })
     }
-    const tilemap = initTilemap(req.params.map as DungeonPMDO)
+    const tilemap = await initTilemap(req.params.map as DungeonPMDO)
     res.send(tilemap)
   } catch (error) {
     logger.error("Error generating tilemap", { error, map: req.params.map })
