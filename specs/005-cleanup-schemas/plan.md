@@ -50,13 +50,25 @@ class ArraySchema<V> implements Array<V>     // NOT extends Array
 
 `obj instanceof Map` returns `false` for MapSchema instances. The StateTracker MUST use duck-typing (e.g., `obj.constructor?.name === 'MapSchema'` or checking for Schema-specific symbols) to detect Schema collections during the transition period (Step 1-2), then rely on `instanceof` after native types replace Schema types (Step 3+).
 
-### C2: `onAdd` Must Fire Retroactively for Existing Elements
+### C2: `onAdd` Must Fire Retroactively for Existing Elements (with opt-out)
 
 When `$state.players.onAdd(callback)` is registered AFTER players already exist in the state, Colyseus fires the callback **immediately** for all existing items. This is how game.tsx initializes — callbacks are registered in a React `useEffect` AFTER `startGame()` has already populated the state.
 
-The StateTracker MUST replicate this: when `onAdd(cb)` is registered on a collection that already has elements, invoke `cb(value, key)` synchronously for each existing element.
+The StateTracker MUST replicate this: when `onAdd(cb)` is registered on a collection that already has elements, invoke `cb(value, key)` synchronously for each existing element **by default**.
 
-Without this, the game screen is blank on startup — no players, no Pokemon.
+**However**, the API MUST support an explicit opt-out via a second parameter:
+
+```typescript
+onAdd(callback: (value, key) => void, triggerAll?: boolean): void
+// triggerAll = true  (default) → fire retroactively for existing elements
+// triggerAll = false            → only fire for future adds
+```
+
+Two call sites use `false`:
+- `$player.board.onAdd(..., false)` — game-container.ts:568
+- `$player.flowerPots.onAdd(..., false)` — game-container.ts:625
+
+Without the default retroactive behavior, the game screen is blank on startup. Without the opt-out, board and flowerPots fire duplicate initialization.
 
 ### C3: ArraySchema Requires onChange Tracking
 
@@ -168,23 +180,26 @@ Create `app/public/src/state-tracker.ts` (~350 lines) with API-compatible `$` pr
 createStateTracker() → { $, flush }
 
 $<T>(obj: T) → CallbackProxy<T>
-├── .listen(prop, callback)               — scalar property changes
-├── .<mapProp>.onAdd(callback)            — Map new key (+ retroactive for existing keys, see C2)
-├── .<mapProp>.onRemove(callback)         — Map removed key (provides old value from snapshot)
-├── .<mapProp>.onChange(callback)          — Map value changes
-├── .<setProp>.onAdd(callback)            — Set new value (+ retroactive for existing values, see C2)
-├── .<setProp>.onRemove(callback)         — Set removed value
-├── .<setProp>.onChange(callback)          — Set adds + removes
-├── .<arrayProp>.onChange(callback)        — Array per-index element changes (see C3)
-└── .<objectProp>.listen(prop, callback)  — nested object properties (recursive)
+├── .listen(prop, callback)                          — scalar property changes
+├── .<mapProp>.onAdd(callback, triggerAll=true)       — Map new key (see C2 for triggerAll)
+├── .<mapProp>.onRemove(callback)                    — Map removed key (provides old value)
+├── .<mapProp>.onChange(callback)                     — Map entry-level changes only (NOT nested)
+├── .<setProp>.onAdd(callback, triggerAll=true)       — Set new value (see C2 for triggerAll)
+├── .<setProp>.onRemove(callback)                    — Set removed value
+├── .<setProp>.onChange(callback)                     — Set adds + removes
+├── .<arrayProp>.onChange(callback)                   — Array per-index element changes (see C3)
+└── .<objectProp>.listen(prop, callback)             — nested object properties (recursive)
 
 flush()
 ├── Compare scalar snapshots → fire listen callbacks for changed props
-├── Diff Map key sets → fire onAdd/onRemove/onChange (provide old value for onRemove)
-├── Diff Set value sets → fire onAdd/onRemove/onChange
-├── Diff Array elements per-index → fire onChange(value, index)
+├── Diff Map: new keys → onAdd, missing keys → onRemove (with old value)
+├── Diff Map: existing keys with changed value reference → onChange
+├── Diff Set value sets → onAdd/onRemove/onChange
+├── Diff Array elements per-index → onChange(value, index)
 └── For each removed collection entry → auto-cleanup all nested listeners (see C4)
 ```
+
+**Map onChange is entry-level only** (confirmed from Colyseus source: `getDecoderStateCallbacks.ts` line 62-63). It fires for add/remove/replace of entries, NOT for nested property changes within values. Nested changes are tracked by scalar listeners on the value objects themselves. This means reference comparison (`===`) is sufficient — no deep equality needed.
 
 **Collection detection strategy (see C1):**
 - During transition (Schema collections still present): duck-typing via `obj.constructor?.name` checks for `'MapSchema'`, `'SetSchema'`, `'ArraySchema'`
