@@ -954,13 +954,13 @@ function stopPickingPhase(state: GameState, context: IGameEngineContext) {
         pickRandomIn(pokemonsProposition),
         true
       )
-      player.pokemonsProposition.clear()
+      player.pokemonsProposition.length = 0
     }
 
     const itemsProposition = values(player.itemsProposition)
     if (player.itemsProposition.length > 0) {
       pickItemProposition(state, player.id, pickRandomIn(itemsProposition))
-      player.itemsProposition.clear()
+      player.itemsProposition.length = 0
     }
   })
 }
@@ -1006,7 +1006,7 @@ function stopFightingPhase(state: GameState, context: IGameEngineContext) {
               player.itemsProposition,
               player.pveRewardsPropositions
             )
-            player.pveRewardsPropositions.clear()
+            player.pveRewardsPropositions.length = 0
           }
         }
 
@@ -1490,7 +1490,7 @@ export function pickPokemonProposition(
     return
 
   const selectedIndex = player.pokemonsProposition.indexOf(pkm)
-  player.pokemonsProposition.clear()
+  player.pokemonsProposition.length = 0
 
   if (AdditionalPicksStages.includes(state.stageLevel)) {
     if (pokemonsObtained[0]?.regional) {
@@ -1532,7 +1532,7 @@ export function pickPokemonProposition(
     const selectedItem = player.itemsProposition[selectedIndex]
     if (player.itemsProposition.length > 0 && selectedItem != null) {
       player.items.push(selectedItem)
-      player.itemsProposition.clear()
+      player.itemsProposition.length = 0
     }
   }
 
@@ -1571,6 +1571,6 @@ export function pickItemProposition(
   const player = state.players.get(playerId)
   if (player && player.itemsProposition.includes(item)) {
     player.items.push(item)
-    player.itemsProposition.clear()
+    player.itemsProposition.length = 0
   }
 }
