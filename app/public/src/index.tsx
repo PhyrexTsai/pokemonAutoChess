@@ -1,7 +1,7 @@
 import React, { Suspense } from "react"
 import { createRoot } from "react-dom/client"
 import { Provider } from "react-redux"
-import { BrowserRouter, Route, Routes } from "react-router-dom"
+import { HashRouter, Route, Routes } from "react-router-dom"
 import i18n from "./i18n"
 import AfterGame from "./pages/after-game"
 import Auth from "./pages/auth"
@@ -33,7 +33,7 @@ i18n.on("initialized", () => {
     <Provider store={store}>
       <React.StrictMode>
         <Suspense fallback="loading">
-          <BrowserRouter
+          <HashRouter
             future={{
               v7_startTransition: true,
               v7_relativeSplatPath: true
@@ -50,7 +50,7 @@ i18n.on("initialized", () => {
               <Route path="/map-viewer" element={<MapViewer />} />
               <Route path="/gameboy" element={<Gameboy />} />
             </Routes>
-          </BrowserRouter>
+          </HashRouter>
         </Suspense>
       </React.StrictMode>
     </Provider>
