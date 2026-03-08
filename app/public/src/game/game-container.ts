@@ -1,4 +1,4 @@
-import { getDecoderStateCallbacks, SchemaCallbackProxy } from "@colyseus/schema"
+import type { SchemaCallbackProxy } from "@colyseus/schema"
 import { t } from "i18next"
 import Phaser from "phaser"
 import MoveToPlugin from "phaser3-rex-plugins/plugins/moveto-plugin.js"
@@ -64,7 +64,7 @@ class GameContainer {
   spectate: boolean
   constructor(div: HTMLDivElement, uid: string, engine: LocalGameEngine) {
     this.engine = engine
-    this.$ = getDecoderStateCallbacks(engine.decoder)
+    this.$ = engine.$
     this.div = div
     this.uid = uid
     this.spectate = false

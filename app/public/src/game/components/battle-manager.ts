@@ -1332,6 +1332,10 @@ export default class BattleManager {
   }
 
   onSimulationStart() {
+    if (this.pokemonSprites.size === 0 && this.simulation) {
+      console.warn("[BattleManager] onSimulationStart with no sprites — rebuilding")
+      this.buildPokemons()
+    }
     this.pokemonSprites.forEach((pkm) => {
       pkm.setVisible(true)
     })

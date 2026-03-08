@@ -1,4 +1,3 @@
-import { getDecoderStateCallbacks } from "@colyseus/schema"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
@@ -489,7 +488,7 @@ export default function Game() {
 
       engine.on(Transfer.GAME_END, leave)
 
-      const $ = getDecoderStateCallbacks(engine.decoder)
+      const $ = engine.$
       const $state = $<GameState>(engine.clientState)
 
       $state.listen("gameMode", (mode) => {
@@ -536,8 +535,10 @@ export default function Game() {
         dispatch(setAdditionalPokemons(values(engine.clientState.additionalPokemons)))
       })
 
-      $state.simulations.onRemove(() => {
-        gameContainer.resetSimulation()
+      $state.simulations.onRemove((simulation) => {
+        if (!gameContainer.simulation || gameContainer.simulation.id === simulation.id) {
+          gameContainer.resetSimulation()
+        }
       })
 
       $state.simulations.onAdd((simulation) => {
