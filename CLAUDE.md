@@ -102,15 +102,14 @@ Four Colyseus rooms, each a game phase:
 - See `.env` template in README for required variables
 
 ## Active Technologies
-- TypeScript 5.x (strict mode, target es2016, commonjs) + Colyseus 0.15.x (Schema, MapSchema), Phaser 3, React 19, Redux Toolki (001-extract-game-engine)
-- N/A for this phase (001-extract-game-engine)
-- TypeScript 5.7, Node.js >=20.16.0 + `idb` (IndexedDB wrapper, ~1KB gzip) — only new dependency (002-remove-mongodb)
-- IndexedDB (browser-native) for player profile + game history; static JSON for bots (002-remove-mongodb)
-- TypeScript 5.7, Node.js >=20.16.0 + `idb` (IndexedDB wrapper, ~1KB gzip) — only new dependency (client-side only) (002-remove-mongodb)
-- Server: in-memory Maps/objects; Client: IndexedDB via `idb`; Bots: static JSON (002-remove-mongodb)
-- TypeScript 5.7, Node.js >=20.16.0 + Phaser 3 (rendering), React 19 (UI), Redux Toolkit (state), `@colyseus/schema` (data structures — retained), `idb` (IndexedDB) (003-remove-colyseus)
-- IndexedDB via `idb` (player profile, game history — from Phase 1) (003-remove-colyseus)
-- TypeScript 5.7, Node.js >=20.16.0 + Phaser 3 (rendering), React 19 (UI), Redux Toolkit (state), `@colyseus/schema` (data structures — retained for Phase 4), `idb` (IndexedDB) (004-remove-server)
+- TypeScript 5.7, Node.js >=20.16.0 + Phaser 3 (rendering), React 19 (UI), Redux Toolkit (state), `idb` (IndexedDB)
+- Data structures: native Map, Set, Array (no external schema library)
+- State sync: snapshot-diff StateTracker (`app/public/src/state-tracker.ts`)
+- IndexedDB via `idb` (player profile, game history)
 
 ## Recent Changes
-- 001-extract-game-engine: Added TypeScript 5.x (strict mode, target es2016, commonjs) + Colyseus 0.15.x (Schema, MapSchema), Phaser 3, React 19, Redux Toolki
+- 005-cleanup-schemas: Removed `@colyseus/schema` — replaced Schema collections with native types, Encoder/Decoder with StateTracker
+- 004-remove-server: Removed server, converted to standalone browser SPA
+- 003-remove-colyseus: Removed Colyseus networking, added LocalGameEngine
+- 002-remove-mongodb: Replaced MongoDB with IndexedDB + static JSON
+- 001-extract-game-engine: Extracted game engine from server
