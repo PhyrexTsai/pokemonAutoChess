@@ -17,7 +17,7 @@ import { SpecialGameRule } from "../../../types/enum/SpecialGameRule"
 import { Synergy } from "../../../types/enum/Synergy"
 import { Weather } from "../../../types/enum/Weather"
 import { ILeaderboardInfo } from "../../../types/interfaces/LeaderboardInfo"
-import { entries } from "../../../utils/schemas"
+import { deepClone, entries } from "../../../utils/schemas"
 import { getGameScene } from "../pages/game"
 
 export interface GameStateStore {
@@ -113,7 +113,7 @@ export const gameSlice: Slice<GameStateStore> = createSlice({
       state.specialGameRule = action.payload
     },
     addPlayer: (state, action: PayloadAction<IPlayer>) => {
-      state.players.push(structuredClone(action.payload))
+      state.players.push(deepClone(action.payload))
     },
     removePlayer: (state, action: PayloadAction<IPlayer>) => {
       state.players = state.players.filter((p) => p.id !== action.payload.id)
@@ -236,10 +236,10 @@ export const gameSlice: Slice<GameStateStore> = createSlice({
         state.blueDpsMeter = new Array<IDps>()
         state.redDpsMeter = new Array<IDps>()
         action.payload.blueDpsMeter.forEach((dps) => {
-          state.blueDpsMeter.push(structuredClone(dps))
+          state.blueDpsMeter.push(deepClone(dps))
         })
         action.payload.redDpsMeter.forEach((dps) => {
-          state.redDpsMeter.push(structuredClone(dps))
+          state.redDpsMeter.push(deepClone(dps))
         })
       }
     },
@@ -260,7 +260,7 @@ export const gameSlice: Slice<GameStateStore> = createSlice({
         state.simulationIdSpectated === id &&
         dpsMeter.find((d) => d.id == value.id) === undefined
       ) {
-        dpsMeter.push(structuredClone(value))
+        dpsMeter.push(deepClone(value))
       }
     },
 
