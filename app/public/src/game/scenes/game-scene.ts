@@ -6,7 +6,7 @@ import {
   getRegionTint,
   RegionDetails
 } from "../../../../config"
-import { DesignTiled } from "../../../../core/design"
+import { DesignTiled, initTilemap } from "../../../../core/design"
 import { FLOWER_POTS_POSITIONS_BLUE } from "../../../../core/flower-pots"
 import { canSell } from "../../../../core/pokemon-entity"
 import Player from "../../../../models/colyseus-models/player"
@@ -350,19 +350,16 @@ export default class GameScene extends Scene {
   preloadMaps(mapNames: DungeonPMDO[]) {
     return Promise.all(
       mapNames.map((mapName: DungeonPMDO) =>
-        fetch(`/tilemap/${mapName}`)
-          .then((res) => res.json())
-          .then((tilemap: DesignTiled) => {
-            this.tilemaps.set(mapName, tilemap)
-            tilemap.tilesets.forEach((t) => {
-              //logger.debug(`loading tileset ${mapName + "/" + t.name}`)
-              this.load.image(
-                mapName + "/" + t.name,
-                "/assets/tilesets/" + mapName + "/" + t.image
-              )
-            })
-            this.load.tilemapTiledJSON("map_" + mapName, tilemap)
+        initTilemap(mapName).then((tilemap: DesignTiled) => {
+          this.tilemaps.set(mapName, tilemap)
+          tilemap.tilesets.forEach((t) => {
+            this.load.image(
+              mapName + "/" + t.name,
+              "/assets/tilesets/" + mapName + "/" + t.image
+            )
           })
+          this.load.tilemapTiledJSON("map_" + mapName, tilemap)
+        })
       )
     )
   }
