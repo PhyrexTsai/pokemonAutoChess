@@ -86,7 +86,7 @@ Remove all 318 `@type()` decorator lines, all 24 `extends Schema` → plain clas
 
 - [x] T013 [US2] Rewrite `app/utils/schemas.ts` for native types: `keys()`/`values()`/`entries()` → thin wrappers over native methods (30+ call sites for `values()`), `resetArraySchema(arr, newArr)` → `arr.length = 0; arr.push(...newArr)`, delete `convertSchemaToRawObject()` (dead code — 0 call sites)
 - [x] T014 [P] [US2] Update `app/types/index.ts` — replace Schema collection type references with native TypeScript types (`Map`, `Set`, `Array`)
-- [ ] T015 [US2] Remove all remaining `@colyseus/schema` imports from all 43 files — no import references should remain
+- [x] T015 [US2] Remove all remaining `@colyseus/schema` imports from all 43 files — no import references should remain
 
 ### Step 6: Package Removal and Cleanup
 

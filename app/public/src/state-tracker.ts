@@ -7,7 +7,7 @@
  * game-container.ts) require zero code changes.
  *
  * Design constraints (from plan.md):
- *   C1: Dual collection detection (instanceof + constructor.name)
+ *   C1: Collection detection via native instanceof
  *   C2: Retroactive onAdd with opt-out (immediate param)
  *   C3: Array per-index onChange tracking
  *   C4: Auto listener cleanup on collection removal
@@ -15,22 +15,17 @@
  */
 
 // ==================== Collection Detection (C1) ====================
-// Schema types implement but do NOT extend native types.
-// Check instanceof first (native), fall back to constructor.name (Schema).
 
 function isMapLike(obj: unknown): boolean {
-  if (obj instanceof Map) return true
-  return (obj as any)?.constructor?.name === "MapSchema"
+  return obj instanceof Map
 }
 
 function isSetLike(obj: unknown): boolean {
-  if (obj instanceof Set) return true
-  return (obj as any)?.constructor?.name === "SetSchema"
+  return obj instanceof Set
 }
 
 function isArrayLike(obj: unknown): boolean {
-  if (Array.isArray(obj)) return true
-  return (obj as any)?.constructor?.name === "ArraySchema"
+  return Array.isArray(obj)
 }
 
 // ==================== Types ====================
