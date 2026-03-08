@@ -6,6 +6,7 @@ import { setBotList } from "../../../models/local-store"
 import { Role } from "../../../types"
 import { BotDifficulty, GameMode } from "../../../types/enum/Game"
 import { SpecialGameRule } from "../../../types/enum/SpecialGameRule"
+import { fetchBot, fetchBotsList } from "../../../services/bots"
 import { IBot } from "../../../types/interfaces/bot"
 import { shuffleArray } from "../../../utils/random"
 import { useAppDispatch, useAppSelector } from "../hooks"
@@ -109,9 +110,8 @@ function StartGamePanel() {
           break
       }
 
-      // Fetch bot list from server
-      const res = await fetch("/bots?approved=true")
-      const botList: Array<{ id: string; elo: number }> = await res.json()
+      // Get bot list directly
+      const botList = fetchBotsList(true)
 
       // Filter by ELO range
       let eligible = botList.filter(
@@ -127,9 +127,9 @@ function StartGamePanel() {
       const selected = eligible.slice(0, numBots)
 
       // Fetch full bot data (with steps) for selected bots
-      const fullBots: IBot[] = await Promise.all(
-        selected.map((b) => fetch(`/bots/${b.id}`).then((r) => r.json()))
-      )
+      const fullBots: IBot[] = selected
+        .map((b) => fetchBot(b.id))
+        .filter((b): b is IBot => b !== null)
 
       // Load into local-store so Bot class can find them via getBotById
       setBotList(fullBots)
