@@ -30,6 +30,7 @@
     "build-client": "node esbuild.js --build",
     "download-music": "degit --force https://github.com/keldaanCommunity/pokemonAutoChessMusic ./app/public/src/assets/musics",
     "build": "npm run build-client",
+    "serve": "npm run build && npx serve app/public/dist/client",
     "translate": "npx @inlang/cli machine translate -f",
     "postinstall": "npm run download-music && cd edit/assetpack && npm install",
     "assetpack": "cd edit/assetpack && npm run assetpack",
