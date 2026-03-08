@@ -672,6 +672,8 @@ export default function Game() {
             getGameScene()?.input.keyboard?.removeAllListeners()
           }
         })
+        // immediate=true: experienceManager reference never changes,
+        // so fire once to register inner scalar listeners
         $player.listen("experienceManager", (experienceManager) => {
           const $experienceManager = $(experienceManager)
           if (player.id === uid) {
@@ -705,7 +707,7 @@ export default function Game() {
               )
             }
           })
-        })
+        }, true)
         $player.listen("loadingProgress", (value) => {
           dispatch(setLoadingProgress({ id: player.id, value: value }))
         })
