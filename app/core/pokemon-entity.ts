@@ -76,6 +76,46 @@ import Simulation from "./simulation"
 import { DelayedCommand, SimulationCommand } from "./simulation-command"
 
 export class PokemonEntity implements IPokemonEntity {
+  shiny!: boolean
+  positionX!: number
+  positionY!: number
+  action = PokemonActionState.WALK
+  index!: string
+  id!: string
+  orientation = Orientation.DOWNLEFT
+  maxHP!: number
+  hp!: number
+  shield = 0
+  maxPP!: number
+  pp = 0
+  atk!: number
+  def!: number
+  speDef!: number
+  ap = 0
+  luck = 0
+  critChance = DEFAULT_CRIT_CHANCE
+  critPower = DEFAULT_CRIT_POWER
+  team!: Team
+  range!: number
+  speed!: number
+  targetEntityId = ""
+  targetX = -1
+  targetY = -1
+  rarity!: Rarity
+  name!: Pkm
+  effects = new Set<EffectEnum>()
+  items = new Set<Item>()
+  types = new Set<Synergy>()
+  stars!: number
+  skill!: Ability
+  tm!: Ability
+  passive!: Passive
+  status!: Status
+  count!: Count
+  healDone!: number
+  emotion!: Emotion
+  stacks = 0
+  stacksRequired = 0
   cooldown = 500
   oneSecondCooldown = 1000
   state!: PokemonState

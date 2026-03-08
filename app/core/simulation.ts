@@ -79,6 +79,17 @@ import { getStrongestUnit, getUnitScore, PokemonEntity } from "./pokemon-entity"
 import { DelayedCommand } from "./simulation-command"
 
 export default class Simulation implements ISimulation {
+  weather: Weather = Weather.NEUTRAL
+  winnerId = ""
+  blueTeam = new Map<string, IPokemonEntity>()
+  redTeam = new Map<string, IPokemonEntity>()
+  blueDpsMeter = new Map<string, Dps>()
+  redDpsMeter = new Map<string, Dps>()
+  id!: string
+  bluePlayerId!: string
+  redPlayerId!: string
+  isGhostBattle!: boolean
+  started!: boolean
   context?: IGameEngineContext
   blueEffects = new Set<EffectEnum>()
   redEffects = new Set<EffectEnum>()

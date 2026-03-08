@@ -1,6 +1,16 @@
 import { IDps } from "../types"
 
 export default class Dps implements IDps {
+  id: string
+  name: string
+  physicalDamage = 0
+  specialDamage = 0
+  trueDamage = 0
+  physicalDamageReduced = 0
+  specialDamageReduced = 0
+  shieldDamageTaken = 0
+  heal = 0
+  shield = 0
 
   constructor(id: string, name: string) {
     this.id = id
