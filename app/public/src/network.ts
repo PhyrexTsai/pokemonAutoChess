@@ -1,4 +1,4 @@
-import { setPlayer } from "../../models/local-store"
+import { loadBotsFromJson, setPlayer } from "../../models/local-store"
 import { Emotion, Item, Role, Title, Transfer } from "../../types"
 import { EloRank } from "../../types/enum/EloRank.js"
 import { BotDifficulty } from "../../types/enum/Game.js"
@@ -10,6 +10,8 @@ import { LocalGameEngine } from "./local-engine"
 import { loadProfile } from "./persistence/local-db"
 import store from "./stores"
 import { setProfile } from "./stores/NetworkStore"
+
+loadBotsFromJson()
 
 export const engine = new LocalGameEngine()
 
