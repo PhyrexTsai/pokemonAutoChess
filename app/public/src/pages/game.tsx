@@ -327,15 +327,7 @@ export default function Game() {
   }, [])
 
   useEffect(() => {
-    try {
-      fetch("/leaderboards")
-        .then((res) => res.json())
-        .then((data) => {
-          dispatch(setPodium(data.leaderboard.slice(0, 3)))
-        })
-    } catch (e) {
-      console.error("error fetching leaderboard", e)
-    }
+    dispatch(setPodium([]))
   }, [])
 
   useEffect(() => {
