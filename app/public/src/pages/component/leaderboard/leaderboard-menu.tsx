@@ -21,14 +21,10 @@ export default function LeaderboardMenu() {
   const tabIndex: number = useAppSelector((state) => state.lobby.tabIndex)
 
   useEffect(() => {
-    fetch("/leaderboards")
-      .then((res) => res.json())
-      .then((data) => {
-        dispatch(setLeaderboard(data.leaderboard))
-        dispatch(setBotLeaderboard(data.botLeaderboard))
-        dispatch(setLevelLeaderboard(data.levelLeaderboard))
-        dispatch(setEventLeaderboard(data.eventLeaderboard))
-      })
+    dispatch(setLeaderboard([]))
+    dispatch(setBotLeaderboard([]))
+    dispatch(setLevelLeaderboard([]))
+    dispatch(setEventLeaderboard([]))
   }, [])
 
   return (
