@@ -33,7 +33,7 @@ let hashIndexPlugin = {
 
 context({
   entryPoints: ["./app/public/src/index.tsx"],
-  entryNames: "[dir]/[name]-[hash]",
+  entryNames: isDev ? "[dir]/[name]" : "[dir]/[name]-[hash]",
   assetNames: "[dir]/[name]-[hash]",
   outfile: "app/public/dist/client/index.js",
   external: ["assets/*"],
@@ -41,28 +41,28 @@ context({
   metafile: true,
   minify: isProdBuild,
   sourcemap: isProdBuild,
-  plugins: [hashIndexPlugin],
+  plugins: isDev ? [] : [hashIndexPlugin],
   target: "es2016",
   define: {
-    "process.env.FIREBASE_API_KEY": `"${process.env.FIREBASE_API_KEY}"`,
-    "process.env.FIREBASE_AUTH_DOMAIN": `"${process.env.FIREBASE_AUTH_DOMAIN}"`,
-    "process.env.FIREBASE_PROJECT_ID": `"${process.env.FIREBASE_PROJECT_ID}"`,
-    "process.env.FIREBASE_STORAGE_BUCKET": `"${process.env.FIREBASE_STORAGE_BUCKET}"`,
-    "process.env.FIREBASE_MESSAGING_SENDER_ID": `"${process.env.FIREBASE_MESSAGING_SENDER_ID}"`,
-    "process.env.FIREBASE_APP_ID": `"${process.env.FIREBASE_APP_ID}"`,
     "process.env.DISCORD_SERVER": `"${process.env.DISCORD_SERVER}"`,
     "process.env.MIN_HUMAN_PLAYERS": `"${process.env.MIN_HUMAN_PLAYERS}"`,
     "process.env.MODE": `"${process.env.MODE || ""}"`,
     "process.env.NODE_ENV": `"${process.env.NODE_ENV || "development"}"`,
   }
 })
-  .then((context) => {
+  .then((ctx) => {
     if (isDev) {
-      // Enable watch mode
-      context.watch()
+      ctx.watch()
+      ctx.serve({
+        servedir: "app/public/dist/client",
+        fallback: "app/public/dist/client/index.html",
+        port: 9000
+      }).then(({ host, port }) => {
+        console.log(`Dev server running at http://${host}:${port}`)
+      })
     } else {
       // Build once and exit if not in watch mode
-      context.rebuild().then((result) => {
+      ctx.rebuild().then((result) => {
         if (result.metafile) {
           // use https://esbuild.github.io/analyze/ to analyse
           fs.writeFileSync(
@@ -70,7 +70,7 @@ context({
             JSON.stringify(result.metafile)
           )
         }
-        context.dispose()
+        ctx.dispose()
       })
     }
   })
