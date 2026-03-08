@@ -1,14 +1,12 @@
 {
   "compilerOptions": {
-    "outDir": "./app/public/dist/server",
     "module": "commonjs",
     "lib": ["es2023", "DOM"],
     "target": "es2016",
-    "declaration": true,
+    "noEmit": true,
     "removeComments": true,
     "noImplicitAny": false,
     "experimentalDecorators": true,
-    "sourceMap": true,
     "esModuleInterop": true,
     "strict": true,
     "allowJs": true,
@@ -20,5 +18,5 @@
     "jsx": "react-jsx",
     "skipLibCheck": true
   },
-  "include": ["./app/*", "./scheduled/*", "./edit/*", "./db-commands/*"]
+  "include": ["./app/*", "./edit/*"]
 }

@@ -1,5 +1,5 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["./app/**/*", "./scheduled/**/*", "./edit/**/*", "./db-commands/**/*"],
+  "include": ["./app/**/*", "./edit/**/*"],
   "exclude": ["./app/public/dist/**/*"]
 }
