@@ -72,12 +72,17 @@ export default class BattleManager {
   }
 
   buildPokemons() {
-    console.log("[BattleManager] buildPokemons", {
+    const blueSize = this.simulation?.blueTeam.size ?? 0
+    const redSize = this.simulation?.redTeam.size ?? 0
+    console.log("[Viz:6a] buildPokemons START", {
       simId: this.simulation?.id,
-      blueTeamSize: this.simulation?.blueTeam.size,
-      redTeamSize: this.simulation?.redTeam.size,
-      started: this.simulation?.started
+      started: this.simulation?.started,
+      blueTeamSize: blueSize,
+      redTeamSize: redSize
     })
+    if (blueSize === 0 && redSize === 0) {
+      console.warn("[Viz:6a] ⚠ BOTH TEAMS EMPTY — no sprites will be created")
+    }
     this.simulation?.blueTeam.forEach((pkm, key) => {
       this.simulation?.id &&
         this.addPokemonEntitySprite(
@@ -95,6 +100,7 @@ export default class BattleManager {
           this.simulation.redPlayerId
         )
     })
+    console.log("[Viz:6a] buildPokemons END — created", this.pokemonSprites.size, "sprites")
   }
 
   addPokemonEntitySprite(
@@ -120,7 +126,8 @@ export default class BattleManager {
         true,
         this.flip
       )
-      pokemonUI.setVisible(this.simulation?.started ?? false)
+      const visible = this.simulation?.started ?? false
+      pokemonUI.setVisible(visible)
 
       this.group.add(pokemonUI)
       this.pokemonSprites.set(pokemon.id, pokemonUI)
@@ -142,6 +149,9 @@ export default class BattleManager {
   }
 
   clear() {
+    console.log("[Viz:3a] BattleManager.clear", {
+      spritesBeforeClear: this.pokemonSprites.size
+    })
     this.group.clear(true, true)
     this.boardEventSprites = Array.from(
       { length: BOARD_WIDTH * BOARD_HEIGHT },
@@ -1326,6 +1336,12 @@ export default class BattleManager {
   }
 
   setSimulation(simulation: Simulation) {
+    console.log("[Viz:6] BattleManager.setSimulation", {
+      simId: simulation.id,
+      started: simulation.started,
+      blueTeamSize: simulation.blueTeam.size,
+      redTeamSize: simulation.redTeam.size
+    })
     this.simulation = simulation
     this.clear()
     this.buildPokemons()
@@ -1334,18 +1350,29 @@ export default class BattleManager {
     // trigger is suppressed inside simulations.onAdd, and started never changes
     // again.  Explicitly set sprites visible here as a safety net.
     if (this.simulation.started) {
+      console.log("[Viz:6] → started already true, calling onSimulationStart immediately")
       this.onSimulationStart()
+    } else {
+      console.log("[Viz:6] → started=false, sprites invisible — waiting for listen(started)")
     }
   }
 
   onSimulationStart() {
+    console.log("[Viz:8] onSimulationStart", {
+      spriteCount: this.pokemonSprites.size,
+      simId: this.simulation?.id,
+      started: this.simulation?.started
+    })
     if (this.pokemonSprites.size === 0 && this.simulation) {
-      console.warn("[BattleManager] onSimulationStart with no sprites — rebuilding")
+      console.warn("[Viz:8] ⚠ no sprites — rebuilding")
       this.buildPokemons()
     }
+    let madeVisible = 0
     this.pokemonSprites.forEach((pkm) => {
       pkm.setVisible(true)
+      madeVisible++
     })
+    console.log("[Viz:8] set", madeVisible, "sprites visible")
   }
 
   setPlayer(player: Player) {
