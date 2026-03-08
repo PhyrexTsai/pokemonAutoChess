@@ -136,7 +136,7 @@ Extract game logic from `game-commands.ts` and `game-room.ts` into 3 new engine 
 
 **Purpose**: Final validation of all user stories working together.
 
-- [ ] T037 Manual play-test validation per spec.md acceptance scenarios — play a full game (15+ rounds) against 7 bot opponents with no server running. Verify: US1 (game loop, shop, drag-drop, battle, income, damage, ranking, ELO saved to IndexedDB), US2 (ability animations, damage/heal floating numbers, status icons, weather effects, board events), US3 (lobby Start Game flow, bot difficulty selection, return to lobby after game), US4 (build passes, zero stale references). Document any issues found and create fix tasks if needed.
+- [x] T037 Manual play-test validation per spec.md acceptance scenarios — play a full game (15+ rounds) against 7 bot opponents with no server running. Verify: US1 (game loop, shop, drag-drop, battle, income, damage, ranking, ELO saved to IndexedDB), US2 (ability animations, damage/heal floating numbers, status icons, weather effects, board events), US3 (lobby Start Game flow, bot difficulty selection, return to lobby after game), US4 (build passes, zero stale references). Document any issues found and create fix tasks if needed.
 
 ---
 
