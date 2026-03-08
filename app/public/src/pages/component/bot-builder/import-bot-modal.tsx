@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { fetchBot, fetchBotsList, IBotListItem } from "../../../../../services/bots"
 import { IBot } from "../../../../../types/interfaces/bot"
 import { Modal } from "../modal/modal"
 
@@ -11,14 +12,9 @@ export default function ImportBotModal(props: {
 }) {
   const { t } = useTranslation()
 
-  const [botList, setBotList] = useState<IBot[]>([])
-  useEffect(() => {
-    fetch("/bots")
-      .then((res) => res.json())
-      .then((data) => {
-        setBotList(data.sort((a, b) => a.name.localeCompare(b.name)))
-      })
-  }, [])
+  const [botList] = useState<IBotListItem[]>(() =>
+    fetchBotsList().sort((a, b) => a.name.localeCompare(b.name))
+  )
 
   const [textArea, setTextArea] = useState<string>("")
   const [jsonError, setJsonError] = useState<string>("")
@@ -59,11 +55,10 @@ export default function ImportBotModal(props: {
               defaultValue=""
               onChange={(e) => {
                 if (e.target.value.length != 0) {
-                  fetch(`/bots/${e.target.value}`)
-                    .then((r) => r.json())
-                    .then((bot) => {
-                      setTextArea(JSON.stringify(bot, null, 2))
-                    })
+                  const bot = fetchBot(e.target.value)
+                  if (bot) {
+                    setTextArea(JSON.stringify(bot, null, 2))
+                  }
                 }
               }}
             >
