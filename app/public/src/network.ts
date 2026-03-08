@@ -135,7 +135,7 @@ export function joinGame(_room: any) {}
 export function joinAfter(_room: any) {}
 export function sendMessage(_message: string, _source: ChatRoom) {}
 export function removeMessage(_message: { id: string }, _source: ChatRoom) {}
-export function addBot(_bot: BotDifficulty | IBot) {}
+export function addBot(_bot: BotDifficulty | IBot | Record<string, any>) {}
 export function removeBot(_id: string) {}
 export function toggleReady(_ready: boolean) {}
 export function setNoElo(_noElo: boolean) {}

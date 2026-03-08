@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { AutoSizer } from "react-virtualized-auto-sizer"
 import { Grid } from "react-window"
-import { IBot } from "../../../../../types/interfaces/bot"
+import { fetchBotsList, IBotListItem } from "../../../../../services/bots"
 import { addBot } from "../../../network"
 import { cc } from "../../utils/jsx"
 import { Modal } from "../modal/modal"
@@ -20,7 +20,7 @@ export function BotSelectModal(props: {
   const [sortBotsOrder, setSortBotsOrder] = useState<boolean>(false)
   const [sortBotsCriteria, setSortBotsCriteria] = useState<string>("name")
   const [queryBot, setQueryBot] = useState<string>("")
-  const [botsSelection, setBotsSelection] = useState<Set<IBot>>(new Set())
+  const [botsSelection, setBotsSelection] = useState<Set<IBotListItem>>(new Set())
   const { t } = useTranslation()
 
   function sortBy(criteria: string) {
@@ -32,18 +32,10 @@ export function BotSelectModal(props: {
     }
   }
 
-  const [loading, setLoading] = useState<boolean>(true)
-  const [botsList, setBotsList] = useState<IBot[] | null>(null)
-  useEffect(() => {
-    if (botsList === null) {
-      fetch(`/bots?approved=true&t=${Date.now()}`)
-        .then((r) => r.json())
-        .then((bots) => {
-          setBotsList(bots)
-          setLoading(false)
-        })
-    }
-  }, [])
+  const [loading, setLoading] = useState<boolean>(false)
+  const [botsList, setBotsList] = useState<IBotListItem[]>(() =>
+    fetchBotsList(true)
+  )
 
   const botsListSorted = (botsList ?? [])
     .filter(
@@ -159,10 +151,10 @@ export function BotSelectModal(props: {
 }
 
 type BotCellData = {
-  botsListSorted: IBot[]
+  botsListSorted: IBotListItem[]
   columnCount: number
-  botsSelection: Set<IBot>
-  setBotsSelection: React.Dispatch<React.SetStateAction<Set<IBot>>>
+  botsSelection: Set<IBotListItem>
+  setBotsSelection: React.Dispatch<React.SetStateAction<Set<IBotListItem>>>
 }
 
 function BotCell({
