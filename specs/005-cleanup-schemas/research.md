@@ -65,7 +65,7 @@ Most callers can switch to native methods directly. Keep the file as a thin wrap
 
 ## Decision 6: State Tracker Scope
 
-**Decision**: New file `app/public/src/state-tracker.ts` (~200 lines). Provides:
+**Decision**: New file `app/public/src/state-tracker.ts` (~300 lines). Provides:
 1. `createStateTracker(state: T)` → returns `{ $, flush }`
 2. `$<T>(obj: T)` → returns `CallbackProxy<T>` with `.listen()`, collection `.onAdd()`/`.onRemove()`/`.onChange()`
 3. `flush()` → snapshot-diff all registered listeners and fire callbacks
@@ -73,12 +73,32 @@ Most callers can switch to native methods directly. Keep the file as a thin wrap
 **Performance characteristics**:
 - Scalar listeners: O(N) reference comparisons per flush, where N = registered listeners (~100)
 - Collection listeners: O(M) set diff per collection per flush, where M = collection size (typically 3-9 for game objects)
+- Array listeners: O(L) per-index comparison per flush, where L = array length (typically 5-9)
 - Flush interval: every 50ms (existing cadence), unchanged
 
 **API compatibility**: The `$` function signature matches `getDecoderStateCallbacks` return type exactly. Consumer files (`game-container.ts`, `game.tsx`) require **zero code changes** to their callback registration logic.
+
+**Critical behaviors discovered during review**:
+- **Retroactive `onAdd`**: When `onAdd(cb)` is registered on a collection with existing elements, `cb` MUST fire immediately for each existing element. game.tsx depends on this for initialization (callbacks are registered after startGame populates the state).
+- **Array `.onChange()`**: 4 ArraySchema fields (`shop`, `items`, `itemsProposition`, `pokemonsProposition`) use `.onChange(value, index)` callbacks. StateTracker MUST snapshot array contents and detect per-index changes.
+- **Schema collection detection**: Schema types `implements` but do NOT `extend` native types (`MapSchema implements Map`, not `extends Map`). `instanceof Map` returns false for MapSchema. StateTracker uses dual detection: `instanceof` (for native) + `constructor.name` check (for Schema during transition).
 
 ## Decision 7: colyseus-models Directory
 
 **Decision**: Keep the directory name `app/models/colyseus-models/` unchanged during this phase.
 
 **Rationale**: Renaming directories affects import paths across 40+ files. This is a high-risk, low-value change that can be done separately. The "minimal change" principle says: change the contents, not the structure.
+
+## Decision 8: Migration Step Ordering (corrected after review)
+
+**Decision**: StateTracker wired in BEFORE collection replacement, using duck-typing for transition.
+
+**Rationale**: There is a build-breaking dependency between Steps 2 and 3:
+- If collections are replaced first (Step 3 before 2): Encoder can't encode native Map/Set → build breaks
+- If StateTracker is wired first (Step 2 before 3): StateTracker can't detect Schema collections via `instanceof` → callbacks don't fire
+
+**Solution**: StateTracker uses dual collection detection (C1 in plan). Step 2 (wire StateTracker) comes first, using `constructor.name` duck-typing to handle Schema collections. Step 3 (replace collections) follows, and native `instanceof` checks start matching. Step 6 removes the duck-typing dead code.
+
+**Alternatives considered**:
+- Atomic Step 2+3 (do both simultaneously): Simpler but creates a single massive commit that's hard to review and bisect. Violates Constitution Principle IV (atomic traceability).
+- Per-file atomic migration: 43 separate commits, each fully migrating one file. Maximally safe but StateTracker still needs to handle both types simultaneously during the migration window.
