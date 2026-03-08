@@ -177,7 +177,7 @@ grep -r "mongoose" package.json  # 無結果
 
 **Spec**: `specs/003-remove-colyseus/`
 **目標**: 用本地遊戲引擎取代 Colyseus 網路層，Redux 直連引擎
-**狀態**: 未開始（依賴 Phase 0）
+**狀態**: ✅ 完成
 
 ### Why
 
@@ -251,7 +251,7 @@ grep -r "colyseus" package.json  # 無結果
 
 **Spec**: `specs/004-remove-server/`
 **目標**: 砍掉 Express/Node.js 後端，改成純靜態 SPA 構建
-**狀態**: 未開始（依賴 Phase 0 + 1 + 2）
+**狀態**: 🔜 下一步（前置條件已全部滿足）
 
 ### Why
 
@@ -306,7 +306,7 @@ npm run build → static files → deploy to any CDN/hosting
 
 **Spec**: `specs/005-cleanup-schemas/`
 **目標**: 移除所有 Colyseus `@type()` 裝飾器和 Schema 殘留，純化 TypeScript 類型
-**狀態**: 未開始（依賴 Phase 3）
+**狀態**: ⏳ 等待（依賴 Phase 3）
 
 ### Why
 
