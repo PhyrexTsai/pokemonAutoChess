@@ -49,7 +49,7 @@ export type FrameTiled = {
   tileid: number
 }
 
-const src = "/assets/tilesets"
+const src = "assets/tilesets"
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url)
