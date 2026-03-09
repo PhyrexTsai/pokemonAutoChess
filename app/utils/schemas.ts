@@ -36,41 +36,6 @@ export function resetArraySchema<T>(
   newArray.forEach((value: T) => schema.push(value))
 }
 
-export function deepCloneSchema<T>(obj: T): T {
-  if (obj === null || typeof obj !== "object") return obj
-  if (obj instanceof Date) return new Date(obj.getTime()) as T
-  if (obj instanceof MapSchema) {
-    const result = new Map()
-    obj.forEach((v, k) => result.set(k, deepCloneSchema(v)))
-    return result as T
-  }
-  if (obj instanceof SetSchema) {
-    const result = new Set()
-    obj.forEach((v) => result.add(deepCloneSchema(v)))
-    return result as T
-  }
-  if (obj instanceof ArraySchema) {
-    return Array.from(obj).map(deepCloneSchema) as T
-  }
-  if (obj instanceof Map) {
-    const result = new Map()
-    obj.forEach((v, k) => result.set(k, deepCloneSchema(v)))
-    return result as T
-  }
-  if (obj instanceof Set) {
-    const result = new Set()
-    obj.forEach((v) => result.add(deepCloneSchema(v)))
-    return result as T
-  }
-  if (Array.isArray(obj)) return obj.map(deepCloneSchema) as T
-  const result = Object.create(Object.getPrototypeOf(obj))
-  for (const key of Object.keys(obj)) {
-    const val = (obj as any)[key]
-    result[key] = typeof val === "function" ? val : deepCloneSchema(val)
-  }
-  return result
-}
-
 export function convertSchemaToRawObject(schema: any): any {
   if (schema instanceof ArraySchema) {
     const values: any[] = []
