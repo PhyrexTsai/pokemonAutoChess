@@ -905,8 +905,6 @@ function updatePlayerBetweenStages(
 
 function checkForLazyTeam(state: GameState, context: IGameEngineContext) {
   state.players.forEach((player) => {
-    if (player.isBot) return
-
     const teamSize = context.getTeamSize(player.board)
     const maxTeamSize = getMaxTeamSize(
       player.experienceManager.level,
