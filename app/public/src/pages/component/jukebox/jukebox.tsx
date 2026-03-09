@@ -81,7 +81,7 @@ export default function Jukebox(props: {
           ◄
         </button>
         <div className={cc("compact-disc", { loading })}>
-          <img src="/assets/ui/compact-disc.svg" />
+          <img src="assets/ui/compact-disc.svg" />
           <span>{loading && t("loading")}</span>
         </div>
         <button
@@ -117,7 +117,7 @@ export default function Jukebox(props: {
           onClick={() => randomizeMusic()}
           title={t("random_music")}
         >
-          <img src="/assets/ui/randomize.svg" style={{ marginRight: 0 }} />
+          <img src="assets/ui/randomize.svg" style={{ marginRight: 0 }} />
         </button>
       </div>
 

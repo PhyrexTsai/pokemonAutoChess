@@ -19,7 +19,7 @@ export default function GameRefresh() {
         getGameScene()?.refreshShop()
       }}
     >
-      <img src={`/assets/ui/refresh.svg`} />
+      <img src={`assets/ui/refresh.svg`} />
       {cost === 0 ? (
         `${t("refresh")} (${shopFreeRolls})`
       ) : (

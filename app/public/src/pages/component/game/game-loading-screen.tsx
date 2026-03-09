@@ -79,7 +79,7 @@ export default function GameLoadingScreen(props: { connectError: string }) {
       </div>
       <div className="loading-hint">
         <div className="speech-bubble">{t("loading_hints." + hint)}</div>
-        <img src={"/assets/loading_hints/" + hint + ".webp"} />
+        <img src={"assets/loading_hints/" + hint + ".webp"} />
       </div>
     </div>
   )

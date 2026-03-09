@@ -32,7 +32,7 @@ export function Gameboy() {
       >
         <iframe
           id="pokechess_iframe"
-          src="/pokechess/"
+          src="pokechess/"
           style={{
             height: "1400px",
             minWidth: "1400px",

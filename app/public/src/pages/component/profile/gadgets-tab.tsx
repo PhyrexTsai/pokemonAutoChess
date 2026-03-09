@@ -29,7 +29,7 @@ export function GadgetsTab() {
               locked: g.levelRequired > level
             })}
           >
-            <img src={`/assets/ui/${g.icon}.svg`} alt={t(g.name)} />
+            <img src={`assets/ui/${g.icon}.svg`} alt={t(g.name)} />
             <span>{t(g.name)}</span>
             {g.levelRequired > level && (
               <small>

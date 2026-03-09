@@ -37,10 +37,10 @@ function fetchMarkdown(
             const titleAttr = title ? ` title="${title}"` : ""
             let tooltipId = ""
             let content = ""
-            if (href.startsWith("/assets/portraits/")) {
+            if (href.startsWith("assets/portraits/")) {
               tooltipId = "game-pokemon-detail-tooltip"
               content = getPkmFromPortraitSrc(href)?.name || ""
-            } else if (href.startsWith("/assets/item/")) {
+            } else if (href.startsWith("assets/item/")) {
               tooltipId = "item-detail-tooltip"
               const itemNameMatch = href.match(/\/assets\/item\/(\w+)\.png/)
               if (itemNameMatch && itemNameMatch[1] in Item) {

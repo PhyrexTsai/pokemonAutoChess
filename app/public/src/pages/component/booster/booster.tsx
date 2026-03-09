@@ -91,7 +91,7 @@ export default function Booster() {
           {t("open_booster")}
         </button>
         <span className="booster-count">{numberOfBooster}</span>
-        <img src="/assets/ui/booster.png" alt="booster" />
+        <img src="assets/ui/booster.png" alt="booster" />
       </div>
     </div>
   )

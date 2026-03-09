@@ -28,7 +28,7 @@ export default function WikiWeather() {
             <header>
               <img
                 className="weather-icon"
-                src={`/assets/icons/weather/${weather.toLowerCase()}.svg`}
+                src={`assets/icons/weather/${weather.toLowerCase()}.svg`}
               />
               <h2>{t(`weather.${weather}`)}</h2>
               <span

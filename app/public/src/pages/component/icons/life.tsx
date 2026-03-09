@@ -15,7 +15,7 @@ export function Life(props: { value?: number | string }) {
           {props.value}
         </span>
       )}
-      <img className="icon-life" src="/assets/ui/heart.png" alt="❤" />
+      <img className="icon-life" src="assets/ui/heart.png" alt="❤" />
     </>
   )
 }

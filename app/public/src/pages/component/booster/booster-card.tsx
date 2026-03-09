@@ -36,7 +36,7 @@ export function BoosterCard({ card, flipped, onFlip }: BoosterCardProps) {
       onClick={onFlip}
     >
       <div className="back">
-        <img src="/assets/ui/pokecard.png" />
+        <img src="assets/ui/pokecard.png" />
       </div>
       <div className={cc("front", { shimmer: card.shiny })}>
         <PokemonPortrait

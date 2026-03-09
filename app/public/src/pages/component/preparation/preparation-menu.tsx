@@ -161,7 +161,7 @@ export default function PreparationMenu() {
             alt={t("no_elo")}
             title={t("no_elo_hint")}
             className="noelo icon"
-            src="/assets/ui/noelo.png"
+            src="assets/ui/noelo.png"
           />
           {t("no_elo_hint")}
         </p>

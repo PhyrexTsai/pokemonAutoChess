@@ -200,7 +200,7 @@ export default function GamePokemonPortrait(props: {
             className="game-pokemon-portrait-evolution-portrait"
           />
           <img
-            src="/assets/ui/evolution.png"
+            src="assets/ui/evolution.png"
             alt=""
             className="game-pokemon-portrait-evolution-icon"
           />
@@ -208,7 +208,7 @@ export default function GamePokemonPortrait(props: {
       )}
       {props.inPlanner && (!willEvolve || !pokemonEvolution) && (
         <img
-          src="/assets/ui/planned.png"
+          src="assets/ui/planned.png"
           alt=""
           className="game-pokemon-portrait-planned-icon"
         />

@@ -20,7 +20,7 @@ export default function Team(props: {
               {p.items.map((item, i) => (
                 <img
                   key={i}
-                  src={"/assets/item/" + item + ".png"}
+                  src={"assets/item/" + item + ".png"}
                   data-tooltip-id="item-detail-tooltip"
                   data-tooltip-content={item}
                 />

@@ -17,7 +17,7 @@ export default function RegionStatistic(props: {
       <span className="rank">{props.rank}</span>
       {details && (
         <img
-          src={`/assets/maps/${props.region.name}-preview.png`}
+          src={`assets/maps/${props.region.name}-preview.png`}
           style={{
             width: "48px",
             height: "48px",

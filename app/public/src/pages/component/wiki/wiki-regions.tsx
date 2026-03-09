@@ -179,7 +179,7 @@ function RegionRow({
               </div>
             </div>
             <img
-              src={`/assets/maps/${dungeon}-preview.png`}
+              src={`assets/maps/${dungeon}-preview.png`}
               loading="lazy"
               alt={dungeon}
               style={{

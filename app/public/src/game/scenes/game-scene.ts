@@ -356,7 +356,7 @@ export default class GameScene extends Scene {
           tilemap.tilesets.forEach((t) => {
             this.load.image(
               mapName + "/" + t.name,
-              "/assets/tilesets/" + mapName + "/" + t.image
+              "assets/tilesets/" + mapName + "/" + t.image
             )
           })
           this.load.tilemapTiledJSON("map_" + mapName, tilemap)

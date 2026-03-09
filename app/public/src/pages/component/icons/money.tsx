@@ -12,7 +12,7 @@ export function Money(props: { value?: number | string; className?: string }) {
           {props.value}
         </span>
       )}
-      <img className="icon-money" src="/assets/icons/money.svg" alt="$" />
+      <img className="icon-money" src="assets/icons/money.svg" alt="$" />
     </>
   )
 }

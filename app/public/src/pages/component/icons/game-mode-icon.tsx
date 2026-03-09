@@ -9,7 +9,7 @@ export function GameModeIcon(props: { gameMode: GameMode }) {
       alt={t(`game_modes.${props.gameMode}`)}
       title={t(`game_modes.${props.gameMode}`)}
       className={cc(props.gameMode.toLowerCase(), "gamemode icon")}
-      src={`/assets/ui/${props.gameMode.toLowerCase()}.png`}
+      src={`assets/ui/${props.gameMode.toLowerCase()}.png`}
       draggable="false"
     />
   )

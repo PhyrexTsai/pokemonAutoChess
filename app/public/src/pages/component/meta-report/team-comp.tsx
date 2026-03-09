@@ -133,7 +133,7 @@ export default function TeamComp(props: { team: IMetaV2; rank: number }) {
                     {(pokemonData?.items || []).map((item, i) => (
                       <img
                         key={i}
-                        src={`/assets/item/${item}.png`}
+                        src={`assets/item/${item}.png`}
                         data-tooltip-id="item-detail-tooltip"
                         data-tooltip-content={item}
                       />
@@ -151,7 +151,7 @@ export default function TeamComp(props: { team: IMetaV2; rank: number }) {
               {props.team.mean_items.slice(0, 5).map((itemData, idx) => (
                 <div key={idx} className="item-entry">
                   <img
-                    src={`/assets/item/${itemData.item}.png`}
+                    src={`assets/item/${itemData.item}.png`}
                     data-tooltip-id="item-detail-tooltip"
                     data-tooltip-content={itemData.item}
                     className="item-icon"
@@ -171,7 +171,7 @@ export default function TeamComp(props: { team: IMetaV2; rank: number }) {
                     return (
                       <div key={idx} className="carousel-item-entry">
                         <img
-                          src={`/assets/item/${itemData.item}.png`}
+                          src={`assets/item/${itemData.item}.png`}
                           data-tooltip-id="item-detail-tooltip"
                           data-tooltip-content={itemData.item}
                           className="carousel-item-icon"
@@ -211,7 +211,7 @@ export default function TeamComp(props: { team: IMetaV2; rank: number }) {
                         {(pokemonData.items || []).map((item, i) => (
                           <img
                             key={i}
-                            src={`/assets/item/${item}.png`}
+                            src={`assets/item/${item}.png`}
                             data-tooltip-id="item-detail-tooltip"
                             data-tooltip-content={item}
                           />

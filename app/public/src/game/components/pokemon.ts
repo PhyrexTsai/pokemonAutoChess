@@ -1687,13 +1687,13 @@ export function loadCompressedAtlas(
           resolve(index)
         })
         // @ts-ignore: there is an error in phaser types, the second parameter can be an object
-        scene.load.multiatlas(index, multiatlas, "/assets/pokemons").start()
+        scene.load.multiatlas(index, multiatlas, "assets/pokemons").start()
       }
     )
     scene.load
       .json(
         `pokemon-atlas-${index}`,
-        `/assets/pokemons/${index}.json?v=${pkg.version}`
+        `assets/pokemons/${index}.json?v=${pkg.version}`
       )
       .start()
   })

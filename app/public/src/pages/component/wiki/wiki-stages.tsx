@@ -48,7 +48,7 @@ export default function WikiStages() {
       if (ItemCarouselStages.includes(level)) {
         stages.push({
           level,
-          icon: "/assets/ui/carousel.svg",
+          icon: "assets/ui/carousel.svg",
           type: "carousel"
         })
       }
@@ -57,7 +57,7 @@ export default function WikiStages() {
       if (PortalCarouselStages.includes(level)) {
         stages.push({
           level,
-          icon: "/assets/ui/mythical.svg",
+          icon: "assets/ui/mythical.svg",
           title:
             level === 0
               ? t("starter_pick")
@@ -72,7 +72,7 @@ export default function WikiStages() {
         // Check for additional pick stages
         stages.push({
           level,
-          icon: "/assets/ui/additional-pick.svg",
+          icon: "assets/ui/additional-pick.svg",
           type: "additional",
           title:
             level === AdditionalPicksStages[0]
@@ -103,7 +103,7 @@ export default function WikiStages() {
         // Regular battle stage
         stages.push({
           level,
-          icon: "/assets/ui/battle.svg",
+          icon: "assets/ui/battle.svg",
           type: "battle"
         })
       }
@@ -144,7 +144,7 @@ export default function WikiStages() {
               onMouseEnter={() => setHoveredLegendType("carousel")}
               onMouseLeave={() => setHoveredLegendType(null)}
             >
-              <img src="/assets/ui/carousel.svg" alt="Carousel" />
+              <img src="assets/ui/carousel.svg" alt="Carousel" />
               <span>{t("stage_type.carousel")}</span>
             </div>
             <div
@@ -152,7 +152,7 @@ export default function WikiStages() {
               onMouseEnter={() => setHoveredLegendType("portal")}
               onMouseLeave={() => setHoveredLegendType(null)}
             >
-              <img src="/assets/ui/mythical.svg" alt="Portal" />
+              <img src="assets/ui/mythical.svg" alt="Portal" />
               <span>{t("stage_type.portal")}</span>
             </div>
             <div
@@ -160,7 +160,7 @@ export default function WikiStages() {
               onMouseEnter={() => setHoveredLegendType("additional")}
               onMouseLeave={() => setHoveredLegendType(null)}
             >
-              <img src="/assets/ui/additional-pick.svg" alt="Additional" />
+              <img src="assets/ui/additional-pick.svg" alt="Additional" />
               <span>{t("stage_type.additional")}</span>
             </div>
             <div
@@ -168,7 +168,7 @@ export default function WikiStages() {
               onMouseEnter={() => setHoveredLegendType("battle")}
               onMouseLeave={() => setHoveredLegendType(null)}
             >
-              <img src="/assets/ui/battle.svg" alt="Battle" />
+              <img src="assets/ui/battle.svg" alt="Battle" />
               <span>{t("stage_type.battle")}</span>
             </div>
           </div>

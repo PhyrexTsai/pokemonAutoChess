@@ -44,32 +44,32 @@ export default class LoadingManager {
     const scene = this.scene
     scene.load.xhr.timeout = 5000 // help avoiding failed loading of assets when server is overloaded
 
-    scene.load.image("town_tileset", "/assets/tilesets/Town/tileset.png")
-    scene.load.tilemapTiledJSON("town", "/assets/tilesets/Town/town.json")
+    scene.load.image("town_tileset", "assets/tilesets/Town/tileset.png")
+    scene.load.tilemapTiledJSON("town", "assets/tilesets/Town/town.json")
     preloadMusic(scene, DungeonMusic.TREASURE_TOWN_STAGE_0)
     preloadMusic(scene, DungeonMusic.TREASURE_TOWN_STAGE_10)
     preloadMusic(scene, DungeonMusic.TREASURE_TOWN_STAGE_20)
 
-    scene.load.image("rain", "/assets/environment/rain.png")
-    scene.load.image("sand", "/assets/environment/sand.png")
-    scene.load.image("wind", "/assets/environment/wind.png")
-    scene.load.image("smog", "/assets/environment/smog.png")
-    scene.load.image("fog", "/assets/environment/fog.png")
-    scene.load.image("sun", "/assets/environment/sun.png")
-    scene.load.image("clouds", "/assets/environment/clouds.png")
-    scene.load.image("distort", "/assets/environment/noise.png")
+    scene.load.image("rain", "assets/environment/rain.png")
+    scene.load.image("sand", "assets/environment/sand.png")
+    scene.load.image("wind", "assets/environment/wind.png")
+    scene.load.image("smog", "assets/environment/smog.png")
+    scene.load.image("fog", "assets/environment/fog.png")
+    scene.load.image("sun", "assets/environment/sun.png")
+    scene.load.image("clouds", "assets/environment/clouds.png")
+    scene.load.image("distort", "assets/environment/noise.png")
     scene.load.multiatlas(
       "snowflakes",
-      "/assets/environment/snowflakes.json",
-      "/assets/environment/"
+      "assets/environment/snowflakes.json",
+      "assets/environment/"
     )
 
-    scene.load.image("money", "/assets/icons/money.svg")
-    scene.load.image("arrowDown", "/assets/ui/arrowDown.png")
+    scene.load.image("money", "assets/icons/money.svg")
+    scene.load.image("arrowDown", "assets/ui/arrowDown.png")
 
     scene.load.spritesheet({
       key: "cell",
-      url: "/assets/ui/cell.png",
+      url: "assets/ui/cell.png",
       frameConfig: {
         frameWidth: 64,
         frameHeight: 64,
@@ -80,7 +80,7 @@ export default class LoadingManager {
 
     scene.load.spritesheet({
       key: "board_cell",
-      url: "/assets/ui/board_cell.png",
+      url: "assets/ui/board_cell.png",
       frameConfig: {
         frameWidth: 32,
         frameHeight: 32,
@@ -92,8 +92,8 @@ export default class LoadingManager {
     for (const pack in atlas.packs) {
       scene.load.multiatlas(
         atlas.packs[pack].name,
-        `/assets/${pack}/${atlas.packs[pack].name}-${pkg.version}.json`,
-        `/assets/${pack}/`
+        `assets/${pack}/${atlas.packs[pack].name}-${pkg.version}.json`,
+        `assets/${pack}/`
       )
     }
 
@@ -139,38 +139,38 @@ export default class LoadingManager {
 export function loadEnvironmentMultiAtlas(scene: Phaser.Scene) {
   scene.load.multiatlas(
     "portal",
-    "/assets/environment/portal.json",
-    "/assets/environment/"
+    "assets/environment/portal.json",
+    "assets/environment/"
   )
   scene.load.multiatlas(
     "chest",
-    "/assets/environment/chest.json",
-    "/assets/environment/"
+    "assets/environment/chest.json",
+    "assets/environment/"
   )
   scene.load.multiatlas(
     "shine",
-    "/assets/environment/shine.json",
-    "/assets/environment/"
+    "assets/environment/shine.json",
+    "assets/environment/"
   )
   scene.load.multiatlas(
     "berry_trees",
-    "/assets/environment/berry_trees.json?tempcacheburst=68", //TEMP
-    "/assets/environment/"
+    "assets/environment/berry_trees.json?tempcacheburst=68", //TEMP
+    "assets/environment/"
   )
   scene.load.multiatlas(
     "flower_pots",
-    "/assets/environment/flower_pots.json",
-    "/assets/environment/"
+    "assets/environment/flower_pots.json",
+    "assets/environment/"
   )
   scene.load.multiatlas(
     "ground_holes",
-    "/assets/environment/ground_holes.json",
-    "/assets/environment/"
+    "assets/environment/ground_holes.json",
+    "assets/environment/"
   )
   scene.load.multiatlas(
     "loading_pokeball",
-    "/assets/environment/loading_pokeball.json",
-    "/assets/environment/"
+    "assets/environment/loading_pokeball.json",
+    "assets/environment/"
   )
 }
 

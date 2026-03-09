@@ -127,7 +127,7 @@ export default function GameStageInfo() {
               </Tooltip>,
               document.body
             )}
-            <img src={`/assets/ui/map.svg`} />
+            <img src={`assets/ui/map.svg`} />
           </div>
         )}
 
@@ -151,7 +151,7 @@ export default function GameStageInfo() {
               </Tooltip>,
               document.body
             )}
-            <img src={`/assets/icons/weather/${weather.toLowerCase()}.svg`} />
+            <img src={`assets/icons/weather/${weather.toLowerCase()}.svg`} />
           </div>
         )}
 
@@ -211,7 +211,7 @@ export function StagePath() {
     if (ItemCarouselStages.includes(level)) {
       path.push({
         level,
-        icon: "/assets/ui/carousel.svg",
+        icon: "assets/ui/carousel.svg",
         title: t("carousel")
       })
       if (level === stageLevel && phase === GamePhaseState.TOWN) {
@@ -221,7 +221,7 @@ export function StagePath() {
     if (PortalCarouselStages.includes(level)) {
       path.push({
         level,
-        icon: "/assets/ui/mythical.svg",
+        icon: "assets/ui/mythical.svg",
         title: t("unique_pick")
       })
       if (level === stageLevel && phase === GamePhaseState.PICK) {
@@ -230,7 +230,7 @@ export function StagePath() {
     } else if (AdditionalPicksStages.includes(level)) {
       path.push({
         level,
-        icon: "/assets/ui/additional-pick.svg",
+        icon: "assets/ui/additional-pick.svg",
         title: t("additional_pick")
       })
       if (level === stageLevel && phase === GamePhaseState.PICK) {
@@ -254,7 +254,7 @@ export function StagePath() {
         level,
         icon: record?.avatar
           ? getAvatarSrc(record.avatar)
-          : "/assets/ui/battle.svg",
+          : "assets/ui/battle.svg",
         title: record?.name ?? t("fight"),
         result: record?.result
       })

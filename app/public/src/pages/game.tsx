@@ -140,7 +140,7 @@ function showMoneyToast(value: number) {
   toast(
     <div className="toast-player-income">
       <span style={{ verticalAlign: "middle" }}>+{value}</span>
-      <img className="icon-money" src="/assets/icons/money.svg" alt="$" />
+      <img className="icon-money" src="assets/icons/money.svg" alt="$" />
     </div>,
     { containerId: "toast-money" }
   )
@@ -439,7 +439,7 @@ export default function Game() {
         toast(
           <div className="toast-player-damage">
             <span style={{ verticalAlign: "middle" }}>-{value}</span>
-            <img className="icon-life" src="/assets/ui/heart.png" alt="❤" />
+            <img className="icon-life" src="assets/ui/heart.png" alt="❤" />
           </div>,
           { containerId: "toast-life" }
         )

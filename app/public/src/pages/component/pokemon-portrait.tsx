@@ -35,7 +35,7 @@ export default function PokemonPortrait(props: Props) {
   }, [src])
 
   const handleError = () => {
-    const missingPortrait = "/assets/ui/missing-portrait.png"
+    const missingPortrait = "assets/ui/missing-portrait.png"
     if (imgSrc !== missingPortrait) {
       setImgSrc(missingPortrait)
     }

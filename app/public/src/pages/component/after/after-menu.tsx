@@ -47,7 +47,7 @@ export default function AfterMenu() {
           <>
             <div className="player-rank">
               {playerRank <= 3 && (
-                <img src={`/assets/ui/rank${playerRank}.png`} alt="" />
+                <img src={`assets/ui/rank${playerRank}.png`} alt="" />
               )}
               <span>{getRankLabel(playerRank)}</span>
             </div>

@@ -65,7 +65,7 @@ export default function GamePokemonDuoPortrait(props: {
       ))}
       {props.inPlanner && (
         <img
-          src="/assets/ui/planned.png"
+          src="assets/ui/planned.png"
           alt=""
           className="game-pokemon-portrait-planned-icon"
         />

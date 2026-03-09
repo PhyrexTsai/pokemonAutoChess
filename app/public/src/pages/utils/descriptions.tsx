@@ -58,7 +58,7 @@ export function addIconsToDescription(
         d = (
           <img
             className="description-icon icon-money"
-            src="/assets/icons/money.svg"
+            src="assets/icons/money.svg"
             alt="$"
           />
         )
@@ -66,7 +66,7 @@ export function addIconsToDescription(
         d = (
           <img
             className="description-icon icon-star"
-            src="/assets/ui/star.svg"
+            src="assets/ui/star.svg"
             alt="⭐"
           />
         )
@@ -258,10 +258,10 @@ export function addIconsToHtml(
       if (token) {
         if (token === "GOLD") {
           iconHTML =
-            '<img class="description-icon icon-money" src="/assets/icons/money.svg" alt="$" />'
+            '<img class="description-icon icon-money" src="assets/icons/money.svg" alt="$" />'
         } else if (token === "STAR") {
           iconHTML =
-            '<img class="description-icon icon-star" src="/assets/ui/star.svg" alt="⭐" />'
+            '<img class="description-icon icon-star" src="assets/ui/star.svg" alt="⭐" />'
         } else if (DamageTypes.includes(token)) {
           const className =
             token === Damage.PHYSICAL

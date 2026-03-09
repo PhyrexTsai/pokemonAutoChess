@@ -90,14 +90,14 @@ export function NotificationModal({
   const getIllustrationSrc = (notification: INotification) => {
     switch (notification.type) {
       case "new_title":
-        return `/assets/titles/${notification.message}.svg`
+        return `assets/titles/${notification.message}.svg`
       case "elo_rank_change":
-        return `/assets/ranks/${notification.message}.svg`
+        return `assets/ranks/${notification.message}.svg`
       case "victory_road_finished":
-        return `/assets/notifications/victory-road.png`
+        return `assets/notifications/victory-road.png`
       case "level_up":
       default:
-        return "/assets/ui/booster.png"
+        return "assets/ui/booster.png"
     }
   }
 

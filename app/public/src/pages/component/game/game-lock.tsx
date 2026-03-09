@@ -16,7 +16,7 @@ export default function GameLock() {
       )}`}
     >
       <img
-        src={`/assets/ui/lock-${shopLocked ? "close" : "open"}.svg`}
+        src={`assets/ui/lock-${shopLocked ? "close" : "open"}.svg`}
         alt={`${shopLocked ? "Locked" : "Unlocked"}`}
       />
     </button>

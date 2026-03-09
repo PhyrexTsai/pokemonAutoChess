@@ -8,14 +8,14 @@ interface PosterProps {
 }
 
 export function Poster({ version, onClick, isDetailed }: PosterProps) {
-  const [imageSrc, setImageSrc] = useState(`/assets/posters/${version}.png`)
+  const [imageSrc, setImageSrc] = useState(`assets/posters/${version}.png`)
   const [isHdLoaded, setIsHdLoaded] = useState(false)
 
   useEffect(() => {
     if (isDetailed && !isHdLoaded) {
       setTimeout(() => {
         const hdImage = new Image()
-        const hdImageSrc = `/assets/posters/hd/${version}.png`
+        const hdImageSrc = `assets/posters/hd/${version}.png`
         hdImage.src = hdImageSrc
         hdImage.onload = () => {
           setImageSrc(hdImageSrc)

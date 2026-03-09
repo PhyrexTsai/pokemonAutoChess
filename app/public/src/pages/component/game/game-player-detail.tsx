@@ -84,7 +84,7 @@ export default function GamePlayerDetail(props: { player: IPlayer }) {
         {distance != null && (
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
             <img
-              src="/assets/ui/time.svg"
+              src="assets/ui/time.svg"
               style={{ width: "16px", height: "16px" }}
               title={t("rounds_since_last_fight", { count: distance })}
             />

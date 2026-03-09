@@ -198,7 +198,7 @@ export class DebugScene extends Phaser.Scene {
             //logger.debug(`loading tileset ${t.image}`)
             this.load.image(
               mapName + "/" + t.name,
-              "/assets/tilesets/" + mapName + "/" + t.image
+              "assets/tilesets/" + mapName + "/" + t.image
             )
           })
           this.load.tilemapTiledJSON(mapName, tilemap)
