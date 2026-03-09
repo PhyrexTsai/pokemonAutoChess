@@ -72,6 +72,7 @@ import {
 import { Passive } from "../../types/enum/Passive"
 import {
   Pkm,
+  PkmDuos,
   PkmIndex,
   PkmRegionalVariants,
   Unowns,
@@ -1470,10 +1471,8 @@ export function pickPokemonProposition(
   )
     return
 
-  const PkmDuos: Record<string, Pkm[]> = (PokemonFactory as any).PkmDuos ?? {}
-
   let pokemonsObtained: Pokemon[] = (
-    pkm in PkmDuos ? PkmDuos[pkm] : [pkm as Pkm]
+    pkm in PkmDuos ? PkmDuos[pkm as keyof typeof PkmDuos] : [pkm as Pkm]
   ).map((p) => PokemonFactory.createPokemonFromName(p, player))
 
   const pokemon = pokemonsObtained[0]
