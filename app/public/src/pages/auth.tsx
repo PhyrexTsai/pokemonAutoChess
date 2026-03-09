@@ -4,11 +4,7 @@ import pkg from "../../../../package.json"
 import { useAppDispatch, useAppSelector } from "../hooks"
 import { setErrorAlertMessage } from "../stores/NetworkStore"
 import UsernameInput from "./component/auth/username-input"
-import DiscordButton from "./component/buttons/discord-button"
-import GithubButton from "./component/buttons/github-button"
-import PolicyButton from "./component/buttons/policy-button"
 import { Modal } from "./component/modal/modal"
-import ServersList from "./component/servers/servers-list"
 import Wiki from "./component/wiki/wiki"
 import "./auth.css"
 
@@ -20,8 +16,6 @@ export default function Auth() {
   const [modal, setModal] = React.useState<string | null>(null)
   const dispatch = useAppDispatch()
   const networkError = useAppSelector((state) => state.network.error)
-  const discordUrl = process.env.DISCORD_SERVER
-
   return (
     <div className="auth-page">
       {isSupposedlyMobile && (
@@ -38,16 +32,9 @@ export default function Auth() {
         <UsernameInput />
       </main>
       <div className="media">
-        <DiscordButton url={discordUrl} />
-        <GithubButton />
-        <PolicyButton />
         <button className="bubbly blue" onClick={() => setModal("wiki")}>
           <img width={32} height={32} src={`assets/ui/wiki.svg`} />
           {t("wiki_label")}
-        </button>
-        <button className="bubbly pink" onClick={() => setModal("servers")}>
-          <img width={32} height={32} src={`assets/ui/players.svg`} />
-          {t("community_servers")}
         </button>
         <span>V{pkg.version}</span>
         <p>
@@ -65,14 +52,6 @@ export default function Auth() {
         header={t("wiki_label")}
       >
         <Wiki inGame={false} />
-      </Modal>
-      <Modal
-        onClose={() => setModal(null)}
-        show={modal === "servers"}
-        className="servers-modal"
-        header={t("community_servers")}
-      >
-        <ServersList />
       </Modal>
       <Modal
         show={networkError != null}
