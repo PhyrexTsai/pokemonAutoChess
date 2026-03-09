@@ -8,11 +8,9 @@ import { GADGETS } from "../../../../../core/gadgets"
 import { Role } from "../../../../../types"
 import {
   selectConnectedPlayer,
-  useAppDispatch,
   useAppSelector
 } from "../../../hooks"
 import { usePreferences } from "../../../preferences"
-import { setSearchedUser } from "../../../stores/LobbyStore"
 import { toggleFullScreen } from "../../utils/fullscreen"
 import { cc } from "../../utils/jsx"
 import Booster from "../booster/booster"
@@ -22,10 +20,7 @@ import Jukebox from "../jukebox/jukebox"
 import MetaReport from "../meta-report/meta-report"
 import { Modal } from "../modal/modal"
 import GameOptionsModal from "../options/game-options-modal"
-import Patchnotes from "../patchnotes/patchnotes"
-import { usePatchVersion } from "../patchnotes/usePatchVersion"
 import PokeGuesser from "../pokeguesser/pokeguesser"
-import Profile from "../profile/profile"
 import ServersList from "../servers/servers-list"
 import SynergyWheelModal from "../synergy-wheel/synergy-wheel"
 import TierListMakerModal from "../tier-list/tier-list-maker-modal"
@@ -58,8 +53,6 @@ export function MainSidebar(props: MainSidebarProps) {
   const profile = useAppSelector((state) => state.network.profile)
   const profileLevel = profile?.level ?? 0
   const [preferences] = usePreferences()
-
-  const { isNewPatch, updateVersionChecked } = usePatchVersion()
 
   const version = pkg.version
 
@@ -143,38 +136,6 @@ export function MainSidebar(props: MainSidebarProps) {
             <small>v{version}</small>
           </div>
         </div>
-
-        <NavLink
-          svg="meta"
-          onClick={() =>
-            window.open(
-              "https://github.com/keldaanCommunity/pokemonAutoChess/blob/master/policy.md",
-              "_blank"
-            )
-          }
-        >
-          {t("policy")}
-        </NavLink>
-
-        <NavLink
-          location="news"
-          svg="newspaper"
-          handleClick={(newModal) => {
-            changeModal(newModal)
-            if (isNewPatch) {
-              updateVersionChecked()
-            }
-          }}
-          shimmer={isNewPatch}
-        >
-          {t("patch_notes")}
-        </NavLink>
-
-        {page === "main_lobby" && (
-          <NavLink location="profile" svg="profile" handleClick={changeModal}>
-            {t("profile")}
-          </NavLink>
-        )}
 
         {page === "main_lobby" && profileLevel >= GADGETS.BAG.levelRequired && (
           <NavLink
@@ -459,38 +420,11 @@ function Modals({
   page: Page
 }) {
   const { t } = useTranslation()
-  const searchedUser = useAppSelector((state) => state.lobby.searchedUser)
-
-  const dispatch = useAppDispatch()
 
   const closeModal = useCallback(() => setModal(undefined), [setModal])
 
-  useEffect(() => {
-    if (searchedUser && modal !== "profile") {
-      setModal("profile")
-    }
-  }, [modal, searchedUser, setModal])
-
   return (
     <>
-      <Modal
-        onClose={closeModal}
-        show={modal === "news"}
-        header={t("patch_notes")}
-        className="patchnotes"
-      >
-        <Patchnotes />
-      </Modal>
-      <Modal
-        onClose={() => {
-          closeModal()
-          dispatch(setSearchedUser(undefined))
-        }}
-        show={modal === "profile"}
-        header={t("profile")}
-      >
-        <Profile />
-      </Modal>
       <Modal
         onClose={closeModal}
         show={modal === "collection"}
