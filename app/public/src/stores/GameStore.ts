@@ -140,11 +140,19 @@ export const gameSlice: Slice<GameStateStore> = createSlice({
       state,
       action: PayloadAction<IExperienceManager>
     ) => {
-      state.experienceManager = {
+      const updated = {
         ...state.experienceManager,
         experience: action.payload.experience,
         expNeeded: action.payload.expNeeded,
         level: action.payload.level
+      }
+      state.experienceManager = updated
+      // Also sync the player's experienceManager in the players array
+      const player = state.players.find(
+        (p) => p.id === state.playerIdSpectated
+      )
+      if (player) {
+        player.experienceManager = { ...updated }
       }
     },
     changePlayer: (
@@ -197,6 +205,10 @@ export const gameSlice: Slice<GameStateStore> = createSlice({
       }
     },
     setLife: (state, action: PayloadAction<{ value: number; id: string }>) => {
+      const player = state.players.find((p) => p.id === action.payload.id)
+      if (player) {
+        player.life = action.payload.value
+      }
       getGameScene()?.board?.updateAvatarLife(
         action.payload.id,
         action.payload.value

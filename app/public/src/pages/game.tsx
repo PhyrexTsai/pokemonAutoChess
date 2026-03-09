@@ -477,11 +477,11 @@ export default function Game() {
         }
       )
 
-      engine.on(Transfer.SIMULATION_STOP, () => {
-        console.log("[Viz:9] SIMULATION_STOP received", {
-          hasBattle: !!getGameScene()?.battle,
-          spriteCount: getGameScene()?.battle?.pokemonSprites.size ?? 0
-        })
+      engine.on(Transfer.SIMULATION_STOP, (payload: { simulationId: string } | undefined) => {
+        const currentSimId = gameContainer.simulation?.id
+        if (payload?.simulationId && payload.simulationId !== currentSimId) {
+          return // Not our simulation — ignore
+        }
         if (gameContainer.game) {
           const g = getGameScene()
           if (g && g.battle) {
@@ -514,12 +514,6 @@ export default function Game() {
       })
 
       $state.listen("phase", (newPhase, previousPhase) => {
-        console.log("[Viz:P] phase changed", previousPhase, "→", newPhase, {
-          hasGame: !!gameContainer.game,
-          hasGameScene: !!getGameScene(),
-          hasBattle: !!getGameScene()?.battle,
-          currentSimId: gameContainer.simulation?.id
-        })
         if (gameContainer.game) {
           const g = getGameScene()
           if (g) {
@@ -546,25 +540,12 @@ export default function Game() {
       })
 
       $state.simulations.onRemove((simulation) => {
-        console.log("[Viz:1] simulations.onRemove", {
-          removedSimId: simulation.id,
-          currentSimId: gameContainer.simulation?.id,
-          willReset: !gameContainer.simulation || gameContainer.simulation.id === simulation.id
-        })
         if (!gameContainer.simulation || gameContainer.simulation.id === simulation.id) {
           gameContainer.resetSimulation()
         }
       })
 
       $state.simulations.onAdd((simulation) => {
-        console.log("[Viz:2] simulations.onAdd", {
-          simId: simulation.id,
-          started: simulation.started,
-          blueTeamSize: simulation.blueTeam.size,
-          redTeamSize: simulation.redTeam.size,
-          bluePlayerId: simulation.bluePlayerId,
-          redPlayerId: simulation.redPlayerId
-        })
         gameContainer.initializeSimulation(simulation)
         const $simulation = $(simulation)
 
