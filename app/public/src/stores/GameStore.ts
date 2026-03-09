@@ -17,7 +17,7 @@ import { SpecialGameRule } from "../../../types/enum/SpecialGameRule"
 import { Synergy } from "../../../types/enum/Synergy"
 import { Weather } from "../../../types/enum/Weather"
 import { ILeaderboardInfo } from "../../../types/interfaces/LeaderboardInfo"
-import { entries } from "../../../utils/schemas"
+import { deepCloneSchema, entries } from "../../../utils/schemas"
 import { getGameScene } from "../pages/game"
 
 export interface GameStateStore {
@@ -113,7 +113,7 @@ export const gameSlice: Slice<GameStateStore> = createSlice({
       state.specialGameRule = action.payload
     },
     addPlayer: (state, action: PayloadAction<IPlayer>) => {
-      state.players.push(JSON.parse(JSON.stringify(action.payload)))
+      state.players.push(deepCloneSchema(action.payload))
     },
     removePlayer: (state, action: PayloadAction<IPlayer>) => {
       state.players = state.players.filter((p) => p.id !== action.payload.id)
