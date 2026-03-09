@@ -37,13 +37,6 @@ export default function Auth() {
           {t("wiki_label")}
         </button>
         <span>V{pkg.version}</span>
-        <p>
-          {t("made_for_fans")}
-          <br />
-          {t("non_profit")} / {t("open_source")}
-          <br />
-          {t("copyright")}
-        </p>
       </div>
       <Modal
         onClose={() => setModal(null)}
