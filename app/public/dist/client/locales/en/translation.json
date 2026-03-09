@@ -3786,6 +3786,8 @@
 	"custom_room_short": "Custom",
 	"loading": "Loading...",
 	"connecting": "Connecting...",
+	"enter_name_to_play": "Enter your name to play",
+	"display_name": "Display name",
 	"no_data_available": "No data available",
 	"no_bots_found": "No bots found !",
 	"leaderboard": "Leaderboard",
