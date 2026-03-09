@@ -21,7 +21,6 @@ import MetaReport from "../meta-report/meta-report"
 import { Modal } from "../modal/modal"
 import GameOptionsModal from "../options/game-options-modal"
 import PokeGuesser from "../pokeguesser/pokeguesser"
-import ServersList from "../servers/servers-list"
 import SynergyWheelModal from "../synergy-wheel/synergy-wheel"
 import TierListMakerModal from "../tier-list/tier-list-maker-modal"
 import { TournamentsAdmin } from "../tournaments-admin/tournaments-admin"
@@ -283,27 +282,6 @@ export function MainSidebar(props: MainSidebarProps) {
 
         <div className="spacer"></div>
 
-        {page !== "game" && (
-          <NavLink
-            svg="players"
-            className="community-servers"
-            location="servers"
-            handleClick={changeModal}
-          >
-            {t("community_servers")}
-          </NavLink>
-        )}
-
-        {page !== "game" && (
-          <NavLink
-            svg="discord"
-            className="discord"
-            onClick={() => window.open(process.env.DISCORD_SERVER, "_blank")}
-          >
-            Discord
-          </NavLink>
-        )}
-
         <NavLink svg="exit-door" className="red logout" onClick={onClickLeave}>
           {leaveLabel}
         </NavLink>
@@ -450,14 +428,6 @@ function Modals({
       </Modal>
       <Modal show={modal === "meta"} header={t("meta")} onClose={closeModal}>
         <MetaReport />
-      </Modal>
-      <Modal
-        onClose={closeModal}
-        show={modal === "servers"}
-        className="servers-modal"
-        header={t("community_servers")}
-      >
-        <ServersList />
       </Modal>
       <TeamBuilderModal
         show={modal === "team-builder"}
