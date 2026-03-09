@@ -252,7 +252,9 @@ export function processBattleEvent(
       break
 
     case "SIMULATION_END":
-      context.emit(Transfer.SIMULATION_STOP, undefined)
+      context.emit(Transfer.SIMULATION_STOP, {
+        simulationId: event.visibleSimulationId
+      })
       rankPlayers(state)
       break
 
