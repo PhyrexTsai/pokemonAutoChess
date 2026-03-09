@@ -2,7 +2,7 @@
  * local-engine.ts
  * LocalGameEngine — runs the entire game loop in-browser.
  * Implements IGameEngineContext so core game logic can call engine methods.
- * Uses snapshot-diff StateTracker for reactive state synchronization.
+ * Uses Proxy-interception StateTracker for reactive state synchronization.
  */
 
 import { createStateTracker, type StateCallbackProxy } from "./state-tracker"
@@ -226,8 +226,9 @@ export class LocalGameEngine implements IGameEngineContext {
       }
     }
 
-    // Initialize StateTracker for snapshot-diff reactivity
+    // Initialize StateTracker — wrap engineState so all mutations are intercepted
     this.stateTracker = createStateTracker()
+    this.engineState = this.stateTracker.wrap(this.engineState)
     this.$ = this.stateTracker.$
 
     // Mark game as loaded and start the game loop
