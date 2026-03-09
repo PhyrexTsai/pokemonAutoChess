@@ -79,7 +79,7 @@ export function Modal(props: ModalProps) {
             <header>
               {header}
               <button className="close-btn" onClick={close}>
-                🗙
+                ✕
               </button>
             </header>
           )}
