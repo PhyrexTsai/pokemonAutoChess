@@ -3782,6 +3782,8 @@
 	"custom_room_short": "自定",
 	"loading": "載入中……",
 	"connecting": "連線中……",
+	"enter_name_to_play": "輸入你的名稱來開始遊戲",
+	"display_name": "顯示名稱",
 	"no_data_available": "資料不可用",
 	"no_bots_found": "未找到機器人！",
 	"leaderboard": "排行榜",
