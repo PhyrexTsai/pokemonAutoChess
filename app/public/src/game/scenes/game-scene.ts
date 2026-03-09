@@ -171,6 +171,13 @@ export default class GameScene extends Scene {
         state
       )
       const simForBattle = state.simulations.get(player.simulationId)
+      console.log("[Viz:0] GameScene.startGame creating BattleManager", {
+        playerSimulationId: player.simulationId,
+        simFound: !!simForBattle,
+        simStarted: simForBattle?.started,
+        blueTeamSize: simForBattle?.blueTeam.size,
+        redTeamSize: simForBattle?.redTeam.size
+      })
       this.battle = new BattleManager(
         this,
         this.battleGroup,
