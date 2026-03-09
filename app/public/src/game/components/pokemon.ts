@@ -689,7 +689,7 @@ export default class PokemonSprite extends DraggableObject {
 
   emoteAnimation() {
     const g = <GameScene>this.scene
-    if (!g.animationManager) return
+    if (!g?.animationManager) return
     g.animationManager.animatePokemon(
       this,
       PokemonActionState.EMOTE,
@@ -699,11 +699,13 @@ export default class PokemonSprite extends DraggableObject {
   }
 
   evolutionAnimation() {
+    if (!this.scene?.textures) return
     this.displayAnimation("EVOLUTION")
     this.emoteAnimation()
   }
 
   spawnAnimation() {
+    if (!this.scene?.textures) return
     this.displayAnimation("SPAWN")
     this.emoteAnimation()
   }
