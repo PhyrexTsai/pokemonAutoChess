@@ -17,6 +17,7 @@ import {
   selectSpectatedPlayer,
   useAppSelector
 } from "../../../hooks"
+import { engine } from "../../../network"
 import { getGameScene } from "../../game"
 import { cc } from "../../utils/jsx"
 import { Money } from "../icons/money"
@@ -104,8 +105,14 @@ export default function GamePokemonPortrait(props: {
   const pokemonCustom = getPkmWithCustom(pokemon.index, customs)
   const rarityColor = RarityColor[pokemon.rarity]
 
-  const evolutionName = spectatedPlayer
-    ? pokemon.evolutionRule.getEvolution(pokemon, spectatedPlayer)
+  // Use clientState player for getEvolution — Redux player is plain
+  // serialized data without Map methods (synergies.get would fail)
+  const clientPlayer = spectatedPlayer
+    ? engine.clientState?.players?.get(spectatedPlayer.id)
+    : undefined
+
+  const evolutionName = clientPlayer
+    ? pokemon.evolutionRule.getEvolution(pokemon, clientPlayer)
     : (pokemon.evolutions[0] ?? pokemon.evolution)
   let pokemonEvolution = PokemonFactory.createPokemonFromName(evolutionName)
 
@@ -124,10 +131,10 @@ export default function GamePokemonPortrait(props: {
     countEvol === pokemon.evolutionRule.numberRequired - 1 &&
     pokemonEvolution.hasEvolution
   ) {
-    const evolutionName2 = spectatedPlayer
+    const evolutionName2 = clientPlayer
       ? pokemonEvolution.evolutionRule.getEvolution(
           pokemonEvolution,
-          spectatedPlayer,
+          clientPlayer,
           stageLevel
         )
       : (pokemonEvolution.evolutions[0] ?? pokemonEvolution.evolution)

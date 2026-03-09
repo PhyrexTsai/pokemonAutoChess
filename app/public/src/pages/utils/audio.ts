@@ -64,7 +64,7 @@ export function playSound(key: Soundkey, volume = 1) {
   if (sound) {
     sound.currentTime = 0
     sound.volume = (volume * preference("sfxVolume")) / 100
-    sound.play()
+    sound.play().catch(() => {})
   }
 }
 

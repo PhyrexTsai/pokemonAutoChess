@@ -404,6 +404,9 @@ export function addAbilitySprite(
   position: number[],
   options: AbilityAnimationOptions = {}
 ) {
+  // Guard: scene may have been destroyed by battle.clear() before a setTimeout fires
+  if (!scene?.textures) return null
+
   const frame = options.frame ?? `${ability}/000.png`
   const textureKey = options.textureKey ?? "abilities"
 
