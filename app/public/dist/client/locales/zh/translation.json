@@ -4540,8 +4540,12 @@
 		"difficulty": "難度",
 		"easy": "簡單",
 		"normal": "普通",
-		"hard": "究極"
+		"hard": "究極",
+		"extreme": "極限"
 	},
+	"opponents": "對手數量",
+	"special_rule": "特殊規則",
+	"none": "無",
 	"synergy_wheel": {
 		"spin": "開始抽取",
 		"spinning": "抽取中……",

@@ -4551,8 +4551,12 @@
 		"difficulty": "Difficulty",
 		"easy": "Easy",
 		"normal": "Normal",
-		"hard": "Ultra"
+		"hard": "Ultra",
+		"extreme": "Extreme"
 	},
+	"opponents": "Opponents",
+	"special_rule": "Special Rule",
+	"none": "None",
 	"synergy_wheel": {
 		"spin": "Spin",
 		"spinning": "Spinning",

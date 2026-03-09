@@ -197,7 +197,7 @@ function StartGamePanel() {
 
         <div style={{ margin: "1em 0" }}>
           <label style={{ display: "block", marginBottom: "0.5em" }}>
-            {t("pokeguesser.difficulty")}
+            {t("pokeguessr.difficulty")}
           </label>
           <select
             className="my-select"
@@ -207,16 +207,16 @@ function StartGamePanel() {
             }
           >
             <option value={BotDifficulty.EASY}>
-              {t("pokeguesser.easy")}
+              {t("pokeguessr.easy")}
             </option>
             <option value={BotDifficulty.MEDIUM}>
-              {t("pokeguesser.normal")}
+              {t("pokeguessr.normal")}
             </option>
             <option value={BotDifficulty.HARD}>
-              {t("pokeguesser.hard")}
+              {t("pokeguessr.hard")}
             </option>
             <option value={BotDifficulty.EXTREME}>
-              {t("extreme")}
+              {t("pokeguessr.extreme")}
             </option>
           </select>
         </div>
